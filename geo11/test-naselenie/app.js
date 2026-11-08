@@ -1,15 +1,16 @@
+ JS
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push, set, update, get, onValue, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../../firebase-config.js";
 import { TEST, VARIANTS } from "./questions.js";
 import { drawMap } from "./map.js";
-
+ 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
 const LS_KEY = "techlab_attempt_" + TEST.id;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
+ 
 if (!firebaseConfig || String(firebaseConfig.apiKey || "").includes("ВСТАВЬТЕ")) {
   app.innerHTML = `<div class="card center"><h2>Тест ещё не подключён</h2>
     <p>Учителю нужно вставить настройки Firebase в файл <b>firebase-config.js</b>.</p></div>`;
@@ -17,14 +18,14 @@ if (!firebaseConfig || String(firebaseConfig.apiKey || "").includes("ВСТАВ�
 }
 const db = getDatabase(initializeApp(firebaseConfig));
 const resultsPath = `results/${TEST.id}`;
-
+ 
 // ---------- состояние ----------
 let S = null;          // { id, name, cls, variant, deadline, answers }
 let active = false;    // идёт тест и включена защита
 let finishing = false;
 let timerId = null, saveTimer = null, blurTimer = null;
 let charts = [];
-
+ 
 // ---------- старт ----------
 init();
 async function init() {
@@ -33,6 +34,14 @@ async function init() {
     try {
       const snap = await get(ref(db, `${resultsPath}/${saved}`));
       const r = snap.val();
+      // Работа со старого урока (время вышло больше 5 минут назад) — компьютер свободен для следующего ученика
+      if (r && Date.now() > (r.deadline || 0) + 5 * 60000) {
+        if (r.status === "in_progress") {
+          await update(ref(db, `${resultsPath}/${saved}`), { status: "submitted", reason: "timeout", submittedAt: serverTimestamp() }).catch(() => {});
+        }
+        localStorage.removeItem(LS_KEY);
+        return showLogin();
+      }
       if (r) {
         S = { id: saved, name: r.name, cls: r.cls, variant: r.variant, deadline: r.deadline, answers: r.answers || {}, viol: r.violations || 0 };
         if (r.status === "in_progress") return resume(r);
@@ -43,7 +52,7 @@ async function init() {
   }
   showLogin();
 }
-
+ 
 function showLogin() {
   app.innerHTML = `
   <div class="card center">
@@ -65,7 +74,7 @@ function showLogin() {
     showRules(name, cls);
   };
 }
-
+ 
 function showRules(name, cls) {
   app.innerHTML = `
   <div class="card center" style="max-width:680px">
@@ -110,7 +119,7 @@ function showRules(name, cls) {
     }
   };
 }
-
+ 
 function resume(r) {
   if (Date.now() >= r.deadline) { S.answers = r.answers || {}; return finish("timeout"); }
   app.innerHTML = `<div class="card center"><h2>Продолжение работы</h2>
@@ -118,7 +127,7 @@ function resume(r) {
     <button class="btn" id="btnCont">Продолжить</button></div>`;
   $("#btnCont").onclick = async () => { await enterFullscreen(); startTest(); };
 }
-
+ 
 // ---------- тест ----------
 function startTest() {
   const v = VARIANTS.find((x) => x.id === S.variant);
@@ -134,12 +143,12 @@ function startTest() {
   watchRecord();
   window.scrollTo(0, 0);
 }
-
+ 
 function head(t) {
   return `<div class="task-head"><span class="task-num">Задание ${t.n}</span><span class="pts">${t.points} б.</span></div>
           <p class="task-title">${esc(t.title)}</p>`;
 }
-
+ 
 function renderTask(t) {
   const A = S.answers;
   let body = "";
@@ -189,7 +198,7 @@ function renderTask(t) {
   }
   return `<section class="card task" id="task${t.n}">${head(t)}${body}</section>`;
 }
-
+ 
 function bindTask(t) {
   const sec = $(`#task${t.n}`);
   const A = S.answers;
@@ -260,7 +269,7 @@ function bindTask(t) {
     });
   }
 }
-
+ 
 // ---------- диаграммы ----------
 const PALETTE = ["#1f6f5c", "#d98a2b", "#3d7cc9", "#b8455a", "#7a5cc0", "#6b8e23", "#999"];
 const valuesPlugin = {
@@ -306,7 +315,7 @@ function drawChart(id, c) {
   });
   charts.push(ch);
 }
-
+ 
 // ---------- сохранение ----------
 function changed() {
   updateProgress();
@@ -332,7 +341,7 @@ function updateProgress() {
   $("#progress").textContent = `Выполнено заданий: ${n} из 10`;
   return n;
 }
-
+ 
 // ---------- таймер ----------
 function tick() {
   const left = Math.max(0, S.deadline - Date.now());
@@ -342,7 +351,7 @@ function tick() {
   el.classList.toggle("low", left < 5 * 60000);
   if (left <= 0) finish("timeout");
 }
-
+ 
 // ---------- сдача ----------
 function askSubmit() {
   const n = updateProgress();
@@ -352,7 +361,7 @@ function askSubmit() {
   $("#mYes").onclick = () => finish("manual");
   $("#mNo").onclick = closeModal;
 }
-
+ 
 const REASONS = {
   manual: "Работа сдана.",
   timeout: "Время вышло — работа сдана автоматически.",
@@ -361,7 +370,7 @@ const REASONS = {
   close: "Страница была закрыта или обновлена — работа сдана автоматически.",
   teacher: "Работа завершена учителем.",
 };
-
+ 
 async function finish(reason, evType) {
   if (finishing || !S) return;
   const payloadEv = {};
@@ -379,7 +388,7 @@ async function finish(reason, evType) {
   } catch (e) { console.error(e); }
   showDone(reason);
 }
-
+ 
 function showDone(reason) {
   active = false;
   charts.forEach((c) => c.destroy()); charts = [];
@@ -394,7 +403,7 @@ function showDone(reason) {
     <p>Результат сообщит учитель. Эту вкладку можно закрыть.</p></div>`;
   watchRecord();
 }
-
+ 
 // Учитель может разрешить продолжить или завершить работу
 let unwatch = null;
 function watchRecord() {
@@ -412,7 +421,7 @@ function watchRecord() {
     }
   });
 }
-
+ 
 // ---------- защита ----------
 async function enterFullscreen() {
   try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen(); }
@@ -425,7 +434,7 @@ function logViolation(type) {
   update(ref(db, `${resultsPath}/${S.id}`), { violations: S.viol, [`events/${evKey}`]: { type, at: Date.now() } })
     .catch(() => { /* не мешаем тесту */ });
 }
-
+ 
 document.addEventListener("visibilitychange", () => {
   if (active && document.visibilityState === "hidden") { finish("tab", "уход со вкладки"); }
 });
@@ -439,7 +448,7 @@ window.addEventListener("blur", () => {
 window.addEventListener("focus", () => clearTimeout(blurTimer));
 window.addEventListener("pagehide", () => { if (active) finish("close", "закрытие/обновление страницы"); });
 window.addEventListener("beforeunload", (e) => { if (active) { e.preventDefault(); e.returnValue = ""; } });
-
+ 
 document.addEventListener("fullscreenchange", () => {
   if (active && !document.fullscreenElement) {
     logViolation("выход из полноэкранного режима");
@@ -469,7 +478,7 @@ document.addEventListener("keydown", (e) => {
   }
 }, true);
 document.addEventListener("keyup", (e) => { if (active && e.key === "PrintScreen") logViolation("снимок экрана (PrintScreen)"); });
-
+ 
 // ---------- модальное окно ----------
 function modal(html) {
   closeModal();
@@ -478,3 +487,4 @@ function modal(html) {
   document.body.appendChild(o);
 }
 function closeModal() { $("#overlay")?.remove(); }
+ 
