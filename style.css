@@ -1,0 +1,13 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f2f5f9; color: #1d2733; }
+header { background: #1f6f5c; color: #fff; padding: 24px 16px; text-align: center; }
+header h1 { margin: 0; font-size: 28px; }
+header p { margin: 6px 0 0; opacity: .85; }
+main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.card { display: block; background: #fff; border-radius: 12px; padding: 20px; text-decoration: none; color: inherit;
+        box-shadow: 0 2px 6px rgba(0,0,0,.08); transition: transform .15s; }
+.card:hover { transform: translateY(-3px); }
+.card h2 { margin: 0 0 6px; font-size: 20px; color: #1f6f5c; }
+.card p { margin: 0; color: #5a6878; }
+.back { display: inline-block; margin-bottom: 16px; color: #1f6f5c; }
