@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Миссия 1 · Медиалаборатория · 5 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: экран входа как окно редактора поверх «проявляющейся» пиксельной картинки;
+   внутри — тёмная панель инструментов слева + белый лист с заданием справа. */
+:root{
+  --ink:#0B0D24;      /* космос */
+  --deep:#15183A;     /* панели */
+  --line:#2C3170;     /* линии */
+  --blue:#7B6CFF;     /* основной акцент (фиолетовый неон) */
+  --cyan:#45D3FF;     /* голубой неон */
+  --violet:#B26BFF;
+  --paper:#171A3F;    /* карточки */
+  --mist:#0F1230;     /* фон листа */
+  --frost:#2E3474;    /* рамки */
+  --text:#EEF0FF;
+  --muted:#A3A9D9;
+  --ok:#14B87A;
+  --warn:#FFB020;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+/* ===== СТАРТ ===== */
+#start{position:fixed;inset:0;display:grid;place-items:center;overflow:auto;
+  padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#bg{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0}
+#start::before{content:"";position:fixed;inset:0;z-index:1;
+  background:radial-gradient(ellipse at 30% 20%,rgba(33,96,255,.25),transparent 60%),linear-gradient(180deg,rgba(7,22,52,.55),rgba(7,22,52,.85))}
+.grid-ov{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(rgba(69,211,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(69,211,255,.07) 1px,transparent 1px);background-size:24px 24px}
+.win{position:relative;z-index:2;width:min(560px,100%);background:var(--paper);border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.45),0 0 60px rgba(33,96,255,.35)}
+.titlebar{display:flex;align-items:center;gap:10px;background:var(--deep);color:#CFE2FF;padding:10px 14px;font-family:var(--mono);font-size:13px}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#2A4A8A;display:block}
+.dots i:first-child{background:#FF5F57}.dots i:nth-child(2){background:#FEBC2E}.dots i:nth-child(3){background:#28C840}
+.titlebar span{opacity:.85}.titlebar b{margin-left:auto;color:var(--cyan);font-weight:600}
+.win-body{padding:26px 28px 28px;display:grid;gap:18px}
+.term{background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:14px 16px;line-height:1.7;min-height:120px}
+.term .p{color:var(--cyan)}.term .g{color:#5BE3A8}.term .c{color:#6E87B8}
+.cursor{display:inline-block;width:8px;height:15px;background:var(--cyan);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.brand{display:grid;gap:6px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:600}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--blue)}
+.sub{margin:0;color:var(--muted)}
+.fields{display:grid;grid-template-columns:1fr 150px;gap:12px}
+.field{display:grid;gap:6px;min-width:0}
+.field label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.field input,.field select{font:inherit;font-size:16px;padding:12px 14px;border:2px solid var(--frost);border-radius:10px;background:var(--mist);color:var(--text);width:100%}
+.field input:focus,.field select:focus{border-color:var(--blue);outline:none;background:#fff}
+.err{color:#D9304B;font-size:14px;font-weight:600;min-height:20px;margin:-6px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;padding:14px 22px;font-weight:800;font-size:16px;
+  background:var(--blue);color:#fff;box-shadow:0 6px 0 #133FB0,0 10px 24px rgba(33,96,255,.35);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #133FB0}
+.btn[disabled]{background:#9DB2D8;box-shadow:0 6px 0 #7E93BA;cursor:not-allowed;transform:none}
+.btn .k{font-family:var(--mono);font-weight:600;opacity:.8}
+.rules{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--muted)}
+.rules li{display:flex;gap:10px}.rules li b{font-family:var(--mono);color:var(--blue)}
+
+/* ===== ПРИЛОЖЕНИЕ ===== */
+#app{min-height:100%;display:grid;grid-template-columns:96px 1fr;grid-template-rows:auto 1fr}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--ink);color:#DDE9FF;border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.logo{font-family:var(--mono);font-weight:700;font-size:15px;color:#fff;letter-spacing:.02em}
+.logo i{font-style:normal;color:var(--cyan)}
+.file{font-family:var(--mono);font-size:12px;color:#7F98C7}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:13px;background:var(--deep);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.chip b{color:var(--cyan);font-weight:600}
+.linkbtn{background:none;border:0;color:#7F98C7;font-family:var(--mono);font-size:12px;text-decoration:underline;padding:4px}
+
+.tools{background:var(--deep);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.tool{position:relative;display:grid;justify-items:center;gap:4px;padding:10px 4px;border-radius:10px;border:1px solid transparent;background:transparent;color:#AFC4EC;font-size:11px;font-weight:700;line-height:1.2;text-align:center}
+.tool svg{width:26px;height:26px}
+.tool:hover{background:rgba(69,211,255,.08)}
+.tool[aria-current="true"]{background:var(--blue);color:#fff;box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(69,211,255,.35)}
+.tool.locked{opacity:.45}
+.tool .st{position:absolute;top:4px;right:6px;font-size:11px}
+.tool.done .st{color:var(--ok)}
+.tools .sep{height:1px;background:var(--line);margin:6px 4px}
+.preview{display:grid;gap:6px;justify-items:center;margin-top:auto;padding-top:8px}
+.preview canvas{width:72px;height:54px;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated}
+.preview small{font-family:var(--mono);font-size:10px;color:#7F98C7;text-align:center}
+
+main{background:var(--mist);min-width:0;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{max-width:920px;margin:0 auto;display:grid;gap:22px}
+.sec-head{display:grid;gap:8px}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(24px,4vw,32px);line-height:1.15;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;margin:0;line-height:1.3}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.card{background:var(--paper);border:1px solid var(--frost);border-radius:14px;padding:22px;display:grid;gap:14px;min-width:0}
+.step-tag{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.06em}
+
+/* блок «в тетрадь» */
+.note{position:relative;background:#FFFDF4;border:2px dashed #E9C46A;border-radius:12px;padding:16px 18px 16px 18px;display:grid;gap:8px}
+.note .tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;color:#9A6B00;letter-spacing:.06em;text-transform:uppercase}
+.note p{margin:0;font-size:17px;font-weight:600;color:#2A2410;max-width:65ch}
+.note ul{margin:0;padding-left:22px;font-size:17px;font-weight:600;color:#2A2410;display:grid;gap:4px}
+.note mark{background:#FFE58A;color:inherit;padding:0 3px;border-radius:3px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.vs{border-radius:12px;padding:16px;display:grid;gap:6px;border:1px solid var(--frost);background:var(--mist)}
+.vs b{font-family:var(--display);font-size:16px}
+.vs p{margin:0;color:var(--muted);font-size:15px}
+.vs .ico{font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:700}
+
+/* пиксели */
+.pix{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center}
+.pix canvas{width:100%;max-width:100%;aspect-ratio:4/3;border-radius:10px;border:1px solid var(--frost);image-rendering:pixelated;background:#000}
+.range{display:grid;gap:6px}
+.range label{font-family:var(--mono);font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+.range label b{color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.pix-txt{display:grid;gap:12px}
+.pix-txt p{margin:0}
+
+/* редактор-демо */
+.editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
+.stage{background:#0B1A3B;border-radius:12px;padding:14px;display:grid;place-items:center;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.stage canvas{max-width:100%;height:auto;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.ops{display:grid;gap:8px;align-content:start}
+.op{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;text-align:left;background:var(--mist);border:1px solid var(--frost);border-radius:10px;padding:10px 12px;color:var(--text)}
+.op:hover{border-color:var(--blue);background:#fff}
+.op svg{width:24px;height:24px;color:var(--blue)}
+.op b{display:block;font-size:15px}
+.op small{display:block;color:var(--muted);font-size:13px;line-height:1.3}
+.op.on{border-color:var(--blue);background:#E3ECFF}
+.console{grid-column:1/-1;background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:10px 14px;min-height:84px;max-height:120px;overflow:auto;line-height:1.6}
+.console .p{color:var(--cyan)}
+.reset{justify-self:start;background:none;border:1px solid var(--frost);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+.opslist{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.opcard{background:var(--mist);border:1px solid var(--frost);border-radius:12px;padding:14px;display:grid;gap:6px}
+.opcard svg{width:28px;height:28px;color:var(--blue)}
+.opcard b{font-size:15px}.opcard span{font-size:14px;color:var(--muted);line-height:1.4}
+
+.finish-theory{background:var(--deep);color:#DDE9FF;border:0}
+.finish-theory h3{color:#fff}
+.check{display:flex;gap:12px;align-items:flex-start;font-weight:600;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--cyan);margin-top:2px;flex:none}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+.locked-screen{text-align:center;justify-items:center;padding:48px 22px}
+.locked-screen .big{font-family:var(--mono);font-size:48px;color:var(--blue)}
+
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;
+  padding:12px 18px;border-radius:10px;border:1px solid var(--cyan);opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* общие для станций */
+.imgbox{background:#0B1A3B;border-radius:12px;height:220px;display:grid;place-items:center;padding:10px;position:relative;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;min-width:0}
+.imgbox canvas{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.imgbox .lbl{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:rgba(7,22,52,.75);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+.imgbox.tall{height:300px}
+.counter{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.counter b{color:var(--blue)}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.choice{display:flex;align-items:center;gap:10px;text-align:left;background:var(--mist);border:2px solid var(--frost);border-radius:10px;padding:12px 14px;color:var(--text);font-weight:700;font-size:15px;line-height:1.3}
+.choice svg{width:22px;height:22px;color:var(--blue);flex:none}
+.choice:hover:not([disabled]){border-color:var(--blue);background:#fff}
+.choice[disabled]{cursor:default}
+.choice.right{border-color:var(--ok);background:#E3F8EF}
+.choice.wrong{border-color:#E5484D;background:#FDECEE}
+.fb{border-radius:10px;padding:12px 16px;font-weight:600;display:flex;gap:10px;align-items:flex-start}
+.fb.ok{background:#E3F8EF;color:#0B6B47}
+.fb.no{background:#FDECEE;color:#A3202E}
+.fb.info{background:#E3ECFF;color:#1B3F9E}
+.fb .m{font-family:var(--mono);font-weight:700}
+.dotsbar{display:flex;gap:6px;flex-wrap:wrap}
+.dotsbar i{width:28px;height:8px;border-radius:4px;background:var(--frost);display:block}
+.dotsbar i.ok{background:var(--ok)}.dotsbar i.no{background:#E5484D}.dotsbar i.cur{background:var(--blue)}
+.task-text{margin:0;font-size:17px;font-weight:600;max-width:65ch}
+
+.q1grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{display:grid;gap:16px}
+.meter{display:grid;gap:6px}
+.meter .mt{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.meter .bar{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#1B2A4E,#5A6E93 50%,#F2F6FF)}
+.meter .zone{position:absolute;top:-3px;bottom:-3px;left:42.5%;width:15%;border:2px solid var(--ok);border-radius:6px;background:rgba(20,184,122,.18)}
+.meter .needle{position:absolute;top:-6px;width:4px;height:28px;background:var(--blue);border-radius:2px;transform:translateX(-2px);transition:left .15s}
+.meter.c .bar{background:linear-gradient(90deg,#8E9BB5,#5A6E93 50%,#0B1A3B)}
+
+.q2grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tbtns{display:flex;flex-wrap:wrap;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;font-size:15px;color:var(--text)}
+.tbtn svg{width:20px;height:20px;color:var(--blue)}
+.tbtn:hover{border-color:var(--blue)}
+.tbtn .v{font-family:var(--mono);font-size:12px;color:var(--blue);background:var(--mist);padding:2px 6px;border-radius:5px}
+
+/* финиш */
+.result{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.grade{width:150px;height:150px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;align-content:center;
+  box-shadow:0 0 0 6px #D6E6FF,0 0 40px rgba(33,96,255,.45)}
+.grade small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;font-weight:700}
+.grade b{font-family:var(--display);font-size:64px;line-height:1}
+.pts{font-family:var(--display);font-size:clamp(40px,7vw,60px);font-weight:800;line-height:1}
+.pts span{font-size:.45em;color:var(--muted)}
+.scale{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;font-family:var(--mono);font-size:11px;text-align:center}
+.scale div{border:1px solid var(--frost);border-radius:6px;padding:6px 2px;background:var(--paper);line-height:1.3}
+.scale div b{display:block;font-size:14px}
+.scale div.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{padding:10px 8px;border-bottom:1px solid var(--frost);text-align:left}
+.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.tbl td:last-child,.tbl th:last-child{text-align:right;font-family:var(--mono);font-weight:700}
+.mood{display:flex;flex-wrap:wrap;gap:10px}
+.mood button{background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;color:var(--text)}
+.mood button[aria-pressed="true"]{border-color:var(--blue);background:#E3ECFF}
+.sent{font-family:var(--mono);background:var(--ink);color:#BFD6FF;border-radius:10px;padding:14px 16px;line-height:1.7}
+.sent .g{color:#5BE3A8}.sent .p{color:var(--cyan)}.sent .r{color:#FF8A8A}
+
+@media (max-width:760px){
+  .q1grid,.q2grid,.result{grid-template-columns:1fr}
+  .grade{width:120px;height:120px}.grade b{font-size:50px}
+  .scale{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr}
+  .tools{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}
+  .tool{min-width:76px}
+  .tools .sep{display:none}
+  .preview{display:none}
+  .two,.pix,.editor{grid-template-columns:1fr}
+  .fields{grid-template-columns:1fr}
+  .file{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== НЕОНОВЫЙ КОСМОС (TechLab) ===== */
+body{background:radial-gradient(circle at 15% 0%,#2a1766 0,var(--ink) 55%) fixed}
+main{background:transparent}
+#start::before{background:radial-gradient(ellipse at 30% 20%,rgba(178,107,255,.30),transparent 60%),linear-gradient(180deg,rgba(11,13,36,.55),rgba(11,13,36,.9))}
+.win{background:var(--paper);box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.55),0 0 70px rgba(123,108,255,.45)}
+.titlebar{background:#0B0D24}
+.eyebrow,.step-tag{color:var(--cyan)}
+h1 em,.grad{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.term,.console,.sent{background:#070818;border:1px solid var(--line)}
+.field input,.field select{background:#0F1230;color:var(--text);border-color:var(--frost)}
+.field input:focus,.field select:focus{background:#13163a;border-color:var(--cyan)}
+.btn{background:linear-gradient(90deg,var(--cyan),var(--violet));color:#0B0D24;box-shadow:0 0 0 0 transparent,0 8px 26px rgba(123,108,255,.45)}
+.btn:active{box-shadow:0 2px 10px rgba(123,108,255,.4)}
+.btn[disabled]{background:#3a3f78;color:#9aa0d0;box-shadow:none}
+.rules li b,.counter b,.range label b{color:var(--cyan)}
+.card{background:rgba(23,26,63,.88);border-color:var(--frost);backdrop-filter:blur(6px)}
+.tool[aria-current="true"]{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 1px var(--cyan),0 0 22px rgba(123,108,255,.55)}
+.note{background:rgba(255,206,84,.08);border-color:#E9C46A}
+.note .tag{color:#FFD36B}.note p,.note ul{color:#FFF1CC}
+.note mark{background:#FFD36B;color:#241a00}
+.vs,.opcard,.op,.choice,.tbtn,.mood button,.scale div{background:#12153A;border-color:var(--frost);color:var(--text)}
+.op:hover,.choice:hover:not([disabled]),.tbtn:hover{background:#1a1e4d;border-color:var(--cyan)}
+.op.on{background:rgba(123,108,255,.25);border-color:var(--violet)}
+.op svg,.opcard svg,.choice svg,.tbtn svg,.vs .ico{color:var(--cyan)}
+.tbtn .v{background:#0B0D24;color:var(--cyan)}
+.choice.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.choice.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.fb.ok{background:rgba(46,229,157,.15);color:#7DF5C4}
+.fb.no{background:rgba(255,92,122,.15);color:#FF9BAE}
+.fb.info{background:rgba(69,211,255,.12);color:#9BE6FF}
+.reset{border-color:var(--frost);color:var(--muted)}
+.dotsbar i{background:#2E3474}.dotsbar i.cur{background:var(--cyan)}
+.grade{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 6px rgba(123,108,255,.25),0 0 50px rgba(178,107,255,.6)}
+.scale div.on{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#0B0D24;border-color:transparent}
+.mood button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.15)}
+.tbl td,.tbl th{border-color:var(--frost)}
+.finish-theory{background:linear-gradient(135deg,#1b1650,#0f2a55);border:1px solid var(--line)}
+.meter .bar{background:linear-gradient(90deg,#0b0d24,#5A6E93 50%,#F2F6FF)}
+.meter .needle{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.stars{font-size:22px;letter-spacing:4px}
+.fuel{height:6px;border-radius:9px;background:#22265a;overflow:hidden;min-width:120px}
+.fuel i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .4s}
+.imgbox canvas{width:auto;height:auto;max-width:100%;max-height:196px}
+.imgbox.tall canvas{max-height:276px}
+.pxgrid{width:max-content}
+.back{color:var(--muted);font-family:var(--mono);font-size:12px;text-decoration:none}
+.back:hover{color:var(--cyan)}
+
+/* пиксель-художник */
+.pxwrap{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+.pxgrid{display:grid;grid-template-columns:repeat(8,34px);grid-template-rows:repeat(8,34px);gap:2px;background:#070818;padding:6px;border-radius:10px;border:1px solid var(--line);user-select:none;touch-action:none}
+.pxgrid.small{grid-template-columns:repeat(8,16px);grid-template-rows:repeat(8,16px);gap:1px;padding:4px;cursor:default}
+.pxgrid i{display:block;border-radius:3px;cursor:crosshair}
+.pxgrid.small i{border-radius:2px;cursor:default}
+.palette{display:flex;flex-wrap:wrap;gap:8px}
+.palette button{width:42px;height:42px;border-radius:10px;border:3px solid transparent;box-shadow:0 0 0 1px var(--frost)}
+.palette button[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--cyan),0 0 16px var(--cyan)}
+.pct{font-family:var(--display);font-size:28px;font-weight:800}
+
+/* блиц */
+.blitz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.clock60{font-family:var(--display);font-size:40px;font-weight:800;color:var(--cyan);text-shadow:0 0 18px rgba(69,211,255,.6)}
+.clock60.low{color:#FF5C7A;text-shadow:0 0 18px rgba(255,92,122,.6)}
+@media (max-width:760px){.pxwrap{grid-template-columns:1fr}.pxgrid{grid-template-columns:repeat(8,30px);grid-template-rows:repeat(8,30px)}}
+</style>
+</head>
+<body>
+
+<!-- ============ СТАРТ ============ -->
+<section id="start">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="grid-ov" aria-hidden="true"></div>
+  <div class="win" role="dialog" aria-labelledby="ttl">
+    <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div><span>mission_01.exe</span><b>5 класс</b></div>
+    <div class="win-body">
+      <div class="brand">
+        <div class="eyebrow">🛰 Экспедиция «Медиалаборатория» · Миссия 1</div>
+        <h1 id="ttl">Фото<em>лаборатория</em></h1>
+        <p class="sub">Что значит редактировать изображение</p>
+      </div>
+      <div class="term" id="term" aria-live="polite"></div>
+      <form id="login" class="win-body" style="padding:0" novalidate>
+        <div class="fields">
+          <div class="field"><label for="fio">&gt; фамилия_и_имя</label><input id="fio" autocomplete="off" placeholder="Например, Руссу Анна" maxlength="60"></div>
+          <div class="field"><label for="cls">&gt; класс</label>
+            <select id="cls"><option value="">выбери…</option><option>5 «А»</option><option>5 «Б»</option><option>5 «В»</option><option>5 «Г»</option></select></div>
+        </div>
+        <p class="err" id="err"></p>
+        <button class="btn" type="submit">🚀 Начать миссию <span class="k">Enter</span></button>
+      </form>
+      <ul class="rules">
+        <li><b>01</b>Изучи «Бортовой журнал» и перепиши жёлтые блоки в тетрадь.</li>
+        <li><b>02</b>Пройди «Разогрев» и пять заданий по порядку. За каждое — баллы и ⭐.</li>
+        <li><b>03</b>На «Финише» увидишь отметку, и результат сразу уйдёт учителю.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ПРИЛОЖЕНИЕ ============ -->
+<div id="app" hidden>
+  <header class="topbar">
+    <a class="back" href="../../../#tech-5">← TechLab</a>
+    <span class="logo">mission<i>_</i>01</span>
+    <span class="file" id="fileName">mission_01 / journal.md</span>
+    <div class="fuel" title="Топливо — прогресс миссии"><i id="fuel" style="width:0%"></i></div>
+    <div class="top-right">
+      <span class="chip">👤 <b id="who">—</b></span>
+      <span class="chip">⏱ <b id="timer">00:00</b></span>
+      <button class="linkbtn" id="logout" type="button">сменить ученика</button>
+    </div>
+  </header>
+
+  <nav class="tools" aria-label="Этапы урока" id="tools"></nav>
+
+  <main id="main"><div class="sheet" id="sheet"></div></main>
+</div>
+<div id="toast" role="status"></div>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script type="module">
+/* Связь миссии с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech5-media-m1";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Журнал", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+/* ---------- сцена-картинка (рисуется кодом, без интернета) ---------- */
+function drawScene(ctx,w,h){
+  const sky=ctx.createLinearGradient(0,0,0,h*0.62);
+  sky.addColorStop(0,"#2E7BFF");sky.addColorStop(1,"#BFE6FF");
+  ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+  // солнце
+  ctx.fillStyle="#FFD447";ctx.beginPath();ctx.arc(w*0.76,h*0.24,h*0.11,0,7);ctx.fill();
+  // облака
+  ctx.fillStyle="rgba(255,255,255,.9)";
+  [[.2,.18,.07],[.27,.16,.09],[.34,.19,.06],[.55,.12,.05],[.6,.1,.06]].forEach(c=>{ctx.beginPath();ctx.arc(w*c[0],h*c[1],h*c[2],0,7);ctx.fill();});
+  // горы
+  ctx.fillStyle="#3F5FA8";ctx.beginPath();ctx.moveTo(0,h*.6);ctx.lineTo(w*.18,h*.32);ctx.lineTo(w*.36,h*.6);ctx.fill();
+  ctx.fillStyle="#2C4A92";ctx.beginPath();ctx.moveTo(w*.22,h*.62);ctx.lineTo(w*.48,h*.26);ctx.lineTo(w*.74,h*.62);ctx.fill();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(w*.48,h*.26);ctx.lineTo(w*.43,h*.33);ctx.lineTo(w*.53,h*.33);ctx.fill();
+  ctx.fillStyle="#4C6CB5";ctx.beginPath();ctx.moveTo(w*.58,h*.62);ctx.lineTo(w*.82,h*.38);ctx.lineTo(w*1.05,h*.62);ctx.fill();
+  // луг
+  const g=ctx.createLinearGradient(0,h*.6,0,h);g.addColorStop(0,"#5CC46A");g.addColorStop(1,"#2E8B47");
+  ctx.fillStyle=g;ctx.fillRect(0,h*.6,w,h*.4);
+  // озеро
+  ctx.fillStyle="#3BA7E8";ctx.beginPath();ctx.ellipse(w*.36,h*.8,w*.2,h*.07,0,0,7);ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.35)";ctx.fillRect(w*.26,h*.79,w*.08,h*.01);
+  // дерево (несимметрично — чтобы было видно отражение)
+  ctx.fillStyle="#6B3E1E";ctx.fillRect(w*.83,h*.55,w*.025,h*.22);
+  ctx.fillStyle="#1F7A3A";ctx.beginPath();ctx.arc(w*.843,h*.52,h*.11,0,7);ctx.fill();
+  ctx.fillStyle="#2A9447";ctx.beginPath();ctx.arc(w*.82,h*.48,h*.07,0,7);ctx.fill();
+  // красный домик слева
+  ctx.fillStyle="#E5484D";ctx.fillRect(w*.07,h*.66,w*.1,h*.12);
+  ctx.fillStyle="#8E2430";ctx.beginPath();ctx.moveTo(w*.055,h*.67);ctx.lineTo(w*.12,h*.58);ctx.lineTo(w*.185,h*.67);ctx.fill();
+  ctx.fillStyle="#FFE58A";ctx.fillRect(w*.1,h*.69,w*.03,h*.04);
+}
+const BASE=document.createElement("canvas");BASE.width=640;BASE.height=480;drawScene(BASE.getContext("2d"),640,480);
+
+/* пикселизация: рисуем картинку крупными «квадратиками» */
+function pixelate(target,block){
+  const ctx=target.getContext("2d"),w=target.width,h=target.height;
+  const sw=Math.max(1,Math.round(w/block)),sh=Math.max(1,Math.round(h/block));
+  const t=document.createElement("canvas");t.width=sw;t.height=sh;
+  t.getContext("2d").drawImage(BASE,0,0,sw,sh);
+  ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,w,h);ctx.drawImage(t,0,0,w,h);
+}
+
+/* ---------- фон стартового экрана: картинка «проявляется» ---------- */
+const bg=document.getElementById("bg");
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let bgStep=0,bgTimer=null;
+const blocks=[64,48,32,24,16,12,8,6,8,12,16,24,32,48];
+function sizeBg(){bg.width=Math.ceil(innerWidth/2);bg.height=Math.ceil(innerHeight/2);}
+function tickBg(){pixelate(bg,blocks[bgStep%blocks.length]/2);bgStep++;}
+sizeBg();pixelate(bg,12);
+if(!reduce){bgTimer=setInterval(tickBg,700);}
+addEventListener("resize",()=>{sizeBg();pixelate(bg,12)});
+
+/* ---------- терминал на старте ---------- */
+const termLines=[
+  ['<span class="c">// загрузка модуля</span>'],
+  ['<span class="p">&gt;</span> mission_01.launch()'],
+  ['<span class="g">✓</span> инструменты: поворот, обрезка, яркость, фильтры'],
+  ['<span class="p">&gt;</span> пилот, введи фамилию и класс <span class="cursor"></span>']
+];
+const term=document.getElementById("term");
+(function type(i){ if(i>=termLines.length)return;
+  term.innerHTML+= (i?'<br>':'')+termLines[i][0];
+  setTimeout(()=>type(i+1),reduce?0:450);
+})(0);
+
+/* ---------- универсальная обработка картинки ---------- */
+function renderTo(cv,st){
+  st=Object.assign({crop:false,rot:0,flip:false,bright:0,contrast:0,fx:0},st||{});
+  const sw=st.crop?400:640,sh=st.crop?300:480,sx=st.crop?120:0,sy=st.crop?90:0;
+  const side=st.rot%180!==0;
+  cv.width=side?240:320;cv.height=side?320:240;
+  const c=cv.getContext("2d");c.save();c.clearRect(0,0,cv.width,cv.height);
+  c.translate(cv.width/2,cv.height/2);c.rotate(st.rot*Math.PI/180);if(st.flip)c.scale(-1,1);
+  c.drawImage(BASE,sx,sy,sw,sh,-160,-120,320,240);c.restore();
+  if(st.bright||st.contrast||st.fx){
+    const im=c.getImageData(0,0,cv.width,cv.height),d=im.data;
+    const cc=Math.max(-127,Math.min(127,st.contrast*1.27)),f=(259*(cc+255))/(255*(259-cc)),b=st.bright*1.6;
+    for(let i=0;i<d.length;i+=4){
+      let r=f*(d[i]-128)+128+b,g=f*(d[i+1]-128)+128+b,bl=f*(d[i+2]-128)+128+b;
+      if(st.fx===1){const y=.3*r+.59*g+.11*bl;r=g=bl=y;}
+      else if(st.fx===2){const y=.3*r+.59*g+.11*bl;r=y+40;g=y+20;bl=y-12;}
+      else if(st.fx===3){r=255-r;g=255-g;bl=255-bl;}
+      d[i]=r;d[i+1]=g;d[i+2]=bl;
+    }
+    c.putImageData(im,0,0);
+  }
+}
+const FXN=["нет","ч/б","сепия","негатив"];
+
+/* ---------- состояние ---------- */
+const STEPS=[
+  {id:"theory",label:"Журнал",file:"journal.md",icon:'<path d="M5 4h10l4 4v12H5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h8M8 15h8M8 7h5" stroke="currentColor" stroke-width="2"/>'},
+  {id:"warm",label:"Разогрев",file:"warmup.js",icon:'<rect x="3" y="5" width="8" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="5" width="8" height="14" rx="1" fill="currentColor" opacity=".5"/><path d="M12 3v18" stroke="currentColor" stroke-width="2"/>'},
+  {id:"q1",label:"Задание 1",file:"task_01.js",icon:'<circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" stroke="currentColor" stroke-width="2"/>'},
+  {id:"q2",label:"Задание 2",file:"task_02.js",icon:'<path d="M20 12a8 8 0 1 1-3-6.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M17 2v4h4" fill="none" stroke="currentColor" stroke-width="2"/>'},
+  {id:"q3",label:"Задание 3",file:"task_03.js",icon:'<circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l6 6" stroke="currentColor" stroke-width="2.5"/>'},
+  {id:"q4",label:"Задание 4",file:"task_04.js",icon:'<rect x="3" y="3" width="6" height="6" fill="currentColor"/><rect x="9" y="9" width="6" height="6" fill="currentColor" opacity=".6"/><rect x="15" y="3" width="6" height="6" fill="currentColor" opacity=".35"/><rect x="3" y="15" width="6" height="6" fill="currentColor" opacity=".6"/><rect x="15" y="15" width="6" height="6" fill="currentColor"/>'},
+  {id:"q5",label:"Задание 5",file:"blitz.js",icon:'<path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="currentColor"/>'},
+  {id:"fin",label:"Финиш",file:"result.png",icon:'<path d="M5 21V4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2"/>'}
+];
+const MAXP={warm:6,q1:6,q2:6,q3:7,q4:6,q5:6};
+const PARTS=["warm","q1","q2","q3","q4","q5"];
+const MAXALL=37;
+const NAMES={warm:"Разогрев «До и после»",q1:"Задание 1 · Спаси фото",q2:"Задание 2 · Повтори образец",q3:"Задание 3 · Фотодетектив",q4:"Задание 4 · Пиксель-художник",q5:"Задание 5 · Блиц 60 секунд"};
+function fresh(fio,cls){return {fio,cls,start:Date.now(),done:{},cur:"theory",score:{},part:{},mood:"",sent:0,rec:""};}
+let S=fresh("","");
+const KEY="techlab_tech5_m1";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
+  /* сохранённая работа старше 4 часов — это другой урок: компьютер свободен */
+  if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+
+/* ---------- связь с сайтом TechLab (Firebase) ---------- */
+function TL(){return Promise.race([window.TL_READY,new Promise((_,rej)=>setTimeout(()=>rej(new Error("нет связи")),10000))]);}
+function stageLabel(){const st=STEPS.find(x=>x.id===S.cur);return st?st.label:"";}
+function syncProgress(){
+  if(!S.rec||S.sent)return;
+  TL().then(t=>t.progress(S.rec,{score:S.score,stage:stageLabel(),doneCount:STEPS.filter(x=>S.done[x.id]).length})).catch(()=>{});
+}
+
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2400);}
+const $=id=>document.getElementById(id);
+
+/* ---------- вход ---------- */
+$("login").addEventListener("submit",e=>{
+  e.preventDefault();
+  const fio=$("fio").value.trim().replace(/\s+/g," ");
+  const cls=$("cls").value;
+  const err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";$("cls").focus();return;}
+  err.textContent="Подключаюсь к TechLab…";
+  const btn=e.submitter||document.querySelector("#login .btn");btn.disabled=true;
+  TL().then(async t=>{
+    if(!(await t.isOpen())){err.textContent="🔒 Миссия ещё не открыта учителем. Подожди и нажми ещё раз.";btn.disabled=false;return;}
+    S=fresh(fio,cls); /* таймер всегда стартует заново */
+    S.rec=await t.start({name:fio,cls});
+    err.textContent="";save();openApp();
+  }).catch(x=>{err.textContent="Нет связи с сайтом. Проверь интернет и нажми ещё раз.";btn.disabled=false;});
+});
+$("logout").addEventListener("click",()=>{
+  try{localStorage.removeItem(KEY)}catch(e){}
+  location.reload();
+});
+
+let timerId=null;
+function openApp(){
+  clearInterval(bgTimer);
+  $("start").hidden=true;$("app").hidden=false;
+  $("who").textContent=S.fio+" · "+S.cls;
+  show(S.cur);tickTimer();clearInterval(timerId);timerId=setInterval(tickTimer,1000);
+}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+function tickTimer(){
+  const s=Math.max(0,Math.floor((Date.now()-S.start)/1000));
+  $("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+}
+
+/* ---------- панель инструментов ---------- */
+function unlocked(id){const i=STEPS.findIndex(s=>s.id===id);return i===0||!!S.done[STEPS[i-1].id];}
+function renderTools(){
+  const nav=$("tools");
+  nav.innerHTML=STEPS.map((s,i)=>{
+    const lock=!unlocked(s.id),done=!!S.done[s.id];
+    return (i===1||i===STEPS.length-1?'<div class="sep"></div>':'')+
+      `<button class="tool${lock?' locked':''}${done?' done':''}" data-id="${s.id}" aria-current="${S.cur===s.id}" type="button">
+        <span class="st">${done?'✓':lock?'🔒':''}</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">${s.icon}</svg>${s.label}</button>`;
+  }).join("")+`<div class="preview"><canvas id="prog" width="96" height="72"></canvas><small id="progTxt"></small></div>`;
+  nav.querySelectorAll(".tool").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.id;
+    if(!unlocked(id)){toast("🔒 Сначала пройди предыдущий этап");return;}
+    show(id);
+  });
+  const n=STEPS.filter(s=>S.done[s.id]).length;
+  pixelate($("prog"),[24,16,12,8,6,4,3,2,1][Math.min(8,n)]);
+  const pc=Math.round(n/STEPS.length*100);
+  $("progTxt").textContent="топливо "+pc+"%";$("fuel").style.width=pc+"%";
+}
+
+/* ---------- экраны ---------- */
+function show(id){
+  if(!unlocked(id))id="theory";
+  S.cur=id;save();
+  const step=STEPS.find(s=>s.id===id);
+  $("fileName").textContent="mission_01 / "+step.file;
+  renderTools();
+  ({theory:showTheory,warm:showWarm,q1:showQ1,q2:showQ2,q3:showQ3,q4:showQ4,q5:showQ5,fin:showFin})[id]();
+  syncProgress();
+  scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+}
+function next(id){const i=STEPS.findIndex(s=>s.id===id);return STEPS[i+1];}
+function finishStation(id,pts){
+  S.score[id]=pts;S.done[id]=true;save();renderTools();syncProgress();
+}
+function stars(id){const r=(S.score[id]||0)/MAXP[id];return r>=.99?"⭐⭐⭐":r>=.6?"⭐⭐☆":r>0?"⭐☆☆":"☆☆☆";}
+function doneCard(id){
+  const nx=next(id);
+  return `<div class="card finish-theory">
+    <div class="step-tag" style="color:var(--cyan)">✓ ЗАДАНИЕ ВЫПОЛНЕНО</div>
+    <div class="stars">${stars(id)}</div>
+    <h3>${NAMES[id]}: ${S.score[id]} из ${MAXP[id]} баллов</h3>
+    <div class="row"><button class="btn" type="button" onclick="show('${nx.id}')">${nx.id==="fin"?"К финишу →":"Дальше: "+nx.label+" →"}</button></div></div>`;
+}
+const ICON={
+ crop:'<path d="M6 2v16h16M2 6h16v16" fill="none" stroke="currentColor" stroke-width="2"/>',
+ rot:'<path d="M20 12a8 8 0 1 1-3-6.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M17 2v4h4" fill="none" stroke="currentColor" stroke-width="2"/>',
+ flip:'<path d="M12 2v20" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/><path d="M9 6L3 18h6zM15 6l6 12h-6z" fill="currentColor"/>',
+ bright:'<circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" stroke="currentColor" stroke-width="2"/>',
+ fx:'<circle cx="8" cy="9" r="5" fill="currentColor" opacity=".45"/><circle cx="16" cy="9" r="5" fill="currentColor" opacity=".7"/><circle cx="12" cy="16" r="5" fill="currentColor" opacity=".3"/>',
+ reset:'<path d="M4 12a8 8 0 1 0 3-6.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 2v4H3" fill="none" stroke="currentColor" stroke-width="2"/>'
+};
+const svg=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
+function head(n,tag,title,lead){
+  return `<div class="sec-head"><div class="step-tag">ЭТАП ${n} ИЗ ${STEPS.length} · ${tag}</div><h2>${title}</h2><p class="lead">${lead}</p></div>`;
+}
+
+/* ================= ТЕОРИЯ ================= */
+function showTheory(){
+ $("sheet").innerHTML=head(1,"🛰 БОРТОВОЙ ЖУРНАЛ","Что значит редактировать изображение?",
+   'Прочитай каждый блок журнала. Всё, что в <b>жёлтой рамке</b>, перепиши в тетрадь. Попробуй кнопки в редакторе: так ты увидишь, как работает каждый инструмент.')+`
+ <div class="card">
+   <div class="step-tag">ШАГ 1 · ТЕМА УРОКА</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p>Тема: «Редактирование изображений. Первые шаги».</p>
+     <p><mark>Редактировать изображение</mark> — значит изменять <b>готовую</b> картинку: исправлять недостатки, менять цвет и размер, добавлять эффекты.</p>
+   </div>
+   <div class="two">
+     <div class="vs"><span class="ico">new_file()</span><b>Создать рисунок</b><p>Начинаем с чистого листа и рисуем всё сами. Например, рисунок в Paint.</p></div>
+     <div class="vs"><span class="ico">open("photo.jpg")</span><b>Редактировать</b><p>Берём готовое фото и улучшаем его: делаем светлее, поворачиваем, обрезаем лишнее.</p></div>
+   </div>
+ </div>
+ <div class="card">
+   <div class="step-tag">ШАГ 2 · ИЗ ЧЕГО СОСТОИТ КАРТИНКА</div>
+   <div class="pix">
+     <canvas id="zoomCv" width="320" height="240" aria-label="Картинка, которую можно увеличить до пикселей"></canvas>
+     <div class="pix-txt">
+       <p>Подвинь ползунок вправо и посмотри, что будет с картинкой.</p>
+       <div class="range"><label for="zoom">Размер квадратиков <b id="zoomVal">1 px</b></label><input type="range" id="zoom" min="1" max="40" value="1"></div>
+       <p style="color:var(--muted)">Видишь цветные квадратики? Из них состоит любое цифровое изображение. Когда мы редактируем фото, компьютер меняет цвет и место этих квадратиков.</p>
+     </div>
+   </div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p>Цифровое изображение состоит из <mark>пикселей</mark> — маленьких цветных квадратиков.</p>
+   </div>
+ </div>
+ <div class="card">
+   <div class="step-tag">ШАГ 3 · ИНСТРУМЕНТЫ РЕДАКТОРА</div>
+   <h3>Попробуй сам: нажимай на инструменты</h3>
+   <div class="editor">
+     <div class="stage"><canvas id="edCv" width="320" height="240"></canvas></div>
+     <div class="ops">
+       <button class="op" type="button" data-op="crop">${svg("crop")}<span><b>Кадрирование</b><small>обрезать лишнее по краям</small></span></button>
+       <button class="op" type="button" data-op="rot">${svg("rot")}<span><b>Поворот</b><small>на 90° по часовой стрелке</small></span></button>
+       <button class="op" type="button" data-op="flip">${svg("flip")}<span><b>Отражение</b><small>как в зеркале, слева направо</small></span></button>
+       <button class="op" type="button" data-op="bright">${svg("bright")}<span><b>Яркость</b><small>сделать светлее или темнее</small></span></button>
+       <button class="op" type="button" data-op="fx">${svg("fx")}<span><b>Фильтр</b><small>ч/б, сепия, негатив</small></span></button>
+     </div>
+     <div class="console" id="log"><span class="p">&gt;</span> open("landscape.png") — фото загружено</div>
+     <button class="reset" type="button" id="edReset">↺ вернуть исходное фото</button>
+   </div>
+ </div>
+ <div class="card">
+   <div class="step-tag">ШАГ 4 · ГЛАВНОЕ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p>Основные операции редактирования:</p>
+     <ul>
+       <li><mark>кадрирование</mark> — обрезка лишнего;</li>
+       <li><mark>поворот</mark> — изменение положения картинки;</li>
+       <li><mark>отражение</mark> — зеркальное изображение;</li>
+       <li><mark>яркость и контраст</mark> — светлее или темнее, чётче;</li>
+       <li><mark>фильтры</mark> — художественные эффекты (ч/б, сепия).</li>
+     </ul>
+     <p>Программы и сайты: Paint, Фотографии Windows, Canva, mycollages.ru.</p>
+   </div>
+ </div>
+ <div class="card finish-theory">
+   <h3>Готов(а) идти дальше?</h3>
+   <label class="check"><input type="checkbox" id="copied"> Я изучил(а) бортовой журнал и переписал(а) все жёлтые блоки в тетрадь</label>
+   <div class="row"><button class="btn" type="button" id="goNext" disabled>🔥 Перейти к разогреву →</button>
+   <span style="font-family:var(--mono);font-size:13px;color:#7F98C7">учитель может проверить тетрадь</span></div>
+ </div>`;
+
+  const zc=$("zoomCv"),zr=$("zoom");
+  const upd=()=>{pixelate(zc,+zr.value);$("zoomVal").textContent=zr.value+" px";};
+  zr.oninput=upd;upd();
+
+  const ec=$("edCv"),log=$("log");
+  let st={crop:false,rot:0,flip:false,bright:0,fx:0};
+  const BR=[0,55,-55];
+  function render(){
+    renderTo(ec,{crop:st.crop,rot:st.rot,flip:st.flip,bright:BR[st.bright],fx:st.fx});
+    document.querySelectorAll(".op").forEach(o=>{const k=o.dataset.op;
+      o.classList.toggle("on",k==="crop"?st.crop:k==="rot"?st.rot!==0:k==="flip"?st.flip:k==="bright"?st.bright!==0:st.fx!==0);});
+  }
+  function say(t){log.innerHTML+=`<br><span class="p">&gt;</span> ${t}`;log.scrollTop=log.scrollHeight;}
+  document.querySelectorAll(".op").forEach(o=>o.onclick=()=>{
+    const k=o.dataset.op;
+    if(k==="crop"){st.crop=!st.crop;say(st.crop?"crop() — обрезали края, осталась середина":"crop(off) — края вернулись");}
+    if(k==="rot"){st.rot=(st.rot+90)%360;say(`rotate(${st.rot}°) — картинка повернулась`);}
+    if(k==="flip"){st.flip=!st.flip;say("flip() — домик и дерево поменялись местами");}
+    if(k==="bright"){st.bright=(st.bright+1)%3;say(["brightness(0) — обычная яркость","brightness(+) — стало светлее","brightness(−) — стало темнее"][st.bright]);}
+    if(k==="fx"){st.fx=(st.fx+1)%4;say(`filter("${FXN[st.fx]}")`);}
+    render();
+  });
+  $("edReset").onclick=()=>{st={crop:false,rot:0,flip:false,bright:0,fx:0};render();say("reset() — исходное фото");};
+  render();
+
+  const cb=$("copied"),nx=$("goNext");
+  cb.checked=!!S.done.theory;nx.disabled=!cb.checked;
+  cb.onchange=()=>nx.disabled=!cb.checked;
+  nx.onclick=()=>{if(!S.done.theory){S.done.theory=true;save();toast("✓ Журнал изучен. Разогрев открыт!");}show("warm");};
+}
+
+/* ================= РАЗМИНКА ================= */
+const OPS=[["crop","Кадрирование"],["rot","Поворот"],["flip","Отражение"],["bright","Яркость"],["fx","Фильтр"]];
+const WARM=[
+  {after:{rot:90},ans:"rot",why:"Небо оказалось сбоку: картинку повернули на 90°."},
+  {after:{bright:55},ans:"bright",why:"Всё стало светлее: изменили яркость."},
+  {after:{flip:true},ans:"flip",why:"Домик и дерево поменялись местами: это отражение."},
+  {after:{fx:2},ans:"fx",why:"Фото стало коричневым, как старинное: фильтр «сепия»."},
+  {after:{crop:true},ans:"crop",why:"Края исчезли, осталась середина: это кадрирование."},
+  {after:{fx:1},ans:"fx",why:"Цвета пропали: фильтр «чёрно-белый»."}
+];
+function showWarm(){
+  const sh=$("sheet");
+  const A=S.part.warm||(S.part.warm=[]);
+  const top=head(2,"🔥 РАЗОГРЕВ ДВИГАТЕЛЕЙ","До и после",'Сравни две картинки. Что сделали с фото? Выбери инструмент. На каждую пару <b>одна попытка</b>.');
+  const dots=`<div class="dotsbar">${WARM.map((w,i)=>`<i class="${i<A.length?(A[i]===w.ans?'ok':'no'):i===A.length?'cur':''}"></i>`).join("")}</div>`;
+  if(S.done.warm||A.length>=WARM.length){
+    if(!S.done.warm)finishStation("warm",A.filter((a,i)=>a===WARM[i].ans).length);
+    sh.innerHTML=top+`<div class="card">${dots}<p class="task-text">Правильных ответов: ${S.score.warm} из ${WARM.length}.</p></div>`+doneCard("warm");return;
+  }
+  const i=A.length,w=WARM[i];
+  sh.innerHTML=top+`<div class="card">
+    <div class="row" style="justify-content:space-between"><span class="counter">пара <b>${i+1}</b> из ${WARM.length}</span>${dots}</div>
+    <div class="two"><div class="imgbox"><span class="lbl">ДО</span><canvas id="wa"></canvas></div><div class="imgbox"><span class="lbl">ПОСЛЕ</span><canvas id="wb"></canvas></div></div>
+    <p class="task-text">Какой инструмент применили?</p>
+    <div class="choices" id="wch">${OPS.map(o=>`<button class="choice" type="button" data-k="${o[0]}">${svg(o[0])}${o[1]}</button>`).join("")}</div>
+    <div id="wfb"></div></div>`;
+  renderTo($("wa"),{});renderTo($("wb"),w.after);
+  document.querySelectorAll("#wch .choice").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k,ok=k===w.ans;
+    A.push(k);save();
+    document.querySelectorAll("#wch .choice").forEach(x=>{x.disabled=true;if(x.dataset.k===w.ans)x.classList.add("right");});
+    if(!ok)b.classList.add("wrong");
+    const last=A.length>=WARM.length;
+    $("wfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${ok?'Верно! ':'Не совсем. '}${w.why}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="wnext">${last?'Завершить разогрев':'Следующая пара →'}</button></div>`;
+    $("wnext").onclick=showWarm;$("wnext").focus();
+  });
+}
+
+/* ================= КВЕСТ 1: СПАСИ ФОТО ================= */
+const Q1=[
+  {name:"Тёмное фото",desc:"Фото сняли вечером, и оно получилось слишком тёмным. Двигай ползунок, пока картинка не станет нормальной.",defect:{bright:-60,contrast:0},sl:["bright"]},
+  {name:"Фото в тумане",desc:"Это фото блёклое и слишком светлое, будто в тумане. Подбери яркость и контраст.",defect:{bright:40,contrast:-50},sl:["bright","contrast"]}
+];
+function showQ1(){
+  const sh=$("sheet");
+  const P=S.part.q1||(S.part.q1={t:0,fails:[0,0],scores:[]});
+  const top=head(3,"🚀 ЗАДАНИЕ 1","Спаси фото",'Исправь испорченные фотографии. Следи за <b>светомером</b>: стрелка должна попасть в зелёную зону. За каждую неверную проверку минус 1 балл.');
+  if(S.done.q1||P.t>=Q1.length){
+    if(!S.done.q1)finishStation("q1",P.scores.reduce((a,b)=>a+b,0));
+    sh.innerHTML=top+doneCard("q1");return;
+  }
+  const t=Q1[P.t];let ub=0,uc=0;
+  sh.innerHTML=top+`<div class="card">
+    <div class="row" style="justify-content:space-between"><span class="counter">фото <b>${P.t+1}</b> из ${Q1.length} · ${t.name}</span><span class="counter">можно получить: <b id="q1max">${Math.max(1,3-P.fails[P.t])}</b> балла</span></div>
+    <p class="task-text">${t.desc}</p>
+    <div class="q1grid">
+      <div class="imgbox tall"><span class="lbl">photo_${P.t+1}.jpg</span><canvas id="q1cv"></canvas></div>
+      <div class="panel">
+        <div class="range"><label for="sb">${svg("bright").replace('<svg','<svg style="width:16px;height:16px;vertical-align:-3px"')} Яркость <b id="sbv">0</b></label><input type="range" id="sb" min="-100" max="100" value="0"></div>
+        <div class="meter"><div class="mt"><span>темно</span><span>светомер</span><span>светло</span></div><div class="bar"><div class="zone"></div><div class="needle" id="nb"></div></div></div>
+        ${t.sl.includes("contrast")?`
+        <div class="range"><label for="sc">◐ Контраст <b id="scv">0</b></label><input type="range" id="sc" min="-100" max="100" value="0"></div>
+        <div class="meter c"><div class="mt"><span>блёкло</span><span>чёткость</span><span>резко</span></div><div class="bar"><div class="zone"></div><div class="needle" id="nc"></div></div></div>`:""}
+        <button class="btn" type="button" id="q1chk">Проверить</button>
+        <div id="q1fb"></div>
+      </div>
+    </div></div>`;
+  const cv=$("q1cv");
+  const pos=v=>Math.max(0,Math.min(100,(v+100)/2))+"%";
+  function upd(){
+    const eb=t.defect.bright+ub,ec=t.defect.contrast+uc;
+    renderTo(cv,{bright:eb,contrast:ec});
+    $("sbv").textContent=(ub>0?"+":"")+ub;$("nb").style.left=pos(eb);
+    if($("sc")){$("scv").textContent=(uc>0?"+":"")+uc;$("nc").style.left=pos(ec);}
+  }
+  $("sb").oninput=e=>{ub=+e.target.value;upd();};
+  if($("sc"))$("sc").oninput=e=>{uc=+e.target.value;upd();};
+  upd();
+  $("q1chk").onclick=()=>{
+    const eb=t.defect.bright+ub,ec=t.defect.contrast+uc;
+    const ok=Math.abs(eb)<=15&&Math.abs(ec)<=15;
+    if(ok){
+      const pts=Math.max(1,3-P.fails[P.t]);P.scores[P.t]=pts;P.t++;save();
+      $("q1chk").disabled=true;$("sb").disabled=true;if($("sc"))$("sc").disabled=true;
+      $("q1fb").innerHTML=`<div class="fb ok"><span class="m">✓ +${pts}</span><span>Фото спасено! Картинка снова выглядит естественно.</span></div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="q1next">${P.t>=Q1.length?'Завершить задание':'Следующее фото →'}</button></div>`;
+      $("q1next").onclick=showQ1;
+    }else{
+      P.fails[P.t]++;save();
+      let hint=Math.abs(eb)>15?(eb<0?"Фото всё ещё тёмное: добавь яркости.":"Получилось слишком светло: убавь яркость."):(ec<0?"Фото всё ещё блёклое: добавь контраста.":"Слишком резко: убавь контраст.");
+      $("q1max").textContent=Math.max(1,3-P.fails[P.t]);
+      $("q1fb").innerHTML=`<div class="fb no"><span class="m">✗</span><span>${hint}</span></div>`;
+    }
+  };
+}
+
+/* ================= КВЕСТ 2: ПОВТОРИ ОБРАЗЕЦ ================= */
+const Q2=[
+  {target:{rot:90},hint:"Посмотри, где у образца небо."},
+  {target:{flip:true,fx:1},hint:"Где стоит домик? Какого цвета фото?"},
+  {target:{crop:true,rot:180,fx:2},hint:"Образец обрезан, перевёрнут вверх ногами и похож на старинное фото."}
+];
+function showQ2(){
+  const sh=$("sheet");
+  const P=S.part.q2||(S.part.q2={l:0,fails:[0,0,0],scores:[]});
+  const top=head(4,"🚀 ЗАДАНИЕ 2","Повтори образец",'Слева образец, справа твоя работа. Пользуйся инструментами, чтобы твоё фото стало <b>точно таким же</b>, как образец. Потом нажми «Проверить».');
+  if(S.done.q2||P.l>=Q2.length){
+    if(!S.done.q2)finishStation("q2",P.scores.reduce((a,b)=>a+b,0));
+    sh.innerHTML=top+doneCard("q2");return;
+  }
+  const L=Q2[P.l],T=Object.assign({crop:false,rot:0,flip:false,fx:0},L.target);
+  let w={crop:false,rot:0,flip:false,fx:0};
+  sh.innerHTML=top+`<div class="card">
+    <div class="row" style="justify-content:space-between"><span class="counter">уровень <b>${P.l+1}</b> из ${Q2.length}</span><span class="counter">можно получить: <b id="q2max">${P.fails[P.l]?1:2}</b> балла</span></div>
+    <div class="q2grid"><div class="imgbox tall"><span class="lbl">ОБРАЗЕЦ</span><canvas id="q2t"></canvas></div><div class="imgbox tall"><span class="lbl">ТВОЯ РАБОТА</span><canvas id="q2w"></canvas></div></div>
+    <div class="tbtns">
+      <button class="tbtn" type="button" data-a="rot">${svg("rot")}Повернуть <span class="v" id="vrot">0°</span></button>
+      <button class="tbtn" type="button" data-a="flip">${svg("flip")}Отразить <span class="v" id="vflip">нет</span></button>
+      <button class="tbtn" type="button" data-a="crop">${svg("crop")}Кадрировать <span class="v" id="vcrop">нет</span></button>
+      <button class="tbtn" type="button" data-a="fx">${svg("fx")}Фильтр <span class="v" id="vfx">нет</span></button>
+      <button class="tbtn" type="button" data-a="reset">${svg("reset")}Сброс</button>
+    </div>
+    <div class="console" id="q2log"><span class="p">&gt;</span> level_${P.l+1}.load() — повтори образец</div>
+    <div class="row"><button class="btn" type="button" id="q2chk">Проверить</button><button class="reset" type="button" id="q2hint">💡 подсказка</button></div>
+    <div id="q2fb"></div></div>`;
+  renderTo($("q2t"),T);
+  const log=m=>{const l=$("q2log");l.innerHTML+=`<br><span class="p">&gt;</span> ${m}`;l.scrollTop=l.scrollHeight;};
+  function upd(){
+    renderTo($("q2w"),w);
+    $("vrot").textContent=w.rot+"°";$("vflip").textContent=w.flip?"да":"нет";$("vcrop").textContent=w.crop?"да":"нет";$("vfx").textContent=FXN[w.fx];
+  }
+  document.querySelectorAll(".tbtn").forEach(b=>b.onclick=()=>{
+    const a=b.dataset.a;
+    if(a==="rot"){w.rot=(w.rot+90)%360;log(`rotate(${w.rot}°)`);}
+    if(a==="flip"){w.flip=!w.flip;log(`flip(${w.flip})`);}
+    if(a==="crop"){w.crop=!w.crop;log(`crop(${w.crop})`);}
+    if(a==="fx"){w.fx=(w.fx+1)%4;log(`filter("${FXN[w.fx]}")`);}
+    if(a==="reset"){w={crop:false,rot:0,flip:false,fx:0};log("reset()");}
+    upd();
+  });
+  upd();
+  $("q2hint").onclick=()=>{$("q2fb").innerHTML=`<div class="fb info"><span class="m">?</span><span>${L.hint}</span></div>`;};
+  $("q2chk").onclick=()=>{
+    const ok=w.crop===T.crop&&w.rot===T.rot&&w.flip===T.flip&&w.fx===T.fx;
+    if(ok){
+      const pts=P.fails[P.l]?1:2;P.scores[P.l]=pts;P.l++;save();
+      document.querySelectorAll(".tbtn").forEach(b=>b.disabled=true);$("q2chk").disabled=true;
+      $("q2fb").innerHTML=`<div class="fb ok"><span class="m">✓ +${pts}</span><span>Точно как образец!</span></div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="q2next">${P.l>=Q2.length?'Завершить задание':'Следующий уровень →'}</button></div>`;
+      $("q2next").onclick=showQ2;
+    }else{
+      P.fails[P.l]++;save();$("q2max").textContent=1;
+      const miss=[];
+      if(w.rot!==T.rot||w.flip!==T.flip)miss.push("положение картинки");
+      if(w.crop!==T.crop)miss.push("обрезку");
+      if(w.fx!==T.fx)miss.push("фильтр");
+      $("q2fb").innerHTML=`<div class="fb no"><span class="m">✗</span><span>Пока не совпадает. Проверь: ${miss.join(", ")}.</span></div>`;
+    }
+  };
+}
+
+/* ================= КВЕСТ 3: ФОТОДЕТЕКТИВ ================= */
+const Q3=[
+  {q:"На фото горизонт стоит криво, картинка «завалилась» набок. Какой инструмент поможет?",o:["Фильтр","Поворот","Яркость","Отражение"],a:1,why:"Поворот возвращает картинку в правильное положение."},
+  {q:"С края фото случайно попал прохожий. Как убрать его, не испортив главное?",o:["Кадрирование","Поворот","Фильтр «сепия»","Яркость"],a:0,why:"Кадрирование обрезает лишнее по краям."},
+  {q:"Фото сделали в тёмной комнате, почти ничего не видно. Что сделать?",o:["Отразить фото","Обрезать фото","Увеличить яркость","Применить негатив"],a:2,why:"Яркость делает фото светлее."},
+  {q:"Ты хочешь, чтобы фото выглядело как старинное, коричневатое. Что выбрать?",o:["Поворот","Отражение","Кадрирование","Фильтр «сепия»"],a:3,why:"Сепия даёт коричневый оттенок старых фотографий."},
+  {q:"Селфи в зеркале: надпись на футболке читается задом наперёд. Как исправить?",o:["Отражение","Поворот на 90°","Яркость","Чёрно-белый фильтр"],a:0,why:"Отражение переворачивает картинку как в зеркале, и надпись читается правильно."},
+  {q:"Из чего состоит цифровое изображение?",o:["Из букв","Из пикселей","Из линий","Из папок"],a:1,why:"Любая цифровая картинка — это много маленьких цветных квадратиков, пикселей."},
+  {q:"Что значит редактировать изображение?",o:["Рисовать с чистого листа","Печатать фото на принтере","Изменять готовую картинку","Удалять фото"],a:2,why:"Редактировать — значит изменять уже готовую картинку."}
+];
+function showQ3(){
+  const sh=$("sheet");
+  const A=S.part.q3||(S.part.q3=[]);
+  const top=head(5,"🚀 ЗАДАНИЕ 3","Фотодетектив",'Прочитай ситуацию и выбери, какой инструмент нужен. Одна попытка на каждый вопрос.');
+  const dots=`<div class="dotsbar">${Q3.map((q,i)=>`<i class="${i<A.length?(A[i]===q.a?'ok':'no'):i===A.length?'cur':''}"></i>`).join("")}</div>`;
+  if(S.done.q3||A.length>=Q3.length){
+    if(!S.done.q3)finishStation("q3",A.filter((a,i)=>a===Q3[i].a).length);
+    sh.innerHTML=top+`<div class="card">${dots}<p class="task-text">Правильных ответов: ${S.score.q3} из ${Q3.length}.</p></div>`+doneCard("q3");return;
+  }
+  const i=A.length,q=Q3[i];
+  sh.innerHTML=top+`<div class="card">
+    <div class="row" style="justify-content:space-between"><span class="counter">дело <b>№${i+1}</b> из ${Q3.length}</span>${dots}</div>
+    <p class="task-text">${q.q}</p>
+    <div class="choices" id="dch">${q.o.map((o,k)=>`<button class="choice" type="button" data-k="${k}">${o}</button>`).join("")}</div>
+    <div id="dfb"></div></div>`;
+  document.querySelectorAll("#dch .choice").forEach(b=>b.onclick=()=>{
+    const k=+b.dataset.k,ok=k===q.a;A.push(k);save();
+    document.querySelectorAll("#dch .choice").forEach(x=>{x.disabled=true;if(+x.dataset.k===q.a)x.classList.add("right");});
+    if(!ok)b.classList.add("wrong");
+    const last=A.length>=Q3.length;
+    $("dfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${ok?'Дело раскрыто! ':'Не то. '}${q.why}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="dnext">${last?'Завершить задание':'Следующее дело →'}</button></div>`;
+    $("dnext").onclick=showQ3;$("dnext").focus();
+  });
+}
+
+/* ================= ЗАДАНИЕ 4: ПИКСЕЛЬ-ХУДОЖНИК ================= */
+const Q4=[
+  {name:"Сердце",pal:{".":"#FFFFFF","R":"#FF3B5C"},
+   art:["........",".RR..RR.","RRRRRRRR","RRRRRRRR",".RRRRRR.","..RRRR..","...RR...","........"]},
+  {name:"Домик в поле",pal:{".":"#7CC8FF","R":"#E5484D","W":"#F4E8D0","Y":"#FFD447","B":"#7A4A22","G":"#2EAA55"},
+   art:["...RR...","..RRRR..",".RRRRRR.","RRRRRRRR",".WWWWWW.",".WYYWBW.",".WYYWBW.","GGGGGGGG"]}
+];
+function showQ4(){
+  const sh=$("sheet");
+  const P=S.part.q4||(S.part.q4={l:0,fails:[0,0],scores:[]});
+  const top=head(6,"🚀 ЗАДАНИЕ 4","Пиксель-художник",'Любая картинка состоит из <b>пикселей</b>. Выбери цвет и закрашивай клеточки, чтобы получилась <b>точно такая же</b> картинка, как образец. Можно водить мышкой с зажатой кнопкой.');
+  if(S.done.q4||P.l>=Q4.length){
+    if(!S.done.q4)finishStation("q4",P.scores.reduce((a,b)=>a+b,0));
+    sh.innerHTML=top+doneCard("q4");return;
+  }
+  const L=Q4[P.l],keys=Object.keys(L.pal);
+  const cells=P.cells&&P.cells.length===64?P.cells:Array(64).fill(".");P.cells=cells;
+  let cur=keys[1];
+  const target=L.art.join("").split("");
+  sh.innerHTML=top+`<div class="card">
+    <div class="row" style="justify-content:space-between"><span class="counter">рисунок <b>${P.l+1}</b> из ${Q4.length} · ${L.name}</span><span class="counter">можно получить: <b id="q4max">${Math.max(1,3-P.fails[P.l])}</b> балла</span></div>
+    <div class="pxwrap">
+      <div><div class="pxgrid" id="pg">${cells.map((c,i)=>`<i data-i="${i}" style="background:${L.pal[c]}"></i>`).join("")}</div></div>
+      <div class="panel">
+        <div><div class="step-tag" style="margin-bottom:6px">ОБРАЗЕЦ</div>
+          <div class="pxgrid small">${target.map(c=>`<i style="background:${L.pal[c]}"></i>`).join("")}</div></div>
+        <div><div class="step-tag" style="margin-bottom:6px">ПАЛИТРА</div>
+          <div class="palette" id="pal">${keys.map(k=>`<button type="button" data-k="${k}" aria-pressed="${k===cur}" style="background:${L.pal[k]}" title="${k==="."?"фон (ластик)":"цвет"}"></button>`).join("")}</div></div>
+        <div class="row"><span class="counter">совпадает с образцом:</span><span class="pct" id="q4pct">0%</span></div>
+        <div class="row"><button class="btn" type="button" id="q4chk">Проверить</button><button class="reset" type="button" id="q4clr">↺ очистить</button></div>
+        <div id="q4fb"></div>
+      </div>
+    </div></div>`;
+  const grid=$("pg");let down=false;
+  const pct=()=>Math.round(cells.filter((c,i)=>c===target[i]).length/64*100);
+  const showPct=()=>{$("q4pct").textContent=pct()+"%";};
+  function paint(el){if(!el||el.dataset.i===undefined)return;const i=+el.dataset.i;cells[i]=cur;el.style.background=L.pal[cur];showPct();}
+  grid.addEventListener("pointerdown",e=>{down=true;paint(e.target);e.preventDefault();});
+  grid.addEventListener("pointerover",e=>{if(down)paint(e.target);});
+  addEventListener("pointerup",()=>{if(down){down=false;save();}});
+  grid.addEventListener("pointermove",e=>{if(!down||e.pointerType==="mouse")return;paint(document.elementFromPoint(e.clientX,e.clientY));});
+  document.querySelectorAll("#pal button").forEach(b=>b.onclick=()=>{cur=b.dataset.k;document.querySelectorAll("#pal button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
+  $("q4clr").onclick=()=>{cells.fill(".");grid.querySelectorAll("i").forEach(x=>x.style.background=L.pal["."]);showPct();save();};
+  showPct();
+  $("q4chk").onclick=()=>{
+    const v=pct();
+    if(v===100){
+      const pts=Math.max(1,3-P.fails[P.l]);P.scores[P.l]=pts;P.l++;P.cells=null;save();
+      $("q4chk").disabled=true;$("q4clr").disabled=true;grid.style.pointerEvents="none";
+      $("q4fb").innerHTML=`<div class="fb ok"><span class="m">✓ +${pts}</span><span>Пиксель в пиксель! Ты собрал(а) картинку из ${64} пикселей.</span></div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="q4next">${P.l>=Q4.length?'Завершить задание':'Следующий рисунок →'}</button></div>`;
+      $("q4next").onclick=showQ4;
+    }else{
+      P.fails[P.l]++;save();$("q4max").textContent=Math.max(1,3-P.fails[P.l]);
+      $("q4fb").innerHTML=`<div class="fb no"><span class="m">✗ ${v}%</span><span>Почти! ${64-cells.filter((c,i)=>c===target[i]).length} пикс. ещё не совпадают. Сравни ряды по одному с образцом.</span></div>`;
+    }
+  };
+}
+
+/* ================= ЗАДАНИЕ 5: БЛИЦ 60 СЕКУНД ================= */
+const BLITZ=[
+  [{rot:90},"rot"],[{rot:180},"rot"],[{rot:270},"rot"],[{flip:true},"flip"],[{crop:true},"crop"],
+  [{bright:55},"bright"],[{bright:-55},"bright"],[{fx:1},"fx"],[{fx:2},"fx"],[{fx:3},"fx"],
+  [{crop:true,flip:false},"crop"],[{flip:true,rot:0},"flip"]
+];
+function showQ5(){
+  const sh=$("sheet");
+  const top=head(7,"⚡ ЗАДАНИЕ 5","Блиц: 60 секунд",'Финальный рывок! За <b>60 секунд</b> определи как можно больше инструментов по картинкам «до и после». Каждый верный ответ — 1 балл (максимум 6). Ошибки баллы не отнимают, но время идёт!');
+  if(S.done.q5){sh.innerHTML=top+doneCard("q5");return;}
+  sh.innerHTML=top+`<div class="card" style="text-align:center;justify-items:center">
+    <div style="font-size:54px">⚡</div><h3>Готов(а)? Таймер запустится сразу после нажатия.</h3>
+    <button class="btn" type="button" id="q5go">▶ Старт блица</button></div>`;
+  $("q5go").onclick=runBlitz;
+}
+function runBlitz(){
+  const sh=$("sheet");
+  const top=head(7,"⚡ ЗАДАНИЕ 5","Блиц: 60 секунд",'Жми быстро, но внимательно!');
+  const end=Date.now()+60000;let right=0,asked=0,last=-1,tm=null,locked=false;
+  function pick(){let k;do{k=Math.floor(Math.random()*BLITZ.length);}while(k===last);last=k;return BLITZ[k];}
+  function finish(){
+    clearInterval(tm);const pts=Math.min(6,right);
+    finishStation("q5",pts);
+    sh.innerHTML=top+`<div class="card"><p class="task-text">Время вышло! Верных ответов: <b>${right}</b> из ${asked}.</p></div>`+doneCard("q5");
+  }
+  function round(){
+    if(Date.now()>=end){finish();return;}
+    const [st,ans]=pick();asked++;locked=false;
+    sh.innerHTML=top+`<div class="card">
+      <div class="blitz-top"><span class="counter">верно: <b id="bR">${right}</b> · вопрос <b>${asked}</b></span><span class="clock60" id="bT">60</span></div>
+      <div class="two"><div class="imgbox"><span class="lbl">ДО</span><canvas id="ba"></canvas></div><div class="imgbox"><span class="lbl">ПОСЛЕ</span><canvas id="bb"></canvas></div></div>
+      <div class="choices" id="bch">${OPS.map(o=>`<button class="choice" type="button" data-k="${o[0]}">${svg(o[0])}${o[1]}</button>`).join("")}</div></div>`;
+    renderTo($("ba"),{});renderTo($("bb"),st);tick();
+    document.querySelectorAll("#bch .choice").forEach(b=>b.onclick=()=>{
+      if(locked)return;locked=true;
+      const ok=b.dataset.k===ans;if(ok)right++;
+      document.querySelectorAll("#bch .choice").forEach(x=>{x.disabled=true;if(x.dataset.k===ans)x.classList.add("right");});
+      if(!ok)b.classList.add("wrong");
+      setTimeout(round,ok?350:900);
+    });
+  }
+  function tick(){const el=$("bT");if(!el)return;const s=Math.max(0,Math.ceil((end-Date.now())/1000));el.textContent=s;el.classList.toggle("low",s<=10);if(s<=0)finish();}
+  tm=setInterval(tick,250);round();
+}
+
+/* ================= ФИНИШ ================= */
+function total(){return PARTS.reduce((s,k)=>s+(S.score[k]||0),0);}
+function gradeOf(p){return 1+[15,25,35,45,55,65,75,85,95].filter(t=>p>=t).length;}
+const SCALE=[[1,"0–14"],[2,"15–24"],[3,"25–34"],[4,"35–44"],[5,"45–54"],[6,"55–64"],[7,"65–74"],[8,"75–84"],[9,"85–94"],[10,"95–100"]];
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+function showFin(){
+  const pts=total(),pct=Math.round(pts/MAXALL*100),g=gradeOf(pct);
+  $("sheet").innerHTML=head(STEPS.length,"🏁 ФИНИШ","Миссия завершена!",'Проверь свои баллы, отметь, как прошёл урок, и отправь результат учителю.')+`
+  <div class="card">
+    <div class="result">
+      <div class="grade"><small>ОТМЕТКА</small><b>${g}</b><small>ИЗ 10</small></div>
+      <div style="display:grid;gap:8px;min-width:0">
+        <div class="pts">${pts}<span> / ${MAXALL} баллов</span></div>
+        <div class="counter">${pct}% · время ≈ <b>${minutes()} мин</b> · ${S.fio}, ${S.cls}</div>
+      </div>
+    </div>
+    <div class="step-tag">ШКАЛА ПЕРЕВОДА В ОТМЕТКУ, %</div>
+    <div class="scale">${SCALE.map(s=>`<div class="${s[0]===g?'on':''}"><b>${s[0]}</b>${s[1]}</div>`).join("")}</div>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>ЗАДАНИЕ</th><th>⭐</th><th>БАЛЛЫ</th></tr></thead><tbody>
+      ${PARTS.map(k=>`<tr><td>${NAMES[k]}</td><td>${stars(k)}</td><td>${S.score[k]??"—"} / ${MAXP[k]}</td></tr>`).join("")}
+      <tr><td><b>Итого</b></td><td></td><td>${pts} / ${MAXALL}</td></tr></tbody></table></div>
+  </div>
+  <div class="card">
+    <h3>Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(m=>`<button type="button" aria-pressed="${S.mood===m[1]}" data-m="${m[1]}">${m[0]} ${m[1]}</button>`).join("")}</div>
+    <div class="row"><button class="btn" type="button" id="send" ${S.mood?"":"disabled"}>${S.sent?"✓ Отправлено":"↑ Отправить учителю"}</button>
+      <span class="counter" id="sendHint">${S.mood?"":"сначала выбери ответ выше"}</span></div>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div>
+  </div>`;
+  document.querySelectorAll("#mood button").forEach(b=>b.onclick=()=>{
+    S.mood=b.dataset.m;save();
+    document.querySelectorAll("#mood button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    if(!S.sent){$("send").disabled=false;$("sendHint").textContent="";}
+  });
+  if(S.sent)$("send").disabled=true;
+  $("send").onclick=()=>sendResult(pts,pct,g);
+}
+function sentHTML(ok,msg){
+  return ok?`<div class="sent"><span class="p">&gt;</span> mission_01.report()<br><span class="g">✓ результат передан на Землю — учителю</span><br><span class="p">&gt;</span> Отличная работа, пилот! Можешь закрыть вкладку.</div>`
+           :`<div class="sent"><span class="p">&gt;</span> mission_01.report()<br><span class="r">✗ ${msg}</span></div>`;
+}
+function sendResult(pts,pct,g){
+  const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+  const data={score:S.score,points:pts,max:MAXALL,percent:pct,grade:g,minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:STEPS.length};
+  const ok=()=>{S.sent=1;S.done.fin=true;save();renderTools();$("sendOut").innerHTML=sentHTML(true);btn.textContent="✓ Отправлено";toast("✓ Отправлено учителю");};
+  const fail=()=>{$("sendOut").innerHTML=sentHTML(false,"Не получилось отправить. Проверь интернет и нажми ещё раз или позови учителя.");btn.disabled=false;btn.textContent="↑ Отправить учителю";};
+  if(!S.rec){fail();return;}
+  TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+}
+
+/* ---------- запуск ---------- */
+load();
+if(S.fio){openApp();}
+</script>
+
+</body>
+</html>

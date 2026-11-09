@@ -6,9 +6,13 @@ import { grade, SCALE } from "./grading.js";
 import { SUBJECTS, TESTS } from "../tests.js";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
-const TEST_ID = new URLSearchParams(location.search).get("test") || TESTS[0].id;
-const ENTRY = TESTS.find((x) => x.id === TEST_ID) || TESTS[0];
-const { TEST, VARIANTS } = await import(new URL("../" + ENTRY.path + "questions.js", location.href).href);
+const READY = TESTS.filter((x) => x.path);
+const TEST_ID = new URLSearchParams(location.search).get("test") || READY[0].id;
+const ENTRY = READY.find((x) => x.id === TEST_ID) || READY[0];
+const IS_MISSION = ENTRY.type === "mission";
+const { TEST, VARIANTS } = IS_MISSION
+  ? { TEST: { id: ENTRY.id, classes: ENTRY.classes || [], max: 0 }, VARIANTS: [] }
+  : await import(new URL("../" + ENTRY.path + "questions.js", location.href).href);
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -28,6 +32,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) return showLogin();
   $("#who").innerHTML = `${esc(user.email)} · <a href="#" id="logout" style="color:#fff">выйти</a>`;
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
+  if (IS_MISSION) return showMissionDashboard();
   try {
     KEYS = (await get(ref(db, `keys/${TEST.id}`))).val();
     if (!KEYS) throw new Error("no-keys");
@@ -58,10 +63,10 @@ function showLogin() {
 // ---------- панель ----------
 function testOptions() {
   return SUBJECTS.map((sub) => {
-    const list = TESTS.filter((t) => t.subject === sub.id);
+    const list = READY.filter((t) => t.subject === sub.id);
     if (!list.length) return "";
     return `<optgroup label="${esc(sub.icon + " " + sub.name)}">${list.map((t) =>
-      `<option value="${t.id}" ${t.id === ENTRY.id ? "selected" : ""}>${esc(t.grade + " класс · " + t.title)}</option>`).join("")}</optgroup>`;
+      `<option value="${t.id}" ${t.id === ENTRY.id ? "selected" : ""}>${esc(t.grade + " класс · " + (t.type === "mission" ? "Миссия " + t.n + " · " : "") + t.title)}</option>`).join("")}</optgroup>`;
   }).join("");
 }
 
@@ -561,4 +566,140 @@ function showLinks() {
     box.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => remove(ref(db, "settings/links/" + b.dataset.del)));
   });
   dlg.addEventListener("close", off, { once: true });
+}
+
+
+// =====================================================================
+//  МИССИИ (экспедиции Технологического воспитания)
+// =====================================================================
+const MSCALE = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2], [0, 1]];
+const mGrade = (pct) => { for (const [p, g] of MSCALE) if (pct >= p) return g; return 1; };
+function mEval(r) {
+  const parts = ENTRY.parts || [];
+  const max = parts.reduce((a, p) => a + p.max, 0);
+  const sc = r.score || {};
+  const pts = parts.reduce((a, p) => a + (Number(sc[p.k]) || 0), 0);
+  const pct = max ? Math.round(pts / max * 100) : 0;
+  return { pts, max, pct, grade: mGrade(pct) };
+}
+const moodIcon = (m) => !m ? "—" : m.startsWith("Мне всё") ? "🟢" : m.startsWith("Понятно") ? "🟡" : "🔴";
+
+function showMissionDashboard() {
+  const parts = ENTRY.parts || [];
+  document.title = "Учитель · Миссия " + ENTRY.n;
+  const sub = $("#hSub"); if (sub) sub.textContent = "Миссия " + ENTRY.n + " · " + ENTRY.title + " · Технологическое воспитание, " + ENTRY.grade + " класс";
+  app.innerHTML = `
+  <div class="card noprint" style="padding:12px 16px">
+    <div class="toolbar">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600">Тест / миссия:
+        <select id="selTest" style="width:auto;min-width:300px">${testOptions()}</select></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn small ghost" href="../${ENTRY.path}" target="_blank">👁 Открыть миссию</a>
+        <a class="btn small ghost" href="../" target="_blank">🏠 Стартовая</a>
+        <button class="btn small ghost" id="bLinks">📎 Материалы на стартовой</button>
+      </div>
+    </div>
+    <div class="muted" id="pinInfo" style="font-size:14px;margin-top:8px"></div>
+  </div>
+  <div class="toolbar noprint" style="margin-bottom:14px">
+    <label class="switch"><input type="checkbox" id="swOpen"> <span id="swText">Миссия закрыта</span></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <select id="fCls" style="width:auto"><option value="">Все классы</option>${(ENTRY.classes || []).map((c) => `<option>${esc(c)}</option>`).join("")}</select>
+      <input type="text" id="fSearch" placeholder="Поиск по фамилии" style="width:180px">
+      <button class="btn small ghost" id="bCsv">Скачать CSV</button>
+      <button class="btn small red" id="bClear">Очистить результаты</button>
+    </div>
+  </div>
+  <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
+  <div class="table-wrap"><table class="res"><thead><tr>
+    <th>№</th><th>Ученик</th><th>Класс</th><th>Этап</th>
+    ${parts.map((p) => `<th title="${esc(p.name)}">${esc(p.name)}<br><span style="font-weight:400">/${p.max}</span></th>`).join("")}
+    <th>Итог</th><th>Оценка</th><th>Время</th><th>Как урок</th><th></th></tr></thead>
+    <tbody id="tb"><tr><td colspan="${parts.length + 9}" class="muted">Ожидание учеников…</td></tr></tbody></table></div>
+  <p class="muted" style="font-size:14px">Баллы появляются сразу после каждого задания. Оценка окончательная, когда статус «🏁 сдано».
+    Шкала: ${MSCALE.map(([p, g]) => `<b>${g}</b> — от ${p}%`).join(" · ")}.</p>`;
+
+  const sw = $("#swOpen");
+  unsub.push(onValue(ref(db, `settings/${ENTRY.id}/open`), (s) => {
+    sw.checked = !!s.val();
+    $("#swText").textContent = sw.checked ? "🟢 Миссия открыта — ученики могут начинать" : "🔴 Миссия закрыта — ученики не могут начать";
+  }));
+  sw.onchange = async () => {
+    await set(ref(db, `settings/${ENTRY.id}/open`), sw.checked);
+    const cur = (await get(ref(db, "settings/current"))).val();
+    if (sw.checked) await set(ref(db, "settings/current"), { id: ENTRY.id, title: "Миссия " + ENTRY.n + " · " + ENTRY.title, path: ENTRY.path, subject: ENTRY.subject, grade: ENTRY.grade, at: Date.now() });
+    else if (cur?.id === ENTRY.id) await remove(ref(db, "settings/current"));
+  };
+  unsub.push(onValue(ref(db, "settings/current"), (s) => {
+    const c = s.val();
+    $("#pinInfo").innerHTML = c ? (c.id === ENTRY.id ? "📌 Эта миссия показана на стартовой странице в блоке «Сейчас на уроке»."
+      : `📌 Сейчас на стартовой: <b>${esc(c.title)}</b>. Включите «Миссия открыта», чтобы показать эту.`)
+      : "Блок «Сейчас на уроке» на стартовой пуст. Включите «Миссия открыта» — миссия появится там.";
+  }));
+  $("#selTest").onchange = (e) => { location.search = "?test=" + encodeURIComponent(e.target.value); };
+  $("#bLinks").onclick = showLinks;
+  $("#fCls").onchange = (e) => { filterCls = e.target.value; renderMission(); };
+  $("#fSearch").oninput = (e) => { search = e.target.value.toLowerCase(); renderMission(); };
+  $("#bCsv").onclick = missionCsv;
+  $("#bClear").onclick = async () => {
+    const n = Object.keys(RESULTS).length; if (!n) return;
+    if (!confirm(`Удалить ВСЕ результаты этой миссии (${n} шт.)? Сначала скачайте CSV.`)) return;
+    if (prompt("Для подтверждения напишите слово УДАЛИТЬ") !== "УДАЛИТЬ") return;
+    await remove(ref(db, P));
+  };
+  unsub.push(onValue(ref(db, P), (snap) => { RESULTS = snap.val() || {}; renderMission(); }));
+}
+
+function renderMission() {
+  const parts = ENTRY.parts || [];
+  const list = rows();
+  const all = Object.values(RESULTS);
+  const done = all.filter((r) => r.status === "submitted");
+  const avg = done.length ? done.reduce((a, r) => a + mEval(r).grade, 0) / done.length : null;
+  const moods = done.reduce((a, r) => { const m = moodIcon(r.mood); a[m] = (a[m] || 0) + 1; return a; }, {});
+  $("#stats").innerHTML = `
+    <div class="stat"><b>${all.length}</b>всего учеников</div>
+    <div class="stat"><b>${all.length - done.length}</b>в пути 🚀</div>
+    <div class="stat"><b>${done.length}</b>финишировали 🏁</div>
+    <div class="stat"><b>${avg ? fmtNum(avg) : "—"}</b>средняя оценка</div>
+    <div class="stat"><b style="font-size:18px">🟢${moods["🟢"] || 0} 🟡${moods["🟡"] || 0} 🔴${moods["🔴"] || 0}</b>как прошёл урок</div>`;
+  const tb = $("#tb");
+  if (!list.length) { tb.innerHTML = `<tr><td colspan="${parts.length + 9}" class="muted">Учеников пока нет. Откройте миссию переключателем выше.</td></tr>`; return; }
+  tb.innerHTML = list.map(([id, r], i) => {
+    const e = mEval(r), sc = r.score || {};
+    const fin = r.status === "submitted";
+    const mins = fin ? (r.minutes || "—") : Math.max(1, Math.round((Date.now() - (r.startedAt || Date.now())) / 60000));
+    const fresh = !seen.has(id) && seen.size ? "new" : "";
+    return `<tr class="${fresh}">
+      <td>${list.length - i}</td><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td>
+      <td>${fin ? '<span class="tag done">🏁 сдано</span>' : `<span class="tag run">🚀 ${esc(r.stage || "старт")}</span>`}</td>
+      ${parts.map((p) => `<td>${sc[p.k] != null ? `<b>${sc[p.k]}</b>` : '<span class="muted">·</span>'}</td>`).join("")}
+      <td><b>${e.pts}</b> / ${e.max}</td>
+      <td>${fin ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}</span>`}</td>
+      <td>${mins} мин</td>
+      <td title="${esc(r.mood || "")}" style="font-size:18px">${moodIcon(r.mood)}</td>
+      <td><button class="btn small red" data-del="${id}" title="Удалить">✕</button></td></tr>`;
+  }).join("");
+  list.forEach(([id]) => seen.add(id));
+  tb.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
+    const r = RESULTS[b.dataset.del];
+    if (confirm(`Удалить результат ученика ${r?.name || ""}?`)) remove(ref(db, `${P}/${b.dataset.del}`));
+  });
+}
+
+function missionCsv() {
+  const parts = ENTRY.parts || [];
+  const head = ["Ученик", "Класс", "Статус", ...parts.map((p) => `${p.name} (/${p.max})`), "Итог", "Макс", "%", "Оценка", "Время, мин", "Как прошёл урок", "Начало"];
+  const lines = [head];
+  for (const [, r] of rows()) {
+    const e = mEval(r), sc = r.score || {};
+    lines.push([r.name, r.cls, r.status === "submitted" ? "сдано" : "в процессе: " + (r.stage || ""),
+      ...parts.map((p) => sc[p.k] ?? ""), e.pts, e.max, e.pct, r.status === "submitted" ? e.grade : "", r.minutes || "", r.mood || "",
+      r.startedAt ? new Date(r.startedAt).toLocaleString("ru-RU") : ""]);
+  }
+  const csv = "﻿" + lines.map((l) => l.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `${ENTRY.id}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
 }
