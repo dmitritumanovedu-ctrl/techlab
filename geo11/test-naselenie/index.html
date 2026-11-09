@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Тест: Население · География 11</title>
-  <link rel="stylesheet" href="test.css">
+  <link rel="stylesheet" href="../../engine/test.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -17,17 +17,12 @@
     </div>
     <div class="timer" id="timer" hidden>40:00</div>
   </header>
-
-  <main id="app">
-    <div class="card center"><p class="muted">Загрузка…</p></div>
-  </main>
-
+  <main id="app"><div class="card center"><p class="muted">Загрузка…</p></div></main>
   <div class="bar-bottom" id="bottomBar" hidden>
     <span class="saved" id="progress"></span>
     <button class="btn" id="btnSubmit">Сдать работу</button>
     <span class="saved" id="savedState"></span>
   </div>
-
-  <script type="module" src="app.js"></script>
+  <script type="module" src="../../engine/student.js"></script>
 </body>
 </html>
