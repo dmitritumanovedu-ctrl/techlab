@@ -15,6 +15,7 @@ const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
 const P = `results/${TEST.id}`;
 
+let AICFG = null, aiAuto = false, aiQueue = [], aiQueued = new Set(), aiBusy = false;
 let KEYS = null, RESULTS = {}, seen = new Set(), filterCls = "", search = "", openId = null, unsub = [];
 
 onAuthStateChanged(auth, async (user) => {
@@ -25,6 +26,8 @@ onAuthStateChanged(auth, async (user) => {
   try {
     KEYS = (await get(ref(db, `keys/${TEST.id}`))).val();
     if (!KEYS) throw new Error("no-keys");
+    AICFG = (await get(ref(db, "keys/_ai"))).val();
+    try { aiAuto = localStorage.getItem("techlab_ai_auto") === "1"; } catch (e) {}
   } catch (e) {
     app.innerHTML = `<div class="card center"><h2>Нет доступа к ключам</h2>
       <p>${e.message === "no-keys" ? "В базе нет ключей ответов. Импортируйте файл <b>keys.json</b> в Realtime Database (шаг 5 инструкции)."
@@ -55,10 +58,16 @@ function showDashboard() {
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <select id="fCls" style="width:auto"><option value="">Все классы</option>${TEST.classes.map((c) => `<option>${esc(c)}</option>`).join("")}</select>
       <input type="text" id="fSearch" placeholder="Поиск по фамилии" style="width:180px">
+      <button class="btn small ghost" id="bAi">🤖 Проверить всё ИИ</button>
+      <button class="btn small ghost" id="bAiCfg" title="Настройка проверки ИИ">⚙ ИИ</button>
       <button class="btn small ghost" id="bKeys">Ключи ответов</button>
       <button class="btn small ghost" id="bCsv">Скачать CSV</button>
       <button class="btn small red" id="bClear">Очистить результаты</button>
     </div>
+  </div>
+  <div class="toolbar noprint" style="margin-bottom:14px">
+    <label class="switch"><input type="checkbox" id="swAi"> <span>🤖 Автоматически проверять развёрнутые ответы ИИ (пока открыта эта панель)</span></label>
+    <span class="muted" id="aiStatus" style="font-size:14px"></span>
   </div>
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
   <div class="table-wrap"><table class="res"><thead><tr>
@@ -76,6 +85,21 @@ function showDashboard() {
   $("#fCls").onchange = (e) => { filterCls = e.target.value; renderTable(); };
   $("#fSearch").oninput = (e) => { search = e.target.value.toLowerCase(); renderTable(); };
   $("#bCsv").onclick = exportCsv;
+  $("#bAiCfg").onclick = showAiSettings;
+  $("#bAi").onclick = () => {
+    if (!AICFG?.url) return showAiSettings();
+    const ids = Object.entries(RESULTS).filter(([, r]) => r.status === "submitted" && aiTargets(r).length).map(([id]) => id);
+    if (!ids.length) return setAiStatus("Нет развёрнутых ответов для проверки.");
+    ids.forEach((id) => enqueueAi(id, true));
+  };
+  const swAi = $("#swAi");
+  swAi.checked = aiAuto;
+  swAi.onchange = () => {
+    if (swAi.checked && !AICFG?.url) { swAi.checked = false; return showAiSettings(); }
+    aiAuto = swAi.checked;
+    try { localStorage.setItem("techlab_ai_auto", aiAuto ? "1" : "0"); } catch (e) {}
+    if (aiAuto) autoEnqueue();
+  };
   $("#bKeys").onclick = showKeys;
   $("#bClear").onclick = async () => {
     const n = Object.keys(RESULTS).length;
@@ -87,7 +111,9 @@ function showDashboard() {
 
   unsub.push(onValue(ref(db, P), (snap) => {
     RESULTS = snap.val() || {};
+    for (const [id, r] of Object.entries(RESULTS)) r._id = id;
     renderTable();
+    if (aiAuto) autoEnqueue();
     if (openId && dlg.open) {
       if (!RESULTS[openId]) dlg.close();
       else if (!dlg.contains(document.activeElement) || document.activeElement.tagName !== "INPUT") showCheck(openId, true);
@@ -97,7 +123,7 @@ function showDashboard() {
 
 function evaluate(r) {
   const k = KEYS.variants[String(r.variant)];
-  return grade({ ...k, points: KEYS.points }, r.answers || {}, r.manual || {});
+  return grade({ ...k, points: KEYS.points }, r.answers || {}, r.manual || {}, r.ai || {});
 }
 
 function statusTag(r) {
@@ -137,7 +163,7 @@ function renderTable() {
       : g.complete ? `<span class="grade">${g.grade}</span>` : `<span class="grade pending" title="Предварительно по уже выставленным баллам">≈${g.gradeNow} · проверить ${g.pending}</span>`;
     return `<tr class="${fresh}">
       <td>${list.length - i}</td><td><b>${esc(r.name)}</b>${dup}</td><td>${esc(r.cls)}</td><td>${r.variant}</td>
-      <td>${statusTag(r)}</td>
+      <td>${statusTag(r)}${aiTag(r)}</td>
       <td>${r.violations ? `<span class="bad">${r.violations}</span>` : "0"}</td>
       <td>${fmtTime(r.startedAt)} / ${r.status === "submitted" ? fmtTime(r.submittedAt) : "…"}</td>
       <td>${fmtNum(g.auto)}</td>
@@ -164,7 +190,9 @@ function showCheck(id, refresh = false) {
 
   const scoreBox = (it) => `<span>Баллы: <input type="number" class="score-in" min="0" max="${it.max}" step="0.5"
       data-item="${it.key}" value="${it.score ?? ""}" placeholder="?"> / ${it.max}
-      ${it.teacher === null && it.auto !== null && it.check ? `<span class="muted" style="font-size:13px">(предложено автоматически)</span>` : ""}
+      ${it.teacher === null && it.ai !== null ? `<span class="tag run" title="Оценка выставлена ИИ — можно изменить">🤖 ИИ</span>` : ""}
+      ${it.teacher === null && it.ai === null && it.auto !== null && it.check ? `<span class="muted" style="font-size:13px">(предложено автоматически)</span>` : ""}
+      ${it.aiComment ? `<div class="muted" style="font-size:13px;margin-top:4px">🤖 ${esc(it.aiComment)}</div>` : ""}
       ${it.autoEmpty ? `<span class="muted" style="font-size:13px">(нет ответа)</span>` : ""}</span>`;
   const mark = (ok) => ok ? `<span class="ok">✓</span>` : `<span class="bad">✗</span>`;
 
@@ -228,6 +256,7 @@ function showCheck(id, refresh = false) {
           Оценка: ${g.complete ? `<span class="grade">${g.grade}</span>` : `<span class="muted">≈${g.gradeNow}, осталось проверить: ${g.pending}</span>`}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${r.status === "submitted" ? `<button class="btn small" id="dUnlock">Разрешить продолжить (+10 мин)</button>` : `<button class="btn small" id="dStop">Завершить работу</button>`}
+          ${r.status === "submitted" && aiTargets(r).length ? `<button class="btn small ghost" id="dAi">🤖 Проверить ИИ</button>` : ""}
           <button class="btn small red" id="dDel">Удалить</button>
         </div>
       </div>
@@ -241,6 +270,8 @@ function showCheck(id, refresh = false) {
     const val = inp.value === "" ? null : Math.max(0, Math.min(Number(inp.max), Number(inp.value)));
     update(ref(db, `${P}/${id}/manual`), { [inp.dataset.item]: val });
   });
+  $("#dAi")?.addEventListener("click", () => { if (!AICFG?.url) return showAiSettings(); enqueueAi(id, true); });
+  if (r.aiStatus === "error") dlg.querySelector(".dlg-body").insertAdjacentHTML("afterbegin", `<div class="chk-item need">🤖 Ошибка проверки ИИ: ${esc(r.aiError || "")}</div>`);
   $("#dUnlock")?.addEventListener("click", () => {
     if (!confirm("Разрешить ученику продолжить работу? Он сможет вернуться к своим ответам ещё на 10 минут.")) return;
     update(ref(db, `${P}/${id}`), { status: "in_progress", reason: null, deadline: Math.max(r.deadline || 0, Date.now() + 10 * 60000) });
@@ -302,4 +333,144 @@ function exportCsv() {
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `geo11-naselenie-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
+}
+
+
+// ---------- проверка развёрнутых ответов с помощью ИИ ----------
+function aiTag(r) {
+  if (r.status !== "submitted" || !aiTargets(r, true).length) return "";
+  if (aiQueued.has(r._id)) return ` <span class="tag run">🤖 в очереди</span>`;
+  if (r.aiStatus === "done") return ` <span class="tag done" title="Развёрнутые ответы проверены ИИ">🤖</span>`;
+  if (r.aiStatus === "error") return ` <span class="tag auto" title="${esc(r.aiError || "")}">🤖 ошибка</span>`;
+  return "";
+}
+function setAiStatus(t) { const el = $("#aiStatus"); if (el) el.textContent = t; }
+
+// Список ответов, которые нужно оценить ИИ. all=true — включая уже оценённые учителем.
+function aiTargets(r, all = false) {
+  const v = VARIANTS.find((x) => x.id === r.variant);
+  const k = KEYS.variants[String(r.variant)];
+  if (!v || !k) return [];
+  const g = evaluate(r);
+  const out = [];
+  for (const it of g.items) {
+    if (!it.check || it.empty || !String(it.answer || "").trim()) continue;
+    if (!all && it.teacher !== null) continue;
+    let question = "";
+    const n = it.task;
+    if (n === 1) {
+      const id = it.key.slice(3, 4);
+      const q = v.tasks[0].items.find((x) => x.id === id);
+      question = `Понятие «${q.concept}». Ученику дано НЕВЕРНОЕ утверждение: «${q.text}» Ученик должен написать правильный вариант (исправить ошибку). Верное определение: «${k.t1[id].orig}»`;
+    } else if (n === 10) {
+      question = v.tasks.find((x) => x.n === 10).title + " Оценивается только пункт «в» — объяснение.";
+    } else {
+      const t = v.tasks.find((x) => x.n === n);
+      question = t.title;
+      if (t.chart) {
+        const c = t.chart;
+        question += `\nДиаграмма «${c.title}» (${c.unit}): ` + c.series.map((sr) =>
+          (c.series.length > 1 ? sr.name + ": " : "") + c.labels.map((l, i) => `${l} — ${sr.data[i]}`).join("; ")).join(" | ");
+      }
+    }
+    out.push({ key: it.key, max: it.max, question, answer: String(it.answer).slice(0, 3000),
+               model: it.model || "", criteria: it.criteria || "" });
+  }
+  return out;
+}
+
+function autoEnqueue() {
+  if (!AICFG?.url) return;
+  for (const [id, r] of Object.entries(RESULTS)) {
+    if (r.status === "submitted" && !r.aiStatus && aiTargets(r).length) enqueueAi(id, false);
+  }
+}
+
+function enqueueAi(id, force) {
+  if (aiQueued.has(id)) return;
+  const r = RESULTS[id]; if (!r) return;
+  if (!force && r.aiStatus) return;
+  aiQueued.add(id); aiQueue.push(id);
+  renderTable();
+  runAiQueue();
+}
+
+async function runAiQueue() {
+  if (aiBusy) return;
+  aiBusy = true;
+  while (aiQueue.length) {
+    const id = aiQueue.shift();
+    const r = RESULTS[id];
+    setAiStatus(`🤖 Проверяю: ${r?.name || ""} (в очереди ещё ${aiQueue.length})`);
+    try {
+      if (r) await gradeWithAi(id, r);
+    } catch (e) {
+      console.error(e);
+      await update(ref(db, `${P}/${id}`), { aiStatus: "error", aiError: String(e.message || e).slice(0, 300) }).catch(() => {});
+      if (/429|quota|rate/i.test(String(e.message))) { setAiStatus("🤖 Лимит запросов ИИ — пауза 60 с…"); await sleep(60000); }
+    }
+    aiQueued.delete(id);
+    renderTable();
+    if (aiQueue.length) await sleep(6000); // бесплатный тариф: не больше ~10 запросов в минуту
+  }
+  aiBusy = false;
+  setAiStatus("🤖 Проверка ИИ завершена.");
+}
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+async function callAi(payload) {
+  const res = await fetch(AICFG.url, { method: "POST", body: JSON.stringify({ secret: AICFG.secret, ...payload }) });
+  const txt = await res.text();
+  let data;
+  try { data = JSON.parse(txt); } catch (e) { throw new Error("Сервис ИИ вернул не JSON. Проверьте URL веб-приложения (он должен заканчиваться на /exec) и доступ «Все»."); }
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+async function gradeWithAi(id, r) {
+  const items = aiTargets(r);
+  if (!items.length) return;
+  const data = await callAi({ subject: "география, 11 класс", items });
+  const ai = { ...(r.ai || {}) };
+  for (const x of data.results || []) {
+    const it = items.find((i) => i.key === x.key);
+    if (!it || !Number.isFinite(Number(x.score))) continue;
+    const sc = Math.max(0, Math.min(it.max, Math.round(Number(x.score) * 2) / 2));
+    ai[x.key] = { score: sc, comment: String(x.comment || "").slice(0, 400) };
+  }
+  await update(ref(db, `${P}/${id}`), { ai, aiStatus: "done", aiError: null, aiAt: Date.now() });
+}
+
+function showAiSettings() {
+  openId = null;
+  dlg.innerHTML = `<div class="dlg-head"><b>🤖 Настройка проверки ИИ</b>
+      <button class="btn small ghost" style="background:#fff" id="aClose">Закрыть ✕</button></div>
+    <div class="dlg-body">
+      <p>Вставьте адрес веб-приложения Google Apps Script и секретное слово (из инструкции). Они сохранятся в базе и будут доступны только вашему аккаунту.</p>
+      <label class="f">URL веб-приложения (заканчивается на /exec)</label>
+      <input type="text" id="aUrl" value="${esc(AICFG?.url || "")}" placeholder="https://script.google.com/macros/s/…/exec">
+      <label class="f">Секретное слово</label>
+      <input type="text" id="aSecret" value="${esc(AICFG?.secret || "")}">
+      <div class="err" id="aErr"></div>
+      <button class="btn" id="aSave">Сохранить и проверить связь</button>
+      <p class="muted" style="font-size:14px;margin-top:14px">ИИ ставит предварительные баллы за развёрнутые ответы (задания 1 — исправления, 4–8, 10в) по критериям и образцам ответов.
+      Оценка ИИ помечается значком 🤖, её всегда можно изменить вручную — ваша оценка важнее. Имена учеников в ИИ не отправляются.</p>
+    </div>`;
+  if (!dlg.open) dlg.showModal();
+  $("#aClose").onclick = () => dlg.close();
+  $("#aSave").onclick = async () => {
+    const url = $("#aUrl").value.trim(), secret = $("#aSecret").value.trim();
+    $("#aErr").style.color = ""; $("#aErr").textContent = "Проверяю связь…";
+    if (!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url)) { $("#aErr").textContent = "Адрес должен начинаться с https://script.google.com/"; return; }
+    const prev = AICFG; AICFG = { url, secret };
+    try {
+      const d = await callAi({ ping: true });
+      await set(ref(db, "keys/_ai"), AICFG);
+      $("#aErr").style.color = "var(--green)";
+      $("#aErr").textContent = `✓ Связь есть${d.model ? " (модель " + d.model + ")" : ""}. Настройки сохранены.`;
+    } catch (e) {
+      AICFG = prev;
+      $("#aErr").textContent = "Ошибка: " + e.message;
+    }
+  };
 }

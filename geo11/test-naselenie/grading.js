@@ -26,12 +26,16 @@ export function parseNum(s) {
 
 // Возвращает список пунктов оценивания: {key, task, label, max, auto(число|null), manual(true если нужна проверка), score}
 // manual — объект ручных оценок учителя {itemKey: число}
-export function grade(key, answers = {}, manual = {}) {
+export function grade(key, answers = {}, manual = {}, ai = {}) {
   const items = [];
   const add = (it) => {
     const m = manual?.[it.key];
     it.teacher = Number.isFinite(m) ? m : null;
-    it.score = it.teacher ?? it.auto; // null = ещё не проверено
+    const a = ai?.[it.key];
+    it.ai = a && Number.isFinite(a.score) ? Math.max(0, Math.min(it.max, a.score)) : null;
+    it.aiComment = a?.comment || "";
+    // приоритет: оценка учителя → оценка ИИ → автопроверка; null = ещё не проверено
+    it.score = it.teacher ?? it.ai ?? it.auto;
     items.push(it);
   };
 
@@ -92,7 +96,7 @@ export function grade(key, answers = {}, manual = {}) {
         answer: a10.why || "", model: key.t10.model, empty: !norm(a10.why) });
 
   // Пустые развёрнутые ответы — сразу 0, проверять нечего
-  for (const it of items) if (it.auto === null && it.empty && it.teacher === null) { it.auto = 0; it.score = 0; it.autoEmpty = true; }
+  for (const it of items) if (it.auto === null && it.empty && it.teacher === null && it.ai === null) { it.auto = 0; it.score = 0; it.autoEmpty = true; }
 
   const max = items.reduce((s, i) => s + i.max, 0);
   const auto = items.reduce((s, i) => s + (i.auto ?? 0), 0);
