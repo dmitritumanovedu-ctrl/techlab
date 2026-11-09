@@ -11,9 +11,9 @@ export const SITE = {
 };
 
 export const SUBJECTS = [
-  { id: "geo",  name: "География",                icon: "🌍", color: "#1f6f5c", grades: ["11", "12"] },
-  { id: "inf",  name: "Информатика",              icon: "💻", color: "#2d5fa8", grades: ["7"] },
-  { id: "tech", name: "Компьютерные технологии",  icon: "🛠", color: "#b8641b", grades: ["5", "6"] },
+  { id: "geo",  name: "География",                     icon: "🌍", color: "#1f6f5c", grades: ["11", "12"] },
+  { id: "inf",  name: "Информатика",                   icon: "💻", color: "#2d5fa8", grades: ["7"] },
+  { id: "tech", name: "Технологическое воспитание",    icon: "🛠", color: "#b8641b", grades: ["5", "6", "7"] },
 ];
 
 export const TESTS = [
