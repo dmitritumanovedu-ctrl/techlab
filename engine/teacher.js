@@ -576,20 +576,40 @@ function showLinks() {
 // =====================================================================
 const MSCALE = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2], [0, 1]];
 const mGrade = (pct) => { for (const [p, g] of MSCALE) if (pct >= p) return g; return 1; };
+function mOpenItems(r, entry = ENTRY) {
+  // развёрнутые ответы миссии: балл учителя → балл ИИ → нет оценки
+  return (entry.openQs || []).map((q) => {
+    const answer = String(r.open?.[q.k] || "").trim();
+    const teacher = Number.isFinite(r.manual?.[q.k]) ? r.manual[q.k] : null;
+    const ai = r.ai?.[q.k] && Number.isFinite(r.ai[q.k].score) ? Math.max(0, Math.min(q.max, r.ai[q.k].score)) : null;
+    const score = !answer ? 0 : (teacher ?? ai);
+    return { ...q, answer, teacher, ai, aiComment: r.ai?.[q.k]?.comment || "", score, pending: score === null };
+  });
+}
 function mEval(r, entry = ENTRY) {
   const parts = entry.parts || [];
   const max = parts.reduce((a, p) => a + p.max, 0);
   const sc = r.score || {};
-  const pts = parts.reduce((a, p) => a + (Number(sc[p.k]) || 0), 0);
+  const items = mOpenItems(r, entry);
+  const openSum = items.reduce((a, i) => a + (i.score || 0), 0);
+  const pending = items.filter((i) => i.pending).length;
+  const partScore = (p) => p.open ? (items.length ? openSum : null) : (sc[p.k] ?? null);
+  const pts = parts.reduce((a, p) => a + (Number(partScore(p)) || 0), 0);
   const pct = max ? Math.round(pts / max * 100) : 0;
-  return { pts, max, pct, grade: mGrade(pct) };
+  const complete = r.status === "submitted" && pending === 0;
+  return { pts, max, pct, grade: mGrade(pct), pending, complete, items, partScore };
 }
 const moodIcon = (m) => !m ? "—" : m.startsWith("Мне всё") ? "🟢" : m.startsWith("Понятно") ? "🟡" : "🔴";
 
-function showMissionDashboard() {
+async function showMissionDashboard() {
   const parts = ENTRY.parts || [];
+  const HAS_OPEN = !!(ENTRY.openQs || []).length;
+  if (HAS_OPEN) {
+    try { AICFG = (await get(ref(db, "keys/_ai"))).val(); } catch (e) { AICFG = null; }
+    try { aiAuto = localStorage.getItem("techlab_ai_auto") === "1"; } catch (e) {}
+  }
   document.title = "Учитель · Миссия " + ENTRY.n;
-  const sub = $("#hSub"); if (sub) sub.textContent = "Миссия " + ENTRY.n + " · " + ENTRY.title + " · Технологическое воспитание, " + ENTRY.grade + " класс";
+  const sub = $("#hSub"); if (sub) sub.textContent = "Миссия " + ENTRY.n + " · " + ENTRY.title + " · " + (SUBJECTS.find((x) => x.id === ENTRY.subject)?.name || "") + ", " + ENTRY.grade + " класс";
   app.innerHTML = `<a class="backlink noprint" href="./">← Центр управления</a>
   <div class="card noprint" style="padding:12px 16px">
     <div class="toolbar">
@@ -608,10 +628,15 @@ function showMissionDashboard() {
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <select id="fCls" style="width:auto"><option value="">Все классы</option>${(ENTRY.classes || []).map((c) => `<option>${esc(c)}</option>`).join("")}</select>
       <input type="text" id="fSearch" placeholder="Поиск по фамилии" style="width:180px">
+      ${HAS_OPEN ? `<button class="btn small ghost" id="bAi">🤖 Проверить всё ИИ</button>
+      <button class="btn small ghost" id="bAiCfg" title="Настройка проверки ИИ">⚙ ИИ</button>` : ""}
       <button class="btn small ghost" id="bCsv">Скачать CSV</button>
       <button class="btn small red" id="bClear">Очистить результаты</button>
     </div>
   </div>
+  ${HAS_OPEN ? `<div class="toolbar noprint" style="margin-bottom:14px">
+    <label class="switch"><input type="checkbox" id="swAi"> <span>🤖 Автоматически проверять развёрнутые ответы ИИ (пока открыта эта панель)</span></label>
+    <span class="muted" id="aiStatus" style="font-size:14px"></span></div>` : ""}
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
   <div class="table-wrap"><table class="res"><thead><tr>
     <th>№</th><th>Ученик</th><th>Класс</th><th>Этап</th>
@@ -649,7 +674,27 @@ function showMissionDashboard() {
     if (prompt("Для подтверждения напишите слово УДАЛИТЬ") !== "УДАЛИТЬ") return;
     await remove(ref(db, P));
   };
-  unsub.push(onValue(ref(db, P), (snap) => { RESULTS = snap.val() || {}; renderMission(); }));
+  if (HAS_OPEN) {
+    $("#bAiCfg").onclick = showAiSettings;
+    $("#bAi").onclick = () => {
+      if (!AICFG?.url) return showAiSettings();
+      const ids = Object.entries(RESULTS).filter(([, r]) => r.status === "submitted" && mAiTargets(r).length).map(([id]) => id);
+      if (!ids.length) return setAiStatus("Нет развёрнутых ответов для проверки.");
+      ids.forEach((id) => mEnqueue(id, true));
+    };
+    const swAi = $("#swAi"); swAi.checked = aiAuto;
+    swAi.onchange = () => {
+      if (swAi.checked && !AICFG?.url) { swAi.checked = false; return showAiSettings(); }
+      aiAuto = swAi.checked;
+      try { localStorage.setItem("techlab_ai_auto", aiAuto ? "1" : "0"); } catch (e) {}
+      if (aiAuto) mAutoEnqueue();
+    };
+  }
+  unsub.push(onValue(ref(db, P), (snap) => {
+    RESULTS = snap.val() || {}; renderMission();
+    if (HAS_OPEN && aiAuto) mAutoEnqueue();
+    if (openId && dlg.open && RESULTS[openId] && !(dlg.contains(document.activeElement) && document.activeElement.tagName === "INPUT")) mShowOpen(openId, true);
+  }));
 }
 
 function renderMission() {
@@ -657,7 +702,8 @@ function renderMission() {
   const list = rows();
   const all = Object.values(RESULTS);
   const done = all.filter((r) => r.status === "submitted");
-  const avg = done.length ? done.reduce((a, r) => a + mEval(r).grade, 0) / done.length : null;
+  const graded = done.map((r) => mEval(r)).filter((e) => e.complete);
+  const avg = graded.length ? graded.reduce((a, e) => a + e.grade, 0) / graded.length : null;
   const moods = done.reduce((a, r) => { const m = moodIcon(r.mood); a[m] = (a[m] || 0) + 1; return a; }, {});
   $("#stats").innerHTML = `
     <div class="stat"><b>${all.length}</b>всего учеников</div>
@@ -675,14 +721,20 @@ function renderMission() {
     return `<tr class="${fresh}">
       <td>${list.length - i}</td><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td>
       <td>${fin ? '<span class="tag done">🏁 сдано</span>' : `<span class="tag run">🚀 ${esc(r.stage || "старт")}</span>`}</td>
-      ${parts.map((p) => `<td>${sc[p.k] != null ? `<b>${sc[p.k]}</b>` : '<span class="muted">·</span>'}</td>`).join("")}
+      ${parts.map((p) => {
+        if (!p.open) return `<td>${sc[p.k] != null ? `<b>${sc[p.k]}</b>` : '<span class="muted">·</span>'}</td>`;
+        if (!fin) return `<td><span class="muted">·</span></td>`;
+        const q = mAiQueued.has(id) ? ' <span class="tag run">🤖…</span>' : r.aiStatus === "error" ? ' <span class="tag auto" title="' + esc(r.aiError || "") + '">🤖 ошибка</span>' : "";
+        return `<td><b>${e.partScore(p) ?? 0}</b>${e.pending ? ` <span class="tag warn">✍ ${e.pending}</span>` : e.items.some((i) => i.teacher === null && i.ai !== null) ? " 🤖" : ""}${q}</td>`;
+      }).join("")}
       <td><b>${e.pts}</b> / ${e.max}</td>
-      <td>${fin ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}</span>`}</td>
+      <td>${e.complete ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}${fin && e.pending ? " · проверить " + e.pending : ""}</span>`}</td>
       <td>${mins} мин</td>
       <td title="${esc(r.mood || "")}" style="font-size:18px">${moodIcon(r.mood)}</td>
-      <td><button class="btn small red" data-del="${id}" title="Удалить">✕</button></td></tr>`;
+      <td style="white-space:nowrap">${(ENTRY.openQs || []).length && fin ? `<button class="btn small" data-mopen="${id}">${e.pending ? "Проверить" : "Открыть"}</button> ` : ""}<button class="btn small red" data-del="${id}" title="Удалить">✕</button></td></tr>`;
   }).join("");
   list.forEach(([id]) => seen.add(id));
+  tb.querySelectorAll("[data-mopen]").forEach((b) => b.onclick = () => mShowOpen(b.dataset.mopen));
   tb.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
     const r = RESULTS[b.dataset.del];
     if (confirm(`Удалить результат ученика ${r?.name || ""}?`)) remove(ref(db, `${P}/${b.dataset.del}`));
@@ -696,7 +748,7 @@ function missionCsv() {
   for (const [, r] of rows()) {
     const e = mEval(r), sc = r.score || {};
     lines.push([r.name, r.cls, r.status === "submitted" ? "сдано" : "в процессе: " + (r.stage || ""),
-      ...parts.map((p) => sc[p.k] ?? ""), e.pts, e.max, e.pct, r.status === "submitted" ? e.grade : "", r.minutes || "", r.mood || "",
+      ...parts.map((p) => e.partScore(p) ?? ""), e.pts, e.max, e.pct, e.complete ? e.grade : "", r.minutes || "", r.mood || "",
       r.startedAt ? new Date(r.startedAt).toLocaleString("ru-RU") : ""]);
   }
   const csv = "﻿" + lines.map((l) => l.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
@@ -726,7 +778,7 @@ async function showOverview() {
     const g = [];
     for (const r of list) {
       if (r.status !== "submitted") continue;
-      if (t.type === "mission") g.push(mEval(r, t).grade);
+      if (t.type === "mission") { const e = mEval(r, t); if (e.complete) g.push(e.grade); }
       else if (KEYSALL[t.id]) {
         const k = KEYSALL[t.id].variants?.[String(r.variant)];
         if (!k) continue;
@@ -774,4 +826,77 @@ async function showOverview() {
   }
   unsub.push(onValue(ref(db, "settings"), (s) => { SET = s.val() || {}; draw(); }));
   unsub.push(onValue(ref(db, "results"), (s) => { RES = s.val() || {}; draw(); }));
+}
+
+
+// ---------- миссии: развёрнутые ответы и проверка ИИ ----------
+const mAiQueue = [], mAiQueued = new Set(); let mAiBusy = false;
+function mAiTargets(r, all = false) {
+  return mOpenItems(r).filter((i) => i.answer && (all || i.teacher === null))
+    .map((i) => ({ key: i.k, max: i.max, question: i.q, answer: i.answer.slice(0, 3000), model: i.model || "", criteria: i.criteria || "" }));
+}
+function mAutoEnqueue() {
+  if (!AICFG?.url) return;
+  for (const [id, r] of Object.entries(RESULTS)) if (r.status === "submitted" && !r.aiStatus && mAiTargets(r).length) mEnqueue(id, false);
+}
+function mEnqueue(id, force) {
+  if (mAiQueued.has(id)) return;
+  const r = RESULTS[id]; if (!r || (!force && r.aiStatus)) return;
+  mAiQueued.add(id); mAiQueue.push(id); renderMission(); mRun();
+}
+async function mRun() {
+  if (mAiBusy) return; mAiBusy = true;
+  while (mAiQueue.length) {
+    const id = mAiQueue.shift(), r = RESULTS[id];
+    setAiStatus(`🤖 Проверяю: ${r?.name || ""} (в очереди ещё ${mAiQueue.length})`);
+    try {
+      const items = r ? mAiTargets(r) : [];
+      if (items.length) {
+        const data = await callAi({ subject: ENTRY.aiSubject || "информатика", items });
+        const ai = { ...(r.ai || {}) };
+        for (const x of data.results || []) {
+          const it = items.find((i) => i.key === x.key);
+          if (!it || !Number.isFinite(Number(x.score))) continue;
+          ai[x.key] = { score: Math.max(0, Math.min(it.max, Math.round(Number(x.score) * 2) / 2)), comment: String(x.comment || "").slice(0, 400) };
+        }
+        await update(ref(db, `${P}/${id}`), { ai, aiStatus: "done", aiError: null, aiAt: Date.now() });
+      }
+    } catch (e) {
+      await update(ref(db, `${P}/${id}`), { aiStatus: "error", aiError: String(e.message || e).slice(0, 300) }).catch(() => {});
+      if (/429|quota|rate/i.test(String(e.message))) { setAiStatus("🤖 Лимит запросов ИИ — пауза 60 с…"); await sleep(60000); }
+    }
+    mAiQueued.delete(id); renderMission();
+    if (mAiQueue.length) await sleep(6000);
+  }
+  mAiBusy = false; setAiStatus("🤖 Проверка ИИ завершена.");
+}
+function mShowOpen(id, refresh = false) {
+  const r = RESULTS[id]; if (!r) return;
+  openId = id;
+  const e = mEval(r), scrollPos = refresh ? dlg.scrollTop : 0;
+  dlg.innerHTML = `<div class="dlg-head"><div><b>${esc(r.name)}</b> · ${esc(r.cls)} · ${e.pts} / ${e.max} б. · оценка ${e.complete ? `<b>${e.grade}</b>` : "≈" + e.grade}</div>
+      <button class="btn small ghost" id="mClose">Закрыть ✕</button></div>
+    <div class="dlg-body">
+      <div class="chk-row" style="margin-bottom:12px"><span class="muted">Автоматические задания: ${(ENTRY.parts || []).filter((p) => !p.open).map((p) => `${esc(p.name)} <b>${r.score?.[p.k] ?? "—"}</b>/${p.max}`).join(" · ")}</span>
+        <button class="btn small ghost" id="mAi">🤖 Проверить ИИ</button></div>
+      ${r.aiStatus === "error" ? `<div class="chk-item need">🤖 Ошибка проверки ИИ: ${esc(r.aiError || "")}</div>` : ""}
+      ${e.items.map((i) => `<div class="chk-item ${i.pending ? "need" : ""}">
+        <div class="chk-row"><b>${esc(i.title || i.k)}</b><span>${i.score ?? "?"} / ${i.max} б. ${i.pending ? '<span class="tag warn">нужно проверить</span>' : ""}</span></div>
+        <div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(i.q)}</div>
+        <div class="ans">${esc(i.answer || "— нет ответа —")}</div>
+        <div class="model"><b>Критерии:</b> ${esc(i.criteria)}<br><b>Образец:</b> ${esc(i.model)}</div>
+        <div class="chk-row"><span>Баллы: <input type="number" class="score-in" min="0" max="${i.max}" step="0.5" data-mk="${i.k}" value="${i.teacher ?? i.ai ?? (i.answer ? "" : 0)}" placeholder="?"> / ${i.max}
+          ${i.teacher === null && i.ai !== null ? '<span class="tag run">🤖 ИИ</span>' : ""}${i.teacher !== null ? '<span class="tag done">✍ учитель</span>' : ""}</span></div>
+        ${i.aiComment ? `<div class="muted" style="font-size:13px;margin-top:4px">🤖 ${esc(i.aiComment)}</div>` : ""}
+      </div>`).join("")}
+      <p class="muted" style="font-size:13px">Ваш балл важнее оценки ИИ. Чтобы вернуть оценку ИИ, очистите поле.</p>
+    </div>`;
+  if (!dlg.open) dlg.showModal();
+  dlg.scrollTop = scrollPos;
+  $("#mClose").onclick = () => { openId = null; dlg.close(); };
+  $("#mAi").onclick = () => { if (!AICFG?.url) return showAiSettings(); mEnqueue(id, true); };
+  dlg.querySelectorAll("[data-mk]").forEach((inp) => inp.onchange = () => {
+    const v = inp.value === "" ? null : Math.max(0, Math.min(Number(inp.max), Number(inp.value)));
+    update(ref(db, `${P}/${id}/manual`), { [inp.dataset.mk]: v });
+  });
 }
