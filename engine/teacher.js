@@ -7,10 +7,11 @@ import { SUBJECTS, TESTS } from "../tests.js";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
-const TEST_ID = new URLSearchParams(location.search).get("test") || READY[0].id;
+const TEST_ID = new URLSearchParams(location.search).get("test");
+const OVERVIEW = !TEST_ID || !READY.some((x) => x.id === TEST_ID);   // без ?test= — «Центр управления»
 const ENTRY = READY.find((x) => x.id === TEST_ID) || READY[0];
 const IS_MISSION = ENTRY.type === "mission";
-const { TEST, VARIANTS } = IS_MISSION
+const { TEST, VARIANTS } = (IS_MISSION || OVERVIEW)
   ? { TEST: { id: ENTRY.id, classes: ENTRY.classes || [], max: 0 }, VARIANTS: [] }
   : await import(new URL("../" + ENTRY.path + "questions.js", location.href).href);
 
@@ -32,6 +33,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) return showLogin();
   $("#who").innerHTML = `${esc(user.email)} · <a href="#" id="logout" style="color:#fff">выйти</a>`;
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
+  if (OVERVIEW) return showOverview();
   if (IS_MISSION) return showMissionDashboard();
   try {
     KEYS = (await get(ref(db, `keys/${TEST.id}`))).val();
@@ -73,7 +75,7 @@ function testOptions() {
 function showDashboard() {
   document.title = "Учитель · " + ENTRY.title;
   const sub = $("#hSub"); if (sub) sub.textContent = ENTRY.title + " · " + (SUBJECTS.find((x) => x.id === ENTRY.subject)?.name || "") + ", " + ENTRY.grade + " класс";
-  app.innerHTML = `
+  app.innerHTML = `<a class="backlink noprint" href="./">← Центр управления</a>
   <div class="card noprint" style="padding:12px 16px">
     <div class="toolbar">
       <label style="display:flex;gap:8px;align-items:center;font-weight:600">Тест:
@@ -574,8 +576,8 @@ function showLinks() {
 // =====================================================================
 const MSCALE = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2], [0, 1]];
 const mGrade = (pct) => { for (const [p, g] of MSCALE) if (pct >= p) return g; return 1; };
-function mEval(r) {
-  const parts = ENTRY.parts || [];
+function mEval(r, entry = ENTRY) {
+  const parts = entry.parts || [];
   const max = parts.reduce((a, p) => a + p.max, 0);
   const sc = r.score || {};
   const pts = parts.reduce((a, p) => a + (Number(sc[p.k]) || 0), 0);
@@ -588,7 +590,7 @@ function showMissionDashboard() {
   const parts = ENTRY.parts || [];
   document.title = "Учитель · Миссия " + ENTRY.n;
   const sub = $("#hSub"); if (sub) sub.textContent = "Миссия " + ENTRY.n + " · " + ENTRY.title + " · Технологическое воспитание, " + ENTRY.grade + " класс";
-  app.innerHTML = `
+  app.innerHTML = `<a class="backlink noprint" href="./">← Центр управления</a>
   <div class="card noprint" style="padding:12px 16px">
     <div class="toolbar">
       <label style="display:flex;gap:8px;align-items:center;font-weight:600">Тест / миссия:
@@ -702,4 +704,74 @@ function missionCsv() {
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `${ENTRY.id}-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
+}
+
+
+// =====================================================================
+//  ЦЕНТР УПРАВЛЕНИЯ — все предметы, тесты и миссии на одном экране
+// =====================================================================
+async function showOverview() {
+  document.title = "Центр управления · TechLab";
+  $("#hSub").textContent = "Все предметы · тесты и миссии · результаты в реальном времени";
+  app.innerHTML = `<div class="card center"><p class="muted">Загружаю результаты…</p></div>`;
+  const KEYSALL = {};
+  for (const t of READY.filter((x) => x.type !== "mission")) {
+    try { KEYSALL[t.id] = (await get(ref(db, `keys/${t.id}`))).val(); } catch (e) { /* нет прав или ключей */ }
+  }
+  app.innerHTML = `<div id="hubNow"></div><div id="hub"></div>
+    <p class="muted" style="font-size:14px;margin-top:26px">Нажмите на карточку, чтобы открыть подробные результаты, проверку и настройки теста или миссии.</p>`;
+  let SET = {}, RES = {};
+
+  const avgOf = (t, list) => {
+    const g = [];
+    for (const r of list) {
+      if (r.status !== "submitted") continue;
+      if (t.type === "mission") g.push(mEval(r, t).grade);
+      else if (KEYSALL[t.id]) {
+        const k = KEYSALL[t.id].variants?.[String(r.variant)];
+        if (!k) continue;
+        const e = grade({ ...k, points: KEYSALL[t.id].points }, r.answers || {}, r.manual || {}, r.ai || {});
+        if (e.complete) g.push(e.grade);
+      }
+    }
+    return g.length ? fmtNum(g.reduce((a, b) => a + b, 0) / g.length) : "—";
+  };
+
+  function draw() {
+    const c = SET.current;
+    $("#hubNow").innerHTML = c ? `<div class="hub-now">
+        <div><div class="l">📌 Сейчас на стартовой у учеников</div><div class="t">${esc(c.title)}</div></div>
+        <div class="r"><a class="btn small" href="?test=${encodeURIComponent(c.id)}">Открыть результаты</a>
+          <button class="btn small ghost" id="unpin">Убрать со стартовой</button></div></div>`
+      : `<div class="hub-now"><div><div class="l">📌 Сейчас на стартовой</div>
+        <div class="muted" style="margin-top:4px">Ничего не открыто. Откройте тест или миссию — они появятся у учеников в блоке «Сейчас на уроке».</div></div></div>`;
+    const un = $("#unpin");
+    if (un) un.onclick = async () => {
+      if (!confirm("Убрать с стартовой и закрыть «" + c.title + "»? Уже начатые работы ученики смогут закончить.")) return;
+      await set(ref(db, `settings/${c.id}/open`), false);
+      await remove(ref(db, "settings/current"));
+    };
+
+    $("#hub").innerHTML = SUBJECTS.map((sub) => {
+      const items = READY.filter((t) => t.subject === sub.id).sort((a, b) => (a.grade + (a.n || 0)).localeCompare(b.grade + (b.n || 0)));
+      const soon = TESTS.filter((t) => t.subject === sub.id && !t.path).length;
+      const head = `<div class="hub-subj"><span class="ic">${sub.icon}</span>${esc(sub.name)}
+        <span class="muted" style="font-family:inherit;font-size:14px;font-weight:600">· ${sub.grades.join(", ")} класс</span></div>`;
+      if (!items.length) return head + `<div class="hub-empty">Пока нет тестов и миссий. Пришлите материал урока — Claude подготовит задание.</div>`;
+      return head + `<div class="hub-grid">${items.map((t) => {
+        const list = Object.values(RES[t.id] || {});
+        const run = list.filter((r) => r.status === "in_progress").length;
+        const done = list.filter((r) => r.status === "submitted").length;
+        const open = !!SET[t.id]?.open;
+        return `<a class="hub-card" href="?test=${encodeURIComponent(t.id)}">
+          <span class="live">${open ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
+          <div class="k">${esc(t.grade)} класс · ${t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : "Тест"}</div>
+          <div class="n">${esc(t.title)}</div>
+          <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b>${avgOf(t, list)}</b>ср. оценка</div></div>
+        </a>`;
+      }).join("")}</div>` + (soon ? `<p class="muted" style="font-size:14px;margin:8px 2px 0">🔒 Ещё в разработке: ${soon}</p>` : "");
+    }).join("");
+  }
+  unsub.push(onValue(ref(db, "settings"), (s) => { SET = s.val() || {}; draw(); }));
+  unsub.push(onValue(ref(db, "results"), (s) => { RES = s.val() || {}; draw(); }));
 }
