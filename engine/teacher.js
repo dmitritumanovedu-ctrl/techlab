@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { grade, SCALE } from "./grading.js";
+import { grade, SCALE, parseNum } from "./grading.js";
 import { SUBJECTS, TESTS } from "../tests.js";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
@@ -41,13 +41,36 @@ onAuthStateChanged(auth, async (user) => {
     AICFG = (await get(ref(db, "keys/_ai"))).val();
     try { aiAuto = localStorage.getItem("techlab_ai_auto") === "1"; } catch (e) {}
   } catch (e) {
+    if (e.message === "no-keys") return showKeysUpload();
     app.innerHTML = `<div class="card center"><h2>Нет доступа к ключам</h2>
-      <p>${e.message === "no-keys" ? "В базе нет ключей ответов. Импортируйте файл <b>keys.json</b> в Realtime Database (шаг 5 инструкции)."
-        : "Этот аккаунт не имеет прав учителя. Проверьте, что в правилах базы (Rules) указан именно этот e-mail."}</p></div>`;
+      <p>Этот аккаунт не имеет прав учителя. Проверьте, что в правилах базы (Rules) указан именно этот e-mail.</p></div>`;
     return;
   }
   showDashboard();
 });
+
+// Ключи нового теста загружаются из файла прямо здесь — без консоли Firebase
+function showKeysUpload() {
+  app.innerHTML = `<div class="card center" style="max-width:640px"><h2>🔑 Загрузите ключи ответов</h2>
+    <p>Для теста <b>${esc(ENTRY.title)}</b> в базе ещё нет ключей. Выберите файл ключей, который прислал Claude
+      (например, <code>keys-${esc(TEST.id)}.json</code>). Файл хранится только у вас и в защищённой базе — на GitHub его загружать <b>нельзя</b>.</p>
+    <input type="file" id="kf" accept=".json,application/json" style="margin:10px 0">
+    <div class="err" id="kerr"></div>
+    <a class="btn small ghost" href="./">← Центр управления</a></div>`;
+  $("#kf").onchange = async (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    $("#kerr").style.color = ""; $("#kerr").textContent = "Загружаю…";
+    try {
+      const j = JSON.parse(await f.text());
+      const k = j.keys?.[TEST.id] || (j.variants ? j : null);
+      if (!k || !k.variants) throw new Error(`в файле нет ключей для теста «${TEST.id}». Проверьте, тот ли это файл.`);
+      if (Object.keys(k.variants).length !== VARIANTS.length) throw new Error(`в файле ${Object.keys(k.variants).length} вариантов, а в тесте ${VARIANTS.length}.`);
+      await set(ref(db, `keys/${TEST.id}`), k);
+      $("#kerr").style.color = "var(--green)"; $("#kerr").textContent = "✓ Ключи загружены. Открываю тест…";
+      setTimeout(() => location.reload(), 900);
+    } catch (err) { $("#kerr").textContent = "Ошибка: " + err.message; }
+  };
+}
 
 function showLogin() {
   $("#who").textContent = "";
@@ -95,6 +118,7 @@ function showDashboard() {
       <button class="btn small ghost" id="bAi">🤖 Проверить всё ИИ</button>
       <button class="btn small ghost" id="bAiCfg" title="Настройка проверки ИИ">⚙ ИИ</button>
       <button class="btn small ghost" id="bKeys">Ключи ответов</button>
+      <button class="btn small ghost" id="bPrintAll" title="Разборы всех сданных работ (с учётом фильтра)">🖨 Разборы</button>
       <button class="btn small ghost" id="bCsv">Скачать CSV</button>
       <button class="btn small red" id="bClear">Очистить результаты</button>
     </div>
@@ -133,10 +157,15 @@ function showDashboard() {
   $("#fCls").onchange = (e) => { filterCls = e.target.value; renderTable(); };
   $("#fSearch").oninput = (e) => { search = e.target.value.toLowerCase(); renderTable(); };
   $("#bCsv").onclick = exportCsv;
+  $("#bPrintAll").onclick = () => {
+    const ids = rows().filter(([, r]) => r.status === "submitted").map(([id]) => id);
+    if (!ids.length) return alert("Нет сданных работ.");
+    printReviews(ids);
+  };
   $("#bAiCfg").onclick = showAiSettings;
   $("#bAi").onclick = () => {
     if (!AICFG?.url) return showAiSettings();
-    const ids = Object.entries(RESULTS).filter(([, r]) => r.status === "submitted" && aiTargets(r).length).map(([id]) => id);
+    const ids = Object.entries(RESULTS).filter(([, r]) => r.status === "submitted" && (aiTargets(r).length || !r.aiSummary)).map(([id]) => id);
     if (!ids.length) return setAiStatus("Нет развёрнутых ответов для проверки.");
     ids.forEach((id) => enqueueAi(id, true));
   };
@@ -235,6 +264,7 @@ function showCheck(id, refresh = false) {
   const byTask = {};
   g.items.forEach((it) => (byTask[it.task] = byTask[it.task] || []).push(it));
   const scrollPos = refresh ? dlg.scrollTop : 0;
+  const RV = reviewOf(r);
 
   const scoreBox = (it) => `<span>Баллы: <input type="number" class="score-in" min="0" max="${it.max}" step="0.5"
       data-item="${it.key}" value="${it.score ?? ""}" placeholder="?"> / ${it.max}
@@ -289,7 +319,7 @@ function showCheck(id, refresh = false) {
     }
     return `<div class="chk-item ${need ? "need" : ""}"><div class="chk-row"><b>Задание ${t.n}</b>
       <span>${fmtNum(sum)} / ${t.points} б. ${need ? '<span class="tag warn">нужно проверить</span>' : ""}</span></div>
-      <div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t.title)}</div>${inner}</div>`;
+      <div class="muted" style="font-size:14px;margin:4px 0 8px">${esc(t.title)}</div>${inner}${reviewHtml(RV.tasks[t.n])}</div>`;
   }).join("");
 
   const events = Object.values(r.events || {}).sort((a, b) => a.at - b.at)
@@ -304,10 +334,12 @@ function showCheck(id, refresh = false) {
           Оценка: ${g.complete ? `<span class="grade">${g.grade}</span>` : `<span class="muted">≈${g.gradeNow}, осталось проверить: ${g.pending}</span>`}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${r.status === "submitted" ? `<button class="btn small" id="dUnlock">Разрешить продолжить (+10 мин)</button>` : `<button class="btn small" id="dStop">Завершить работу</button>`}
-          ${r.status === "submitted" && aiTargets(r).length ? `<button class="btn small ghost" id="dAi">🤖 Проверить ИИ</button>` : ""}
+          ${r.status === "submitted" ? `<button class="btn small ghost" id="dAi">🤖 ${r.aiSummary ? "Разобрать заново (ИИ)" : "Разбор ИИ"}</button>` : ""}
+          ${r.status === "submitted" ? `<button class="btn small ghost" id="dPrint">🖨 Печать разбора</button>` : ""}
           <button class="btn small red" id="dDel">Удалить</button>
         </div>
       </div>
+      ${summaryHtml(r, RV)}
       ${r.violations ? `<div class="chk-item need"><b>Нарушения (${r.violations}):</b><div class="events">${events || "—"}</div></div>` : ""}
       ${parts}
     </div>`;
@@ -319,6 +351,7 @@ function showCheck(id, refresh = false) {
     update(ref(db, `${P}/${id}/manual`), { [inp.dataset.item]: val });
   });
   $("#dAi")?.addEventListener("click", () => { if (!AICFG?.url) return showAiSettings(); enqueueAi(id, true); });
+  $("#dPrint")?.addEventListener("click", () => printReviews([id]));
   if (r.aiStatus === "error") dlg.querySelector(".dlg-body").insertAdjacentHTML("afterbegin", `<div class="chk-item need">🤖 Ошибка проверки ИИ: ${esc(r.aiError || "")}</div>`);
   $("#dUnlock")?.addEventListener("click", () => {
     if (!confirm("Разрешить ученику продолжить работу? Он сможет вернуться к своим ответам ещё на 10 минут.")) return;
@@ -430,7 +463,7 @@ function aiTargets(r, all = false) {
 function autoEnqueue() {
   if (!AICFG?.url) return;
   for (const [id, r] of Object.entries(RESULTS)) {
-    if (r.status === "submitted" && !r.aiStatus && aiTargets(r).length) enqueueAi(id, false);
+    if (r.status === "submitted" && !r.aiStatus) enqueueAi(id, false);
   }
 }
 
@@ -482,16 +515,23 @@ async function callAi(payload) {
 
 async function gradeWithAi(id, r) {
   const items = aiTargets(r);
-  if (!items.length) return;
-  const data = await callAi({ subject: ENTRY.aiSubject || "география, 11 класс", items });
+  if (!items.length && r.aiSummary) return;
+  const rv = reviewOf(r);
+  const context = Object.entries(rv.tasks).map(([n, t]) =>
+    `Задание ${n} (${t.topic}): ${t.pending ? "развёрнутый ответ оценивается тобой ниже" : fmtNum(t.sum) + " из " + t.max + " б"}` +
+    (t.bad.length ? ". Ошибки: " + t.bad.join("; ") : t.pending ? "" : ". Ошибок нет")).join("\n");
+  const data = await callAi({ subject: ENTRY.aiSubject || "география, 11 класс", items, review: true, context });
   const ai = { ...(r.ai || {}) };
+  const cut = (x, n = 500) => String(x || "").slice(0, n);
   for (const x of data.results || []) {
     const it = items.find((i) => i.key === x.key);
     if (!it || !Number.isFinite(Number(x.score))) continue;
     const sc = Math.max(0, Math.min(it.max, Math.round(Number(x.score) * 2) / 2));
-    ai[x.key] = { score: sc, comment: String(x.comment || "").slice(0, 400) };
+    ai[x.key] = { score: sc, comment: cut(x.comment, 400), good: cut(x.good), missing: cut(x.missing), advice: cut(x.advice) };
   }
-  await update(ref(db, `${P}/${id}`), { ai, aiStatus: "done", aiError: null, aiAt: Date.now() });
+  const upd = { ai, aiStatus: "done", aiError: null, aiAt: Date.now() };
+  if (data.summary) upd.aiSummary = { strengths: cut(data.summary.strengths, 800), gaps: cut(data.summary.gaps, 800), advice: cut(data.summary.advice, 800) };
+  await update(ref(db, `${P}/${id}`), upd);
 }
 
 function showAiSettings() {
@@ -583,7 +623,8 @@ function mOpenItems(r, entry = ENTRY) {
     const teacher = Number.isFinite(r.manual?.[q.k]) ? r.manual[q.k] : null;
     const ai = r.ai?.[q.k] && Number.isFinite(r.ai[q.k].score) ? Math.max(0, Math.min(q.max, r.ai[q.k].score)) : null;
     const score = !answer ? 0 : (teacher ?? ai);
-    return { ...q, answer, teacher, ai, aiComment: r.ai?.[q.k]?.comment || "", score, pending: score === null };
+    const A = r.ai?.[q.k] || {};
+    return { ...q, answer, teacher, ai, aiComment: A.comment || "", aiGood: A.good || "", aiMissing: A.missing || "", aiAdvice: A.advice || "", score, pending: score === null };
   });
 }
 function mEval(r, entry = ENTRY) {
@@ -857,7 +898,8 @@ async function mRun() {
         for (const x of data.results || []) {
           const it = items.find((i) => i.key === x.key);
           if (!it || !Number.isFinite(Number(x.score))) continue;
-          ai[x.key] = { score: Math.max(0, Math.min(it.max, Math.round(Number(x.score) * 2) / 2)), comment: String(x.comment || "").slice(0, 400) };
+          ai[x.key] = { score: Math.max(0, Math.min(it.max, Math.round(Number(x.score) * 2) / 2)), comment: String(x.comment || "").slice(0, 400),
+            good: String(x.good || "").slice(0, 500), missing: String(x.missing || "").slice(0, 500), advice: String(x.advice || "").slice(0, 500) };
         }
         await update(ref(db, `${P}/${id}`), { ai, aiStatus: "done", aiError: null, aiAt: Date.now() });
       }
@@ -887,7 +929,10 @@ function mShowOpen(id, refresh = false) {
         <div class="model"><b>Критерии:</b> ${esc(i.criteria)}<br><b>Образец:</b> ${esc(i.model)}</div>
         <div class="chk-row"><span>Баллы: <input type="number" class="score-in" min="0" max="${i.max}" step="0.5" data-mk="${i.k}" value="${i.teacher ?? i.ai ?? (i.answer ? "" : 0)}" placeholder="?"> / ${i.max}
           ${i.teacher === null && i.ai !== null ? '<span class="tag run">🤖 ИИ</span>' : ""}${i.teacher !== null ? '<span class="tag done">✍ учитель</span>' : ""}</span></div>
-        ${i.aiComment ? `<div class="muted" style="font-size:13px;margin-top:4px">🤖 ${esc(i.aiComment)}</div>` : ""}
+        ${i.aiGood || i.aiMissing || i.aiAdvice ? `<div class="review"><div class="rv-h">📋 Разбор ИИ</div><ul>
+          ${i.aiGood ? `<li class="ok">✓ ${esc(i.aiGood)}</li>` : ""}${i.aiMissing ? `<li class="bad">✗ ${esc(i.aiMissing)}</li>` : ""}</ul>
+          ${i.aiAdvice ? `<div class="rv-adv">💡 <b>Рекомендация:</b> ${esc(i.aiAdvice)}</div>` : ""}</div>`
+          : i.aiComment ? `<div class="muted" style="font-size:13px;margin-top:4px">🤖 ${esc(i.aiComment)}</div>` : ""}
       </div>`).join("")}
       <p class="muted" style="font-size:13px">Ваш балл важнее оценки ИИ. Чтобы вернуть оценку ИИ, очистите поле.</p>
     </div>`;
@@ -899,4 +944,142 @@ function mShowOpen(id, refresh = false) {
     const v = inp.value === "" ? null : Math.max(0, Math.min(Number(inp.max), Number(inp.value)));
     update(ref(db, `${P}/${id}/manual`), { [inp.dataset.mk]: v });
   });
+}
+
+
+// =====================================================================
+//  РАЗБОР РАБОТЫ: что верно, что неверно, рекомендации по каждому заданию
+// =====================================================================
+const T_TOPIC = { 1: "ключевые термины", 2: "классификация (таблица)", 3: "выбор верного утверждения", 4: "анализ диаграммы", 5: "анализ диаграммы",
+  6: "причинно-следственные связи", 7: "причинно-следственные связи", 8: "развёрнутая аргументация", 9: "работа с картой", 10: "расчёт плотности населения" };
+const T_ADVICE = {
+  1: "Выучить определения из рамок «Ключевые термины» учебника. В неверном утверждении найти слово-ошибку и записать определение правильно, полностью.",
+  2: "Повторить классификации из параграфа. Перед распределением вспомнить главный признак каждого столбца и проверять каждую карточку по этому признаку.",
+  3: "Внимательно читать числа, годы, проценты и названия в каждом утверждении и сверять их с таблицами и текстом учебника.",
+  4: "Описание диаграммы по плану: 1) общая тенденция; 2) конкретные числа — максимум, минимум, «во сколько раз»; 3) две причины.",
+  5: "Описание диаграммы по плану: 1) общая тенденция; 2) конкретные числа — максимум, минимум, «во сколько раз»; 3) две причины.",
+  6: "Отвечать по схеме «причина → объяснение»: назвать три разные причины и к каждой добавить «потому что…».",
+  7: "Отвечать по схеме «причина → объяснение»: назвать три разные причины и к каждой добавить «потому что…».",
+  8: "Развёрнутый ответ: три аргумента (причины / следствия) + пример конкретной страны + короткий вывод.",
+  9: "Повторить политическую карту мира: искать страну по материку, океану, соседям и очертаниям; сравнивать с атласом.",
+  10: "D = Np / St. Перевести единицы: млн чел. × 1 000 000, тыс. км² × 1 000. Результат сравнить с легендой: I — более 100, II — 20–100, III — 2–20, IV — менее 2 чел./км².",
+};
+const yesNo = (v) => v === "T" ? "«Верно»" : v === "F" ? "«Неверно»" : "нет ответа";
+
+function reviewOf(r) {
+  const v = VARIANTS.find((x) => x.id === r.variant), k = KEYS.variants[String(r.variant)];
+  const g = evaluate(r), A = r.answers || {}, tasks = {};
+  for (const t of v.tasks) {
+    const its = g.items.filter((i) => i.task === t.n);
+    const T = { topic: T_TOPIC[t.n], sum: its.reduce((s, i) => s + (i.score ?? 0), 0), max: t.points, good: [], bad: [], advice: T_ADVICE[t.n], ai: [] };
+    if (t.type === "tf") {
+      for (const q of t.items) {
+        const kk = k.t1[q.id], a = (A.t1 || {})[q.id] || {};
+        if (a.v !== kk.tf) T.bad.push(`${q.id}) «${q.concept}»: ${a.v ? "отмечено " + yesNo(a.v) : "нет ответа"}, а утверждение ${kk.tf === "T" ? "верное" : "неверное"}` +
+          (kk.tf === "F" ? `. Правильно: ${kk.fix}` : ""));
+        else if (kk.tf === "F") {
+          const fx = its.find((i) => i.key === `t1_${q.id}f`);
+          if ((fx?.score ?? 0) < 1) T.bad.push(`${q.id}) «${q.concept}»: ошибка найдена, но исправление ${a.fix ? `неточное («${a.fix}»)` : "не написано"}. Нужно: ${kk.fix}`);
+          else T.good.push(`${q.id}) «${q.concept}» — ошибка найдена и исправлена`);
+        } else T.good.push(`${q.id}) «${q.concept}» — верно определено как правильное`);
+      }
+    } else if (t.type === "classify") {
+      const a = A.t2 || {};
+      let ok = 0;
+      for (const c of t.chips) {
+        const ans = a[c.id], key = k.t2[c.id];
+        if (ans == null || ans < 0) T.bad.push(`«${c.text}» не распределено (верно: «${t.columns[key]}»)`);
+        else if (Number(ans) !== key) T.bad.push(`«${c.text}» отнесено к «${t.columns[ans]}», а верно — «${t.columns[key]}»`);
+        else ok++;
+      }
+      if (ok) T.good.push(`верно распределено карточек: ${ok} из ${t.chips.length}`);
+    } else if (t.type === "mcq") {
+      const ch = t.options.find((o) => o.id === A.t3), right = t.options.find((o) => o.id === k.t3);
+      if (!ch) T.bad.push(`ответ не выбран. Верно: «${right.text}»`);
+      else if (ch.id !== k.t3) T.bad.push(`выбрано неверное утверждение «${ch.text}». Верно: «${right.text}»`);
+      else T.good.push("выбрано верное утверждение");
+    } else if (t.type === "mapid") {
+      const a = A.t9 || {};
+      for (const m of t.markers) {
+        if (a[m.letter] === k.t9[m.letter]) T.good.push(`${m.letter} — ${k.t9[m.letter]}`);
+        else T.bad.push(`${m.letter}: ${a[m.letter] ? `выбрано «${a[m.letter]}»` : "не выбрано"}, верно — ${k.t9[m.letter]}`);
+      }
+    } else if (t.type === "mapcalc") {
+      const a = A.t10 || {}, d = parseNum(a.d), kd = k.t10.d;
+      const calc = its.find((i) => i.key === "t10a"), cat = its.find((i) => i.key === "t10b");
+      if (d === null) T.bad.push(`а) плотность не рассчитана. Верно: ${k.t10.calc}`);
+      else if (calc.auto === 2) T.good.push(`а) плотность рассчитана верно (${a.d})`);
+      else {
+        const lg = Math.log10(d / kd), ilg = Math.log10(d * kd);
+        let why = "ошибка в вычислении";
+        if (calc.auto === 1) why = "небольшая неточность (округление)";
+        else if (Number.isFinite(lg) && Math.abs(lg - Math.round(lg)) < .06 && Math.round(lg) !== 0) why = `ответ отличается в ${Math.pow(10, Math.abs(Math.round(lg))).toLocaleString("ru-RU")} раз — неверно переведены единицы (млн → × 1 000 000, тыс. км² → × 1 000)`;
+        else if (Number.isFinite(ilg) && Math.abs(ilg - Math.round(ilg)) < .06) why = "перепутаны местами численность населения и площадь (нужно население ÷ площадь)";
+        T.bad.push(`а) ответ ${a.d} — ${why}. Верно: ${k.t10.calc}`);
+      }
+      if (!a.cat) T.bad.push(`б) категория не выбрана (верно: ${k.t10.cat})`);
+      else if (cat.auto === 1) T.good.push(`б) категория ${a.cat} определена верно`);
+      else T.bad.push(`б) выбрана категория ${a.cat}, а для плотности ${d ?? "?"} чел./км² нужна категория ${k.t10.cat}`);
+    }
+    // развёрнутые ответы: оценка ИИ (что верно / чего не хватает / совет)
+    for (const it of its.filter((i) => i.check)) {
+      const pre = t.type === "tf" ? `${it.key.slice(3, 4)}) исправление — ` : it.task === 10 ? "в) объяснение — " : "";
+      if (it.autoEmpty || it.empty) { if (t.type !== "tf") T.bad.push(pre + "ответ не дан"); continue; }
+      if (it.score === null) T.pending = true;
+      if (it.aiGood) T.good.push(pre + it.aiGood);
+      if (it.aiMissing) T.bad.push(pre + it.aiMissing);
+      if (it.aiAdvice) T.ai.push(it.aiAdvice);
+    }
+    T.mixed = t.type === "tf" || t.type === "mapcalc";
+    tasks[t.n] = T;
+  }
+  return { tasks, g };
+}
+
+const adviceOf = (T) => !T.ai.length ? T.advice : T.mixed ? T.advice + " " + T.ai.join(" ") : T.ai.join(" ");
+
+function reviewHtml(T) {
+  if (!T) return "";
+  const li = (arr, cls, ic) => arr.map((x) => `<li class="${cls}">${ic} ${esc(x)}</li>`).join("");
+  const perfect = !T.bad.length && T.sum >= T.max;
+  return `<div class="review"><div class="rv-h">📋 Разбор задания</div>
+    <ul>${li(T.good, "ok", "✓")}${li(T.bad, "bad", "✗")}</ul>
+    ${perfect ? `<div class="rv-adv">🌟 Задание выполнено полностью.</div>`
+      : `<div class="rv-adv">💡 <b>Рекомендация:</b> ${esc(adviceOf(T))}</div>`}</div>`;
+}
+
+function summaryHtml(r, RV) {
+  const weak = Object.entries(RV.tasks).filter(([, t]) => t.sum < t.max * .6).map(([n, t]) => `№${n} (${t.topic})`);
+  const S = r.aiSummary;
+  return `<div class="chk-item rv-sum"><div class="chk-row"><b>🤖 Общий вывод по работе</b>
+      ${S ? "" : `<span class="muted" style="font-size:13px">нажмите «Разбор ИИ», чтобы получить вывод от ИИ</span>`}</div>
+    ${S ? `<p><b>✓ Сильные стороны:</b> ${esc(S.strengths)}</p><p><b>✗ Пробелы:</b> ${esc(S.gaps)}</p><p><b>💡 Что повторить и как:</b> ${esc(S.advice)}</p>`
+      : `<p><b>Слабые задания:</b> ${weak.length ? esc(weak.join(", ")) : "нет — работа выполнена хорошо"}.</p>`}</div>`;
+}
+
+function printReviews(ids) {
+  const SCH = SCALE.map(([p, g]) => `<b>${g}</b> — от ${Math.ceil(p / 100 * TEST.max * 2) / 2} б.`).join(" · ");
+  const pages = ids.map((id) => {
+    const r = RESULTS[id]; const RV = reviewOf(r), g = RV.g;
+    const tasks = Object.entries(RV.tasks).map(([n, t]) => `<tr><td class="n">${n}</td><td><b>${esc(t.topic)}</b>
+        <ul>${t.good.map((x) => `<li class="ok">✓ ${esc(x)}</li>`).join("")}${t.bad.map((x) => `<li class="bad">✗ ${esc(x)}</li>`).join("")}</ul>
+        ${t.bad.length || t.sum < t.max ? `<div class="adv">💡 ${esc(adviceOf(t))}</div>` : ""}</td>
+        <td class="p">${fmtNum(t.sum)} / ${t.max}</td></tr>`).join("");
+    const S = r.aiSummary;
+    return `<section><h1>${esc(ENTRY.title)}</h1>
+      <div class="meta"><b>${esc(r.name)}</b> · ${esc(r.cls)} · вариант ${r.variant} · баллы: <b>${fmtNum(g.total)} / ${g.max}</b> · оценка: <b class="gr">${g.complete ? g.grade : "≈" + g.gradeNow}</b></div>
+      <table><thead><tr><th>№</th><th>Разбор: что верно ✓ · что неверно ✗ · рекомендация 💡</th><th>Баллы</th></tr></thead><tbody>${tasks}</tbody></table>
+      ${S ? `<div class="sum"><b>Общий вывод.</b> <b>Сильные стороны:</b> ${esc(S.strengths)} <b>Пробелы:</b> ${esc(S.gaps)} <b>Что повторить:</b> ${esc(S.advice)}</div>` : ""}
+      <div class="scale">Шкала перевода баллов в оценку: ${SCH}</div></section>`;
+  }).join("");
+  const w = window.open("", "_blank");
+  w.document.write(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Разбор работ</title><style>
+    body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:13px}section{padding:18px 22px;page-break-after:always}
+    h1{font-size:18px;margin:0 0 6px}.meta{margin-bottom:10px}.gr{font-size:18px}
+    table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:6px 8px;vertical-align:top;text-align:left}
+    th{background:#eee}td.n,td.p{white-space:nowrap;text-align:center;font-weight:bold}ul{margin:4px 0;padding-left:16px}
+    li.ok{color:#126b3a}li.bad{color:#b3261e}.adv{background:#fff6d6;border-left:3px solid #e0b100;padding:4px 8px;margin-top:4px}
+    .sum{margin-top:10px;background:#eef5ff;border:1px solid #9cc0f0;padding:8px 10px}.scale{margin-top:8px;color:#555;font-size:11px}
+  </style></head><body>${pages}</body></html>`);
+  w.document.close(); setTimeout(() => w.print(), 600);
 }

@@ -34,6 +34,7 @@ export function grade(key, answers = {}, manual = {}, ai = {}) {
     const a = ai?.[it.key];
     it.ai = a && Number.isFinite(a.score) ? Math.max(0, Math.min(it.max, a.score)) : null;
     it.aiComment = a?.comment || "";
+    it.aiGood = a?.good || ""; it.aiMissing = a?.missing || ""; it.aiAdvice = a?.advice || "";
     // приоритет: оценка учителя → оценка ИИ → автопроверка; null = ещё не проверено
     it.score = it.teacher ?? it.ai ?? it.auto;
     items.push(it);

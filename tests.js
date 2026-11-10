@@ -31,6 +31,9 @@ export const TESTS = [
   { id: "geo11-pop", type: "test", subject: "geo", grade: "11", title: "Население и населённые пункты",
     note: "Ед. обучения III · §12–16 · 40 минут", path: "geo11/test-naselenie/",
     aiSubject: "география, 11 класс" },
+  { id: "geo11-pop-r", type: "test", subject: "geo", grade: "11", title: "Население и населённые пункты · Пересдача",
+    note: "Ед. обучения III · §12–17 · 25 вариантов · 45 минут", path: "geo11/test-peresdacha/",
+    aiSubject: "география, 11 класс" },
 
   { id: "inf7-safe-m1", type: "mission", expedition: "inf7-safe", n: 1, date: "12.11",
     subject: "inf", grade: "7", title: "Эргономика и личная безопасность в цифровых средах",

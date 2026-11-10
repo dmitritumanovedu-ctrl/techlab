@@ -80,3 +80,12 @@ dialog::backdrop { background: rgba(5,6,20,.75); }
 .hub-empty { color: var(--muted); padding: 16px 18px; border-radius: 16px; border: 1px dashed var(--line); }
 .backlink { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); text-decoration: none; font-weight: 700; margin-bottom: 10px; }
 .backlink:hover { color: var(--cyan); }
+
+/* ===== Разбор работы ===== */
+.review { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.review .rv-h { font-size: 12px; font-weight: 800; letter-spacing: .08em; color: var(--cyan); text-transform: uppercase; margin-bottom: 4px; }
+.review ul { margin: 0 0 6px; padding-left: 4px; list-style: none; display: grid; gap: 3px; font-size: 14px; }
+.review li.ok { color: #7DF5C4; } .review li.bad { color: #FF9BAE; }
+.review .rv-adv { background: rgba(255,200,87,.1); border-left: 3px solid var(--amber); border-radius: 6px; padding: 6px 10px; font-size: 14px; color: #FFE7B0; }
+.rv-sum { background: linear-gradient(135deg, rgba(69,211,255,.1), rgba(178,107,255,.1)); border-color: rgba(69,211,255,.35); }
+.rv-sum p { margin: 6px 0; }
