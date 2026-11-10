@@ -588,14 +588,14 @@ function mOpenItems(r, entry = ENTRY) {
 }
 function mEval(r, entry = ENTRY) {
   const parts = entry.parts || [];
-  const max = parts.reduce((a, p) => a + p.max, 0);
+  const max = parts.reduce((a, p) => a + (p.bonus ? 0 : p.max), 0);   // бонусы не входят в максимум
   const sc = r.score || {};
   const items = mOpenItems(r, entry);
   const openSum = items.reduce((a, i) => a + (i.score || 0), 0);
   const pending = items.filter((i) => i.pending).length;
   const partScore = (p) => p.open ? (items.length ? openSum : null) : (sc[p.k] ?? null);
   const pts = parts.reduce((a, p) => a + (Number(partScore(p)) || 0), 0);
-  const pct = max ? Math.round(pts / max * 100) : 0;
+  const pct = max ? Math.min(100, Math.round(pts / max * 100)) : 0;
   const complete = r.status === "submitted" && pending === 0;
   return { pts, max, pct, grade: mGrade(pct), pending, complete, items, partScore };
 }
@@ -640,10 +640,10 @@ async function showMissionDashboard() {
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
   <div class="table-wrap"><table class="res"><thead><tr>
     <th>№</th><th>Ученик</th><th>Класс</th><th>Этап</th>
-    ${parts.map((p) => `<th title="${esc(p.name)}">${esc(p.name)}<br><span style="font-weight:400">/${p.max}</span></th>`).join("")}
+    ${parts.map((p) => `<th title="${esc(p.name)}">${esc(p.name)}<br><span style="font-weight:400">${p.bonus ? "+" : "/"}${p.max}</span></th>`).join("")}
     <th>Итог</th><th>Оценка</th><th>Время</th><th>Как урок</th><th></th></tr></thead>
     <tbody id="tb"><tr><td colspan="${parts.length + 9}" class="muted">Ожидание учеников…</td></tr></tbody></table></div>
-  <p class="muted" style="font-size:14px">Баллы появляются сразу после каждого задания. Оценка окончательная, когда статус «🏁 сдано».
+  <p class="muted" style="font-size:14px">${parts.some((p) => p.bonus) ? "⭐ Бонусные задания добавляют баллы сверх максимума (итог не выше 100 %). " : ""}Баллы появляются сразу после каждого задания. Оценка окончательная, когда статус «🏁 сдано».
     Шкала: ${MSCALE.map(([p, g]) => `<b>${g}</b> — от ${p}%`).join(" · ")}.</p>`;
 
   const sw = $("#swOpen");

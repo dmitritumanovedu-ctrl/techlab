@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Миссия 1 · Аудиолаборатория · 6 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: экран входа как окно редактора поверх «проявляющейся» пиксельной картинки;
+   внутри — тёмная панель инструментов слева + белый лист с заданием справа. */
+:root{
+  --ink:#0B0D24;      /* космос */
+  --deep:#15183A;     /* панели */
+  --line:#2C3170;     /* линии */
+  --blue:#7B6CFF;     /* основной акцент (фиолетовый неон) */
+  --cyan:#45D3FF;     /* голубой неон */
+  --violet:#B26BFF;
+  --paper:#171A3F;    /* карточки */
+  --mist:#0F1230;     /* фон листа */
+  --frost:#2E3474;    /* рамки */
+  --text:#EEF0FF;
+  --muted:#A3A9D9;
+  --ok:#14B87A;
+  --warn:#FFB020;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+/* ===== СТАРТ ===== */
+#start{position:fixed;inset:0;display:grid;place-items:center;overflow:auto;
+  padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#bg{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0}
+#start::before{content:"";position:fixed;inset:0;z-index:1;
+  background:radial-gradient(ellipse at 30% 20%,rgba(33,96,255,.25),transparent 60%),linear-gradient(180deg,rgba(7,22,52,.55),rgba(7,22,52,.85))}
+.grid-ov{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(rgba(69,211,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(69,211,255,.07) 1px,transparent 1px);background-size:24px 24px}
+.win{position:relative;z-index:2;width:min(560px,100%);background:var(--paper);border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.45),0 0 60px rgba(33,96,255,.35)}
+.titlebar{display:flex;align-items:center;gap:10px;background:var(--deep);color:#CFE2FF;padding:10px 14px;font-family:var(--mono);font-size:13px}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#2A4A8A;display:block}
+.dots i:first-child{background:#FF5F57}.dots i:nth-child(2){background:#FEBC2E}.dots i:nth-child(3){background:#28C840}
+.titlebar span{opacity:.85}.titlebar b{margin-left:auto;color:var(--cyan);font-weight:600}
+.win-body{padding:26px 28px 28px;display:grid;gap:18px}
+.term{background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:14px 16px;line-height:1.7;min-height:120px}
+.term .p{color:var(--cyan)}.term .g{color:#5BE3A8}.term .c{color:#6E87B8}
+.cursor{display:inline-block;width:8px;height:15px;background:var(--cyan);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.brand{display:grid;gap:6px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:600}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--blue)}
+.sub{margin:0;color:var(--muted)}
+.fields{display:grid;grid-template-columns:1fr 150px;gap:12px}
+.field{display:grid;gap:6px;min-width:0}
+.field label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.field input,.field select{font:inherit;font-size:16px;padding:12px 14px;border:2px solid var(--frost);border-radius:10px;background:var(--mist);color:var(--text);width:100%}
+.field input:focus,.field select:focus{border-color:var(--blue);outline:none;background:#fff}
+.err{color:#D9304B;font-size:14px;font-weight:600;min-height:20px;margin:-6px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;padding:14px 22px;font-weight:800;font-size:16px;
+  background:var(--blue);color:#fff;box-shadow:0 6px 0 #133FB0,0 10px 24px rgba(33,96,255,.35);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #133FB0}
+.btn[disabled]{background:#9DB2D8;box-shadow:0 6px 0 #7E93BA;cursor:not-allowed;transform:none}
+.btn .k{font-family:var(--mono);font-weight:600;opacity:.8}
+.rules{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--muted)}
+.rules li{display:flex;gap:10px}.rules li b{font-family:var(--mono);color:var(--blue)}
+
+/* ===== ПРИЛОЖЕНИЕ ===== */
+#app{min-height:100%;display:grid;grid-template-columns:96px 1fr;grid-template-rows:auto 1fr}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--ink);color:#DDE9FF;border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.logo{font-family:var(--mono);font-weight:700;font-size:15px;color:#fff;letter-spacing:.02em}
+.logo i{font-style:normal;color:var(--cyan)}
+.file{font-family:var(--mono);font-size:12px;color:#7F98C7}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:13px;background:var(--deep);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.chip b{color:var(--cyan);font-weight:600}
+.linkbtn{background:none;border:0;color:#7F98C7;font-family:var(--mono);font-size:12px;text-decoration:underline;padding:4px}
+
+.tools{background:var(--deep);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.tool{position:relative;display:grid;justify-items:center;gap:4px;padding:10px 4px;border-radius:10px;border:1px solid transparent;background:transparent;color:#AFC4EC;font-size:11px;font-weight:700;line-height:1.2;text-align:center}
+.tool svg{width:26px;height:26px}
+.tool:hover{background:rgba(69,211,255,.08)}
+.tool[aria-current="true"]{background:var(--blue);color:#fff;box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(69,211,255,.35)}
+.tool.locked{opacity:.45}
+.tool .st{position:absolute;top:4px;right:6px;font-size:11px}
+.tool.done .st{color:var(--ok)}
+.tools .sep{height:1px;background:var(--line);margin:6px 4px}
+.preview{display:grid;gap:6px;justify-items:center;margin-top:auto;padding-top:8px}
+.preview canvas{width:72px;height:54px;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated}
+.preview small{font-family:var(--mono);font-size:10px;color:#7F98C7;text-align:center}
+
+main{background:var(--mist);min-width:0;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{max-width:920px;margin:0 auto;display:grid;gap:22px}
+.sec-head{display:grid;gap:8px}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(24px,4vw,32px);line-height:1.15;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;margin:0;line-height:1.3}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.card{background:var(--paper);border:1px solid var(--frost);border-radius:14px;padding:22px;display:grid;gap:14px;min-width:0}
+.step-tag{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.06em}
+
+/* блок «в тетрадь» */
+.note{position:relative;background:#FFFDF4;border:2px dashed #E9C46A;border-radius:12px;padding:16px 18px 16px 18px;display:grid;gap:8px}
+.note .tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;color:#9A6B00;letter-spacing:.06em;text-transform:uppercase}
+.note p{margin:0;font-size:17px;font-weight:600;color:#2A2410;max-width:65ch}
+.note ul{margin:0;padding-left:22px;font-size:17px;font-weight:600;color:#2A2410;display:grid;gap:4px}
+.note mark{background:#FFE58A;color:inherit;padding:0 3px;border-radius:3px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.vs{border-radius:12px;padding:16px;display:grid;gap:6px;border:1px solid var(--frost);background:var(--mist)}
+.vs b{font-family:var(--display);font-size:16px}
+.vs p{margin:0;color:var(--muted);font-size:15px}
+.vs .ico{font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:700}
+
+/* пиксели */
+.pix{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center}
+.pix canvas{width:100%;max-width:100%;aspect-ratio:4/3;border-radius:10px;border:1px solid var(--frost);image-rendering:pixelated;background:#000}
+.range{display:grid;gap:6px}
+.range label{font-family:var(--mono);font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+.range label b{color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.pix-txt{display:grid;gap:12px}
+.pix-txt p{margin:0}
+
+/* редактор-демо */
+.editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
+.stage{background:#0B1A3B;border-radius:12px;padding:14px;display:grid;place-items:center;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.stage canvas{max-width:100%;height:auto;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.ops{display:grid;gap:8px;align-content:start}
+.op{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;text-align:left;background:var(--mist);border:1px solid var(--frost);border-radius:10px;padding:10px 12px;color:var(--text)}
+.op:hover{border-color:var(--blue);background:#fff}
+.op svg{width:24px;height:24px;color:var(--blue)}
+.op b{display:block;font-size:15px}
+.op small{display:block;color:var(--muted);font-size:13px;line-height:1.3}
+.op.on{border-color:var(--blue);background:#E3ECFF}
+.console{grid-column:1/-1;background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:10px 14px;min-height:84px;max-height:120px;overflow:auto;line-height:1.6}
+.console .p{color:var(--cyan)}
+.reset{justify-self:start;background:none;border:1px solid var(--frost);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+.opslist{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.opcard{background:var(--mist);border:1px solid var(--frost);border-radius:12px;padding:14px;display:grid;gap:6px}
+.opcard svg{width:28px;height:28px;color:var(--blue)}
+.opcard b{font-size:15px}.opcard span{font-size:14px;color:var(--muted);line-height:1.4}
+
+.finish-theory{background:var(--deep);color:#DDE9FF;border:0}
+.finish-theory h3{color:#fff}
+.check{display:flex;gap:12px;align-items:flex-start;font-weight:600;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--cyan);margin-top:2px;flex:none}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+.locked-screen{text-align:center;justify-items:center;padding:48px 22px}
+.locked-screen .big{font-family:var(--mono);font-size:48px;color:var(--blue)}
+
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;
+  padding:12px 18px;border-radius:10px;border:1px solid var(--cyan);opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* общие для станций */
+.imgbox{background:#0B1A3B;border-radius:12px;height:220px;display:grid;place-items:center;padding:10px;position:relative;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;min-width:0}
+.imgbox canvas{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.imgbox .lbl{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:rgba(7,22,52,.75);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+.imgbox.tall{height:300px}
+.counter{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.counter b{color:var(--blue)}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.choice{display:flex;align-items:center;gap:10px;text-align:left;background:var(--mist);border:2px solid var(--frost);border-radius:10px;padding:12px 14px;color:var(--text);font-weight:700;font-size:15px;line-height:1.3}
+.choice svg{width:22px;height:22px;color:var(--blue);flex:none}
+.choice:hover:not([disabled]){border-color:var(--blue);background:#fff}
+.choice[disabled]{cursor:default}
+.choice.right{border-color:var(--ok);background:#E3F8EF}
+.choice.wrong{border-color:#E5484D;background:#FDECEE}
+.fb{border-radius:10px;padding:12px 16px;font-weight:600;display:flex;gap:10px;align-items:flex-start}
+.fb.ok{background:#E3F8EF;color:#0B6B47}
+.fb.no{background:#FDECEE;color:#A3202E}
+.fb.info{background:#E3ECFF;color:#1B3F9E}
+.fb .m{font-family:var(--mono);font-weight:700}
+.dotsbar{display:flex;gap:6px;flex-wrap:wrap}
+.dotsbar i{width:28px;height:8px;border-radius:4px;background:var(--frost);display:block}
+.dotsbar i.ok{background:var(--ok)}.dotsbar i.no{background:#E5484D}.dotsbar i.cur{background:var(--blue)}
+.task-text{margin:0;font-size:17px;font-weight:600;max-width:65ch}
+
+.q1grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{display:grid;gap:16px}
+.meter{display:grid;gap:6px}
+.meter .mt{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.meter .bar{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#1B2A4E,#5A6E93 50%,#F2F6FF)}
+.meter .zone{position:absolute;top:-3px;bottom:-3px;left:42.5%;width:15%;border:2px solid var(--ok);border-radius:6px;background:rgba(20,184,122,.18)}
+.meter .needle{position:absolute;top:-6px;width:4px;height:28px;background:var(--blue);border-radius:2px;transform:translateX(-2px);transition:left .15s}
+.meter.c .bar{background:linear-gradient(90deg,#8E9BB5,#5A6E93 50%,#0B1A3B)}
+
+.q2grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tbtns{display:flex;flex-wrap:wrap;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;font-size:15px;color:var(--text)}
+.tbtn svg{width:20px;height:20px;color:var(--blue)}
+.tbtn:hover{border-color:var(--blue)}
+.tbtn .v{font-family:var(--mono);font-size:12px;color:var(--blue);background:var(--mist);padding:2px 6px;border-radius:5px}
+
+/* финиш */
+.result{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.grade{width:150px;height:150px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;align-content:center;
+  box-shadow:0 0 0 6px #D6E6FF,0 0 40px rgba(33,96,255,.45)}
+.grade small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;font-weight:700}
+.grade b{font-family:var(--display);font-size:64px;line-height:1}
+.pts{font-family:var(--display);font-size:clamp(40px,7vw,60px);font-weight:800;line-height:1}
+.pts span{font-size:.45em;color:var(--muted)}
+.scale{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;font-family:var(--mono);font-size:11px;text-align:center}
+.scale div{border:1px solid var(--frost);border-radius:6px;padding:6px 2px;background:var(--paper);line-height:1.3}
+.scale div b{display:block;font-size:14px}
+.scale div.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{padding:10px 8px;border-bottom:1px solid var(--frost);text-align:left}
+.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.tbl td:last-child,.tbl th:last-child{text-align:right;font-family:var(--mono);font-weight:700}
+.mood{display:flex;flex-wrap:wrap;gap:10px}
+.mood button{background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;color:var(--text)}
+.mood button[aria-pressed="true"]{border-color:var(--blue);background:#E3ECFF}
+.sent{font-family:var(--mono);background:var(--ink);color:#BFD6FF;border-radius:10px;padding:14px 16px;line-height:1.7}
+.sent .g{color:#5BE3A8}.sent .p{color:var(--cyan)}.sent .r{color:#FF8A8A}
+
+@media (max-width:760px){
+  .q1grid,.q2grid,.result{grid-template-columns:1fr}
+  .grade{width:120px;height:120px}.grade b{font-size:50px}
+  .scale{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr}
+  .tools{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}
+  .tool{min-width:76px}
+  .tools .sep{display:none}
+  .preview{display:none}
+  .two,.pix,.editor{grid-template-columns:1fr}
+  .fields{grid-template-columns:1fr}
+  .file{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== НЕОНОВЫЙ КОСМОС (TechLab) ===== */
+body{background:radial-gradient(circle at 15% 0%,#2a1766 0,var(--ink) 55%) fixed}
+main{background:transparent}
+#start::before{background:radial-gradient(ellipse at 30% 20%,rgba(178,107,255,.30),transparent 60%),linear-gradient(180deg,rgba(11,13,36,.55),rgba(11,13,36,.9))}
+.win{background:var(--paper);box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.55),0 0 70px rgba(123,108,255,.45)}
+.titlebar{background:#0B0D24}
+.eyebrow,.step-tag{color:var(--cyan)}
+h1 em,.grad{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.term,.console,.sent{background:#070818;border:1px solid var(--line)}
+.field input,.field select{background:#0F1230;color:var(--text);border-color:var(--frost)}
+.field input:focus,.field select:focus{background:#13163a;border-color:var(--cyan)}
+.btn{background:linear-gradient(90deg,var(--cyan),var(--violet));color:#0B0D24;box-shadow:0 0 0 0 transparent,0 8px 26px rgba(123,108,255,.45)}
+.btn:active{box-shadow:0 2px 10px rgba(123,108,255,.4)}
+.btn[disabled]{background:#3a3f78;color:#9aa0d0;box-shadow:none}
+.rules li b,.counter b,.range label b{color:var(--cyan)}
+.card{background:rgba(23,26,63,.88);border-color:var(--frost);backdrop-filter:blur(6px)}
+.tool[aria-current="true"]{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 1px var(--cyan),0 0 22px rgba(123,108,255,.55)}
+.note{background:rgba(255,206,84,.08);border-color:#E9C46A}
+.note .tag{color:#FFD36B}.note p,.note ul{color:#FFF1CC}
+.note mark{background:#FFD36B;color:#241a00}
+.vs,.opcard,.op,.choice,.tbtn,.mood button,.scale div{background:#12153A;border-color:var(--frost);color:var(--text)}
+.op:hover,.choice:hover:not([disabled]),.tbtn:hover{background:#1a1e4d;border-color:var(--cyan)}
+.op.on{background:rgba(123,108,255,.25);border-color:var(--violet)}
+.op svg,.opcard svg,.choice svg,.tbtn svg,.vs .ico{color:var(--cyan)}
+.tbtn .v{background:#0B0D24;color:var(--cyan)}
+.choice.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.choice.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.fb.ok{background:rgba(46,229,157,.15);color:#7DF5C4}
+.fb.no{background:rgba(255,92,122,.15);color:#FF9BAE}
+.fb.info{background:rgba(69,211,255,.12);color:#9BE6FF}
+.reset{border-color:var(--frost);color:var(--muted)}
+.dotsbar i{background:#2E3474}.dotsbar i.cur{background:var(--cyan)}
+.grade{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 6px rgba(123,108,255,.25),0 0 50px rgba(178,107,255,.6)}
+.scale div.on{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#0B0D24;border-color:transparent}
+.mood button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.15)}
+.tbl td,.tbl th{border-color:var(--frost)}
+.finish-theory{background:linear-gradient(135deg,#1b1650,#0f2a55);border:1px solid var(--line)}
+.meter .bar{background:linear-gradient(90deg,#0b0d24,#5A6E93 50%,#F2F6FF)}
+.meter .needle{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.stars{font-size:22px;letter-spacing:4px}
+.fuel{height:6px;border-radius:9px;background:#22265a;overflow:hidden;min-width:120px}
+.fuel i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .4s}
+.imgbox canvas{width:auto;height:auto;max-width:100%;max-height:196px}
+.imgbox.tall canvas{max-height:276px}
+.pxgrid{width:max-content}
+.back{color:var(--muted);font-family:var(--mono);font-size:12px;text-decoration:none}
+.back:hover{color:var(--cyan)}
+
+/* пиксель-художник */
+.pxwrap{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+.pxgrid{display:grid;grid-template-columns:repeat(8,34px);grid-template-rows:repeat(8,34px);gap:2px;background:#070818;padding:6px;border-radius:10px;border:1px solid var(--line);user-select:none;touch-action:none}
+.pxgrid.small{grid-template-columns:repeat(8,16px);grid-template-rows:repeat(8,16px);gap:1px;padding:4px;cursor:default}
+.pxgrid i{display:block;border-radius:3px;cursor:crosshair}
+.pxgrid.small i{border-radius:2px;cursor:default}
+.palette{display:flex;flex-wrap:wrap;gap:8px}
+.palette button{width:42px;height:42px;border-radius:10px;border:3px solid transparent;box-shadow:0 0 0 1px var(--frost)}
+.palette button[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--cyan),0 0 16px var(--cyan)}
+.pct{font-family:var(--display);font-size:28px;font-weight:800}
+
+/* блиц */
+.blitz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.clock60{font-family:var(--display);font-size:40px;font-weight:800;color:var(--cyan);text-shadow:0 0 18px rgba(69,211,255,.6)}
+.clock60.low{color:#FF5C7A;text-shadow:0 0 18px rgba(255,92,122,.6)}
+@media (max-width:760px){.pxwrap{grid-template-columns:1fr}.pxgrid{grid-template-columns:repeat(8,30px);grid-template-rows:repeat(8,30px)}}
+</style>
+<style>
+/* ===== дополнения для Аудиолаборатории (6 класс) ===== */
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{background:#12153A;border:2px solid var(--frost);border-radius:10px;padding:10px 14px;color:var(--text);font-weight:700;font-size:15px;text-align:left}
+.seg button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.14)}
+.seg button.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.seg button.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.panelsvg{width:100%;max-width:640px;justify-self:center;display:block}
+.panelsvg .port{cursor:pointer}
+.panelsvg .port:hover rect,.panelsvg .port:hover circle{filter:drop-shadow(0 0 8px #45D3FF)}
+.plug{display:inline-flex;gap:10px;align-items:center;padding:10px 16px;border-radius:12px;background:#12153A;border:2px solid var(--cyan);font-weight:800;font-size:18px}
+.olist{display:grid;gap:8px;counter-reset:o}
+.orow{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;background:#12153A;border:1px solid var(--frost);border-radius:10px;padding:10px 12px;font-weight:700}
+.orow::before{counter-increment:o;content:counter(o);font-family:var(--mono);color:var(--cyan);text-align:center}
+.orow button{border:1px solid var(--frost);background:#0B0D24;color:var(--text);border-radius:8px;width:34px;height:34px;font-weight:800}
+.orow button:hover:not([disabled]){border-color:var(--cyan)}
+.orow.ok{border-color:#2EE59D}.orow.no{border-color:#FF5C7A}
+.orow .db{font-family:var(--mono);color:var(--muted);font-size:13px}
+.dbscale{height:14px;border-radius:9px;background:linear-gradient(90deg,#2EE59D 0%,#2EE59D 55%,#FFC857 62%,#FF5C7A 75%,#FF5C7A 100%);position:relative;margin:6px 0 2px}
+.dbscale span{position:absolute;top:18px;font-family:var(--mono);font-size:11px;color:var(--muted);transform:translateX(-50%)}
+.mock{border:1px solid var(--frost);border-radius:14px;background:#0F1230;padding:14px;display:grid;gap:10px}
+.mock .mi{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:#12153A;border:2px solid var(--frost);cursor:pointer;font-weight:600;text-align:left;color:var(--text);width:100%}
+.mock .mi:hover:not([disabled]){border-color:var(--cyan)}
+.mock .mi .ic{font-size:24px;width:32px;text-align:center}
+.mock .mi .v{margin-left:auto;font-family:var(--mono);color:var(--cyan)}
+.mock .mi.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.mock .mi.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.box{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:20px;align-items:start}
+.pack{border-radius:18px;padding:18px;background:linear-gradient(160deg,#1d2266,#0f1230);border:1px solid var(--line);display:grid;gap:10px;justify-items:center;text-align:center}
+.pack .big{font-size:64px}
+.pack .lbls{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.pack .lbls b{font-family:var(--mono);background:#0B0D24;border:1px solid var(--cyan);color:var(--cyan);border-radius:6px;padding:3px 8px;font-size:13px}
+.match{display:grid;gap:8px}
+.match label{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-weight:700}
+.match label code{font-family:var(--mono);color:var(--cyan)}
+.match select{background:#0F1230;color:var(--text);border:2px solid var(--frost);border-radius:10px;padding:8px 10px;font:inherit;font-size:15px}
+.match select.ok{border-color:#2EE59D}.match select.no{border-color:#FF5C7A}
+.client{border-left:4px solid var(--violet);background:rgba(178,107,255,.08);border-radius:10px;padding:12px 16px;font-size:17px}
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.prod{display:grid;gap:4px;text-align:left;background:#12153A;border:2px solid var(--frost);border-radius:12px;padding:12px;color:var(--text);cursor:pointer}
+.prod:hover:not([disabled]){border-color:var(--cyan)}
+.prod[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.12)}
+.prod .pi{font-size:30px}.prod b{font-size:15px}.prod small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.prod .pr{font-family:var(--mono);color:#FFD36B;font-weight:700}
+.prod.right{border-color:#2EE59D}.prod.wrong{border-color:#FF5C7A}
+textarea.ans{width:100%;min-height:110px;resize:vertical;font:inherit;font-size:16px;line-height:1.5;padding:12px 14px;border-radius:10px;border:2px solid var(--frost);background:#0F1230;color:var(--text)}
+textarea.ans:focus{outline:none;border-color:var(--cyan)}
+.chars{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+.qtimer{height:6px;border-radius:9px;background:#22265a;overflow:hidden}.qtimer i{display:block;height:100%;background:linear-gradient(90deg,#45D3FF,#B26BFF)}
+.room{width:100%;max-width:560px;justify-self:center}
+.room .spot{cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{background:#12153A;border:2px solid var(--frost);border-radius:999px;padding:8px 14px;color:var(--text);font-weight:700}
+.chips button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.15)}
+.chips button[disabled]{opacity:.35}
+.wave{width:100%;height:170px;background:#070818;border:1px solid var(--line);border-radius:12px;display:block}
+.sl{display:grid;grid-template-columns:120px 1fr 40px;gap:12px;align-items:center;font-weight:700}
+.sl input{accent-color:#45D3FF}
+.hp{width:100%;max-width:380px;justify-self:center}
+.tools .bonus-h{font-family:var(--mono);font-size:10px;color:#FFD36B;text-align:center;letter-spacing:.08em;padding:4px 0}
+.tool.bonus{opacity:.95}.tool.bonus .st{color:#FFD36B}
+.bonus-tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;color:#241a00;background:#FFD36B;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+@media (max-width:760px){.box{grid-template-columns:1fr}.match label{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<section id="start">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="grid-ov" aria-hidden="true"></div>
+  <div class="win" role="dialog" aria-labelledby="ttl">
+    <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div><span>audio_lab.exe</span><b>6 класс</b></div>
+    <div class="win-body">
+      <div class="brand">
+        <div class="eyebrow">🎧 Экспедиция «Устройства вывода» · Миссия 1</div>
+        <h1 id="ttl">Аудио<em>лаборатория</em></h1>
+        <p class="sub">Акустические системы и наушники — слушаем вместе или отдельно?</p>
+      </div>
+      <div class="term" id="term" aria-live="polite"></div>
+      <form id="login" class="win-body" style="padding:0" novalidate>
+        <div class="fields">
+          <div class="field"><label for="fio">&gt; фамилия_и_имя</label><input id="fio" autocomplete="off" placeholder="Например, Руссу Анна" maxlength="60"></div>
+          <div class="field"><label for="cls">&gt; класс</label>
+            <select id="cls"><option value="">выбери…</option><option>6 «А»</option><option>6 «Б»</option><option>6 «В»</option><option>6 «Г»</option></select></div>
+        </div>
+        <p class="err" id="err"></p>
+        <button class="btn" type="submit">🚀 Начать миссию <span class="k">Enter</span></button>
+      </form>
+      <ul class="rules">
+        <li><b>01</b>Звук включать не нужно — вся лаборатория «тихая». Изучи журнал и перепиши жёлтые блоки в тетрадь.</li>
+        <li><b>02</b>Пройди 7 заданий по порядку. Успеваешь раньше — бери ⭐ бонусные задания, они повышают балл.</li>
+        <li><b>03</b>Объяснения в «Техническом задании» проверит ИИ и учитель. Результат уйдёт учителю.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <a class="back" href="../../../#tech-6">← TechLab</a>
+    <span class="logo">audio<i>_</i>lab</span>
+    <span class="file" id="fileName">mission_01 / journal.md</span>
+    <div class="fuel" title="Прогресс миссии"><i id="fuel" style="width:0%"></i></div>
+    <div class="top-right">
+      <span class="chip">👤 <b id="who">—</b></span>
+      <span class="chip">⏱ <b id="timer">00:00</b></span>
+      <button class="linkbtn" id="logout" type="button">сменить ученика</button>
+    </div>
+  </header>
+  <nav class="tools" aria-label="Этапы урока" id="tools"></nav>
+  <main id="main"><div class="sheet" id="sheet"></div></main>
+</div>
+<div id="toast" role="status"></div>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech6-audio-m1";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Журнал", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- фон: звуковые волны ---------- */
+const bg=$("bg");let bgRAF=0,bgOn=true;
+(function(){const c=bg.getContext("2d");
+  function size(){bg.width=innerWidth;bg.height=innerHeight;}
+  function draw(t){if(!bgOn)return;c.clearRect(0,0,bg.width,bg.height);
+    for(let k=0;k<5;k++){c.beginPath();const amp=30+k*14,f=.004+k*.0016,y0=bg.height*(.25+k*.13);
+      for(let x=0;x<=bg.width;x+=6){const y=y0+Math.sin(x*f+t/900*(1+k*.3))*amp*Math.sin(t/2600+k);x?c.lineTo(x,y):c.moveTo(x,y);}
+      c.strokeStyle=k%2?"rgba(178,107,255,.35)":"rgba(69,211,255,.35)";c.lineWidth=2;c.stroke();}
+    if(!reduce)bgRAF=requestAnimationFrame(draw);}
+  size();addEventListener("resize",size);bgRAF=requestAnimationFrame(draw);})();
+
+const termLines=['<span class="c">// звук выключен — лаборатория тихая</span>','<span class="p">&gt;</span> audio_lab.launch()',
+  '<span class="g">✓</span> модули: колонки, наушники, гнёзда, децибелы, Bluetooth','<span class="p">&gt;</span> звукоинженер, введи фамилию и класс <span class="cursor"></span>'];
+(function type(i){if(i>=termLines.length)return;$("term").innerHTML+=(i?'<br>':'')+termLines[i];setTimeout(()=>type(i+1),reduce?0:450);})(0);
+
+/* ---------- этапы ---------- */
+const IC={
+ doc:'<path d="M5 4h10l4 4v12H5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h8M8 15h8M8 7h5" stroke="currentColor" stroke-width="2"/>',
+ plug:'<path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 0 1-12 0zM12 18v4" fill="none" stroke="currentColor" stroke-width="2"/>',
+ hp:'<path d="M4 15v-3a8 8 0 0 1 16 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="5" height="7" rx="2" fill="currentColor"/><rect x="16" y="14" width="5" height="7" rx="2" fill="currentColor"/>',
+ db:'<path d="M3 20h3V14H3zM9 20h3V10H9zM15 20h3V6h-3zM21 20h0" fill="currentColor"/>',
+ fix:'<path d="M14 4a5 5 0 0 0-5 6L3 16l3 3 6-6a5 5 0 0 0 6-5l-3 3-3-3z" fill="currentColor"/>',
+ box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z M3 7l9 4 9-4M12 11v10" fill="none" stroke="currentColor" stroke-width="2"/>',
+ tz:'<path d="M6 3h12v18H6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="2"/>',
+ boss:'<path d="M5 3h14v5a7 7 0 0 1-14 0z M9 21h6M12 15v6" fill="none" stroke="currentColor" stroke-width="2"/>',
+ fin:'<path d="M5 21V4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2"/>',
+ star:'<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" fill="currentColor"/>'
+};
+const STEPS=[
+ {id:"theory",label:"Журнал",file:"journal.md",icon:IC.doc},
+ {id:"q1",label:"Задание 1",file:"connect.js",icon:IC.plug},
+ {id:"q2",label:"Задание 2",file:"together.js",icon:IC.hp},
+ {id:"q3",label:"Задание 3",file:"decibel.js",icon:IC.db},
+ {id:"q4",label:"Задание 4",file:"repair.js",icon:IC.fix},
+ {id:"q5",label:"Задание 5",file:"box.js",icon:IC.box},
+ {id:"q6",label:"Задание 6",file:"spec.md",icon:IC.tz},
+ {id:"q7",label:"Аудиобосс",file:"boss.js",icon:IC.boss},
+ {id:"fin",label:"Финиш",file:"report.json",icon:IC.fin}
+];
+const BONUS=[
+ {id:"b1",label:"5.1",file:"bonus_51.js"},{id:"b2",label:"Волна",file:"bonus_wave.js"},
+ {id:"b3",label:"Наушники",file:"bonus_parts.js"},{id:"b4",label:"Bluetooth",file:"bonus_bt.js"},{id:"b5",label:"Этикет",file:"bonus_etiquette.js"}
+];
+const MAXP={q1:4,q2:6,q3:6,q4:4,q5:6,q6:2,q7:8,b1:6,b2:3,b3:6,b4:3,b5:6};
+const MAIN=["q1","q2","q3","q4","q5","q6","q7"],BKEYS=["b1","b2","b3","b4","b5"];
+const OPENMAX=4,MAXMAIN=40;
+const NAMES={q1:"Задание 1 · Подключи правильно",q2:"Задание 2 · Вместе или отдельно?",q3:"Задание 3 · Децибелометр",q4:"Задание 4 · Мастер ремонта",
+ q5:"Задание 5 · Расшифруй коробку",q6:"Задание 6 · Техническое задание (выбор)",q7:"Аудиобосс",
+ b1:"⭐ Расставь колонки 5.1",b2:"⭐ Звуковая волна",b3:"⭐ Собери наушники",b4:"⭐ Подключи по Bluetooth",b5:"⭐ Звуковой этикет"};
+function fresh(fio,cls){return {fio,cls,start:Date.now(),done:{},cur:"theory",score:{},part:{},open:{o1:"",o2:""},mood:"",sent:0,rec:""};}
+let S=fresh("","");
+const KEY="techlab_tech6_m1";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2400);}
+function TL(){return Promise.race([window.TL_READY,new Promise((_,rej)=>setTimeout(()=>rej(new Error("нет связи")),10000))]);}
+function allSteps(){return STEPS.concat(BONUS);}
+function stageLabel(){const st=allSteps().find(x=>x.id===S.cur);return st?(BKEYS.includes(st.id)?"⭐ "+st.label:st.label):"";}
+function syncProgress(){if(!S.rec)return;
+  TL().then(t=>t.progress(S.rec,{score:S.score,open:S.open,stage:S.sent?"Финиш":stageLabel(),doneCount:STEPS.filter(x=>S.done[x.id]).length})).catch(()=>{});}
+
+$("login").addEventListener("submit",e=>{
+  e.preventDefault();
+  const fio=$("fio").value.trim().replace(/\s+/g," "),cls=$("cls").value,err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";$("cls").focus();return;}
+  err.textContent="Подключаюсь к TechLab…";const btn=document.querySelector("#login .btn");btn.disabled=true;
+  TL().then(async t=>{
+    if(!(await t.isOpen())){err.textContent="🔒 Миссия ещё не открыта учителем. Подожди и нажми ещё раз.";btn.disabled=false;return;}
+    S=fresh(fio,cls);S.rec=await t.start({name:fio,cls});err.textContent="";save();openApp();
+  }).catch(()=>{err.textContent="Нет связи с сайтом. Проверь интернет и нажми ещё раз.";btn.disabled=false;});
+});
+$("logout").addEventListener("click",()=>{if(!confirm("Выйти и начать заново под другим именем?"))return;try{localStorage.removeItem(KEY)}catch(e){}location.reload();});
+
+let timerId=null;
+function openApp(){bgOn=false;cancelAnimationFrame(bgRAF);$("start").hidden=true;$("app").hidden=false;$("who").textContent=S.fio+" · "+S.cls;
+  show(S.cur);tickTimer();clearInterval(timerId);timerId=setInterval(tickTimer,1000);}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+function tickTimer(){const s=Math.max(0,Math.floor((Date.now()-S.start)/1000));$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+
+function unlocked(id){
+  if(BKEYS.includes(id))return !!S.done.theory;
+  const i=STEPS.findIndex(s=>s.id===id);return i===0||!!S.done[STEPS[i-1].id];}
+function renderTools(){
+  const btn=(s,bonus)=>{const lock=!unlocked(s.id),done=!!S.done[s.id];
+    return `<button class="tool${bonus?' bonus':''}${lock?' locked':''}${done?' done':''}" data-id="${s.id}" aria-current="${S.cur===s.id}" type="button">
+      <span class="st">${done?(bonus?'⭐':'✓'):lock?'🔒':''}</span><svg viewBox="0 0 24 24" aria-hidden="true">${bonus?IC.star:s.icon}</svg>${s.label}</button>`;};
+  $("tools").innerHTML=STEPS.map((s,i)=>(i===1||i===STEPS.length-1?'<div class="sep"></div>':'')+btn(s,false)).join("")+
+    '<div class="sep"></div><div class="bonus-h">⭐ БОНУС</div>'+BONUS.map(b=>btn(b,true)).join("")+
+    `<div class="preview"><div style="font-size:30px">🎧</div><small id="progTxt"></small></div>`;
+  $("tools").querySelectorAll(".tool").forEach(b=>b.onclick=()=>{const id=b.dataset.id;if(!unlocked(id)){toast("🔒 Сначала пройди предыдущий этап"+(BKEYS.includes(id)?" (журнал)":""));return;}show(id);});
+  const n=STEPS.filter(s=>S.done[s.id]).length,pc=Math.round(n/STEPS.length*100);
+  $("progTxt").textContent="звук "+pc+"%";$("fuel").style.width=pc+"%";
+}
+const VIEWS={};
+function show(id){
+  if(!unlocked(id))id="theory";
+  S.cur=id;save();$("fileName").textContent="mission_01 / "+allSteps().find(s=>s.id===id).file;renderTools();
+  clearInterval(window.__qt);VIEWS[id]();syncProgress();scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+}
+function next(id){if(BKEYS.includes(id))return null;const i=STEPS.findIndex(s=>s.id===id);return STEPS[i+1];}
+function finishStation(id,pts){S.score[id]=Math.min(MAXP[id],pts);S.done[id]=true;save();renderTools();syncProgress();}
+function stars(id){if(S.score[id]==null)return"—";const r=S.score[id]/MAXP[id];return r>=.99?"⭐⭐⭐":r>=.6?"⭐⭐☆":r>0?"⭐☆☆":"☆☆☆";}
+function nextMainId(){const s=STEPS.find(x=>!S.done[x.id]&&unlocked(x.id));return s?s.id:"fin";}
+function doneCard(id){const nx=next(id);const bonus=!nx;
+  const go=bonus?`<button class="btn" type="button" onclick="show('${nextMainId()}')">↩ Вернуться к заданиям</button>`:`<button class="btn" type="button" onclick="show('${nx.id}')">Дальше: ${nx.label} →</button>`;
+  return `<div class="card finish-theory"><div class="step-tag" style="color:${bonus?'#FFD36B':'var(--cyan)'}">✓ ${bonus?'БОНУС ПОЛУЧЕН':'ЗАДАНИЕ ВЫПОЛНЕНО'}</div><div class="stars">${stars(id)}</div>
+    <h3>${NAMES[id]}: ${S.score[id]} из ${MAXP[id]} баллов</h3><div class="row">${go}</div></div>`;}
+function head(n,tag,title,lead,bonus){return `<div class="sec-head"><div class="step-tag">${bonus?'⭐ БОНУСНОЕ ЗАДАНИЕ':'ЭТАП '+n+' ИЗ '+STEPS.length}${tag?' · '+tag:''}${bonus?'<span class="bonus-tag">+ до '+MAXP[bonus]+' б.</span>':''}</div><h2>${title}</h2><p class="lead">${lead}</p></div>`;}
+function shuffle(a,seed){a=a.slice();let s=seed||1;for(let i=a.length-1;i>0;i--){s=(s*9301+49297)%233280;const j=Math.floor(s/233280*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function seqQuiz(o){ /* последовательность вопросов с одной попыткой: o={key,items,ask(i),answer(i),why(i),choices(i)->[[val,label]],title,lead,n,bonus} */
+  const A=S.part[o.key]||(S.part[o.key]=[]);const top=head(o.n,o.tag,o.title,o.lead,o.bonus);
+  const dots=`<div class="dotsbar">${o.items.map((w,i)=>`<i class="${i<A.length?(A[i]===o.answer(i)?'ok':'no'):i===A.length?'cur':''}"></i>`).join("")}</div>`;
+  if(S.done[o.key]||A.length>=o.items.length){if(!S.done[o.key])finishStation(o.key,(o.score||(x=>x))(A.filter((a,i)=>a===o.answer(i)).length));
+    $("sheet").innerHTML=top+`<div class="card">${dots}<p class="task-text">Верно: ${A.filter((a,i)=>a===o.answer(i)).length} из ${o.items.length}.</p></div>`+doneCard(o.key);return;}
+  const i=A.length;
+  $("sheet").innerHTML=top+`<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">${o.unit||'вопрос'} <b>${i+1}</b> из ${o.items.length}</span>${dots}</div>
+    ${o.timer?`<div class="qtimer"><i id="qtb" style="width:100%"></i></div>`:""}
+    ${o.ask(i)}<div class="choices" id="sq">${o.choices(i).map(c=>`<button class="choice" type="button" data-k="${esc(c[0])}">${c[1]}</button>`).join("")}</div><div id="sqfb"></div></div>`;
+  const ans=o.answer(i);
+  function decide(v,b){clearInterval(window.__qt);const ok=v===ans;A.push(v);save();
+    document.querySelectorAll("#sq .choice").forEach(x=>{x.disabled=true;if(x.dataset.k===String(ans))x.classList.add("right");});
+    if(b&&!ok)b.classList.add("wrong");
+    $("sqfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${v==="__time"?"Время вышло! ":""}${o.why(i)}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="sqn">${A.length>=o.items.length?'Завершить':'Дальше →'}</button></div>`;
+    $("sqn").onclick=()=>seqQuiz(o);$("sqn").focus();}
+  document.querySelectorAll("#sq .choice").forEach(b=>b.onclick=()=>decide(b.dataset.k,b));
+  if(o.timer){const end=Date.now()+o.timer*1000;window.__qt=setInterval(()=>{const l=end-Date.now();const el=$("qtb");if(el)el.style.width=Math.max(0,l/(o.timer*1000)*100)+"%";if(l<=0)decide("__time",null);},100);}
+}
+function orderWidget(box,items,order,locked){ /* items: [{id,t,extra}] order: массив id */
+  box.innerHTML=`<div class="olist">${order.map((id,k)=>{const it=items.find(x=>x.id===id);return `<div class="orow" data-id="${id}"><span>${it.t}</span><span class="db">${locked&&it.extra?it.extra:""}</span>
+    <button type="button" data-u="${k}" ${locked||k===0?"disabled":""} aria-label="выше">↑</button><button type="button" data-d="${k}" ${locked||k===order.length-1?"disabled":""} aria-label="ниже">↓</button></div>`;}).join("")}</div>`;
+  if(locked)return;
+  box.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const k=+b.dataset.u;[order[k-1],order[k]]=[order[k],order[k-1]];save();orderWidget(box,items,order);});
+  box.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{const k=+b.dataset.d;[order[k+1],order[k]]=[order[k],order[k+1]];save();orderWidget(box,items,order);});
+}
+
+/* ================= БОРТОВОЙ ЖУРНАЛ ================= */
+VIEWS.theory=function(){
+ $("sheet").innerHTML=head(1,"🛰 БОРТОВОЙ ЖУРНАЛ","Акустические системы и наушники",
+  'Звукоинженер, изучи журнал. Всё в <b>жёлтой рамке</b> перепиши в тетрадь. Звук включать не нужно!')+`
+ <div class="card"><div class="step-tag">ШАГ 1 · ЧТО ТАКОЕ ЗВУК</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+    <p>Тема: «Акустические системы и наушники — слушаем вместе или отдельно?»</p>
+    <p><mark>Звук</mark> — это колебания воздуха. Динамик колеблется, толкает воздух, и колебания доходят до уха.</p>
+    <p><mark>Высота звука</mark> — частота колебаний, измеряется в <mark>герцах (Гц)</mark>. Человек слышит примерно <mark>от 20 до 20 000 Гц</mark>.</p>
+    <p><mark>Громкость</mark> измеряют в <mark>децибелах (дБ)</mark>. Звук громче <mark>85 дБ</mark> при долгом прослушивании вредит слуху.</p></div>
+   <canvas class="wave" id="thWave" width="900" height="170" aria-label="Рисунок звуковой волны"></canvas>
+   <p class="lead" style="margin:0">Выше волна — громче звук. Чаще волны — выше звук.</p></div>
+ <div class="card"><div class="step-tag">ШАГ 2 · СЛУШАЕМ ВМЕСТЕ: АКУСТИЧЕСКИЕ СИСТЕМЫ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+    <p><mark>Акустическая система (колонки)</mark> — звук слышат все в комнате.</p>
+    <ul><li><mark>2.0</mark> — две колонки (левая и правая);</li><li><mark>2.1</mark> — две колонки + <mark>сабвуфер</mark> (низкие звуки, «бас»);</li>
+    <li><mark>5.1</mark> — пять колонок + сабвуфер: объёмный звук, как в кинотеатре.</li></ul>
+    <p><mark>Моно</mark> — один канал. <mark>Стерео</mark> — два канала: левый (L) и правый (R).</p></div></div>
+ <div class="card"><div class="step-tag">ШАГ 3 · СЛУШАЕМ ОТДЕЛЬНО: НАУШНИКИ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+    <p>Виды наушников: <mark>вкладыши</mark>, <mark>внутриканальные</mark> («затычки»), <mark>накладные</mark>, <mark>полноразмерные</mark>. <mark>Гарнитура</mark> = наушники + микрофон.</p>
+    <p><mark>ANC</mark> — активное шумоподавление: наушники «гасят» шум вокруг.</p></div></div>
+ <div class="card"><div class="step-tag">ШАГ 4 · ПОДКЛЮЧЕНИЕ</div>
+   ${panelSVG(false,true)}
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+    <p>Проводное подключение: разъём <mark>3,5 мм</mark> («джек») или <mark>USB</mark>. Беспроводное: <mark>Bluetooth</mark>.</p>
+    <p>Цвета гнёзд: <mark>зелёное</mark> — наушники и колонки (выход звука), <mark>розовое</mark> — микрофон, <mark>голубое</mark> — линейный вход (звук от другого устройства в компьютер).</p>
+    <p>Если звука нет — проверь: значок звука, громкость, <mark>устройство вывода</mark> (значок динамика 🔊 на панели задач), гнездо, Bluetooth.</p></div></div>
+ <div class="card"><div class="step-tag">ШАГ 5 · ХАРАКТЕРИСТИКИ И БЕЗОПАСНОСТЬ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+    <ul><li><mark>Вт</mark> — мощность колонок (насколько громко могут играть);</li><li><mark>Гц</mark> — частотный диапазон;</li>
+    <li><mark>ч</mark> — время работы от батареи; <mark>Mic</mark> — есть микрофон.</li></ul>
+    <p>Правило <mark>60/60</mark>: не громче 60 % и не дольше 60 минут подряд. Не делись вкладышами (гигиена).</p></div></div>
+ <div class="card finish-theory"><h3>Готов(а) к миссии?</h3>
+   <label class="check"><input type="checkbox" id="copied"> Я изучил(а) журнал и переписал(а) все жёлтые блоки в тетрадь</label>
+   <div class="row"><button class="btn" type="button" id="goNext" disabled>🔌 Перейти к заданию 1 →</button></div></div>`;
+  drawWave($("thWave"),3,3,true);
+  const cb=$("copied"),nx=$("goNext");cb.checked=!!S.done.theory;nx.disabled=!cb.checked;cb.onchange=()=>nx.disabled=!cb.checked;
+  nx.onclick=()=>{if(!S.done.theory){S.done.theory=true;save();toast("✓ Журнал изучен. Задания и бонусы открыты!");}show("q1");};
+};
+function drawWave(cv,amp,freq,anim,target){
+  const c=cv.getContext("2d");let t0=performance.now();
+  function frame(now){const W=cv.width,H=cv.height;c.clearRect(0,0,W,H);
+    c.strokeStyle="rgba(255,255,255,.08)";c.beginPath();c.moveTo(0,H/2);c.lineTo(W,H/2);c.stroke();
+    const line=(a,f,col,dash,ph)=>{c.setLineDash(dash||[]);c.strokeStyle=col;c.lineWidth=3;c.beginPath();
+      for(let x=0;x<=W;x+=3){const y=H/2-Math.sin(x/W*Math.PI*2*f+ph)*a*14;x?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();c.setLineDash([]);};
+    if(target)line(target[0],target[1],"rgba(255,211,107,.9)",[8,8],0);
+    line(amp,freq,"#45D3FF",null,anim&&!reduce?(now-t0)/300:0);
+    if(anim&&!reduce&&cv.isConnected)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+}
+
+/* ================= ЗАДАНИЕ 1: ПОДКЛЮЧИ ПРАВИЛЬНО ================= */
+function panelSVG(clickable,labels){
+  const p=(id,el,lbl,x)=>`<g class="${clickable?'port':''}" data-p="${id}"><rect x="${x-46}" y="56" width="92" height="104" rx="10" fill="rgba(255,255,255,0.001)"/>${el}${labels?`<text x="${x}" y="150" fill="#A3A9D9" font-family="monospace" font-size="13" text-anchor="middle">${lbl}</text>`:""}</g>`;
+  return `<svg class="panelsvg" viewBox="0 0 640 170" role="img" aria-label="Задняя панель компьютера">
+    <rect x="4" y="4" width="632" height="162" rx="14" fill="#0F1230" stroke="#2E3474" stroke-width="2"/>
+    <text x="20" y="28" fill="#5d6aa8" font-family="monospace" font-size="12">ЗАДНЯЯ ПАНЕЛЬ КОМПЬЮТЕРА</text>
+    ${p("green",'<circle cx="90" cy="90" r="26" fill="#2EE59D"/><circle cx="90" cy="90" r="9" fill="#0B0D24"/>',"зелёное",90)}
+    ${p("pink",'<circle cx="190" cy="90" r="26" fill="#FF7AB6"/><circle cx="190" cy="90" r="9" fill="#0B0D24"/>',"розовое",190)}
+    ${p("blue",'<circle cx="290" cy="90" r="26" fill="#5AB8FF"/><circle cx="290" cy="90" r="9" fill="#0B0D24"/>',"голубое",290)}
+    ${p("usb",'<rect x="390" y="72" width="70" height="36" rx="5" fill="#C9CEF5"/><rect x="400" y="82" width="50" height="10" fill="#0B0D24"/>',"USB",425)}
+    ${p("hdmi",'<path d="M510 74h96v20l-10 14h-76l-10-14z" fill="#8a90c8"/><rect x="522" y="82" width="72" height="8" fill="#0B0D24"/>',"HDMI",558)}
+  </svg>`;
+}
+const Q1=[
+ {dev:"🎧 Наушники (штекер 3,5 мм)",a:"green",why:"Наушники и колонки — в зелёное гнездо (выход звука)."},
+ {dev:"🎤 Микрофон (штекер 3,5 мм)",a:"pink",why:"Микрофон — в розовое гнездо."},
+ {dev:"🎧🎤 Гарнитура с разъёмом USB",a:"usb",why:"У этой гарнитуры штекер USB — значит, в порт USB."},
+ {dev:"🎹 Синтезатор: записать его звук в компьютер",a:"blue",why:"Звук от другого устройства в компьютер — в голубое гнездо (линейный вход)."}
+];
+VIEWS.q1=function(){
+  const P=S.part.q1||(S.part.q1={i:0,pts:0,miss:false});
+  const top=head(2,"🔌 ЗАДАНИЕ 1","Подключи правильно",'Куда вставить штекер? Нажми на нужное гнездо. Если ошибёшься — штекер «отскочит» с подсказкой; балл даётся, только если вставил с первого раза.');
+  if(S.done.q1){$("sheet").innerHTML=top+doneCard("q1");return;}
+  if(P.i>=Q1.length){finishStation("q1",P.pts);$("sheet").innerHTML=top+doneCard("q1");return;}
+  const q=Q1[P.i];
+  $("sheet").innerHTML=top+`<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">устройство <b>${P.i+1}</b> из ${Q1.length}</span><span class="counter">баллы: <b>${P.pts}</b></span></div>
+    <div class="row"><span class="plug">${q.dev}</span></div>${panelSVG(true,true)}<div id="q1fb"></div></div>`;
+  document.querySelectorAll(".port").forEach(g=>g.onclick=()=>{
+    if(g.dataset.p===q.a){if(!P.miss)P.pts++;P.i++;P.miss=false;save();
+      $("q1fb").innerHTML=`<div class="fb ok"><span class="m">✓ щёлк!</span><span>${q.why}</span></div><div class="row" style="margin-top:12px"><button class="btn" type="button" id="q1n">${P.i>=Q1.length?'Завершить задание':'Следующее устройство →'}</button></div>`;
+      document.querySelectorAll(".port").forEach(x=>x.onclick=null);$("q1n").onclick=VIEWS.q1;}
+    else{P.miss=true;save();g.animate&&g.animate([{transform:"translateY(0)"},{transform:"translateY(-10px)"},{transform:"translateY(0)"}],{duration:300});
+      $("q1fb").innerHTML=`<div class="fb no"><span class="m">✗ не подходит</span><span>Штекер отскочил! Подсказка: ${q.a==="usb"?"посмотри на форму штекера — он плоский.":"вспомни цвета гнёзд из журнала."}</span></div>`;}
+  });
+};
+
+/* ================= ЗАДАНИЕ 2: ВМЕСТЕ ИЛИ ОТДЕЛЬНО ================= */
+const DEV=[["spk","🔊 Колонки"],["buds","🎧 Беспроводные вкладыши"],["anc","🎧 Наушники с ANC"],["set","🎧🎤 Гарнитура"]];
+const Q2=[
+ {t:"🌙 Ночь, все дома спят, а ты хочешь досмотреть фильм.",a:"buds",why:"Ночью слушаем отдельно — в наушниках, чтобы никого не разбудить."},
+ {t:"🪩 Дискотека в классе.",a:"spk",why:"Музыку для всех — через колонки."},
+ {t:"💻 Онлайн-урок: нужно отвечать учителю.",a:"set",why:"Нужен микрофон — значит, гарнитура."},
+ {t:"🚌 Шумный автобус, хочешь послушать аудиокнигу.",a:"anc",why:"Шумоподавление (ANC) убирает шум — не нужно делать громче."},
+ {t:"🎬 Смотрим фильм всей семьёй.",a:"spk",why:"Вместе — через колонки (например, 5.1)."},
+ {t:"🏃 Пробежка в парке.",a:"buds",why:"Лёгкие вкладыши без проводов. ANC на улице опасен — не услышишь машины и велосипеды."}
+];
+VIEWS.q2=()=>seqQuiz({key:"q2",n:3,tag:"🎧 ЗАДАНИЕ 2",title:"Вместе или отдельно?",lead:"Выбери лучшее устройство для каждой ситуации. Одна попытка.",unit:"ситуация",
+  items:Q2,ask:i=>`<p class="task-text" style="font-size:20px">${Q2[i].t}</p>`,answer:i=>Q2[i].a,why:i=>Q2[i].why,choices:()=>DEV});
+
+/* ================= ЗАДАНИЕ 3: ДЕЦИБЕЛОМЕТР ================= */
+const DB=[{id:"w",t:"🤫 Шёпот",d:30},{id:"r",t:"🗣 Обычный разговор",d:60},{id:"v",t:"🧹 Пылесос",d:75},{id:"h",t:"🎧 Наушники на максимуме",d:100},{id:"c",t:"🎸 Рок-концерт",d:110},{id:"p",t:"✈ Взлёт самолёта рядом",d:130}];
+VIEWS.q3=function(){
+  const P=S.part.q3||(S.part.q3={order:shuffle(DB.map(x=>x.id),5),tries:0});
+  const top=head(4,"📊 ЗАДАНИЕ 3","Децибелометр",'Расставь звуки от <b>самого тихого</b> (сверху) к <b>самому громкому</b> (снизу) стрелками ↑↓. Две проверки; балл — за каждый звук на своём месте.');
+  if(S.done.q3){$("sheet").innerHTML=top+`<div class="card"><div id="olist"></div>${scale()}</div>`+doneCard("q3");orderWidget($("olist"),DB.map(x=>({...x,extra:x.d+" дБ"})),DB.map(x=>x.id),true);return;}
+  $("sheet").innerHTML=top+`<div class="card"><div id="olist"></div><div class="row"><button class="btn" type="button" id="q3c">Проверить (${2-P.tries})</button></div><div id="q3fb"></div></div>`;
+  orderWidget($("olist"),DB,P.order);
+  $("q3c").onclick=()=>{P.tries++;save();const ok=P.order.filter((id,k)=>DB[k].id===id).length;
+    document.querySelectorAll(".orow").forEach((r,k)=>r.classList.add(r.dataset.id===DB[k].id?"ok":"no"));
+    if(ok===6||P.tries>=2){finishStation("q3",ok);
+      $("sheet").innerHTML=top+`<div class="card"><p class="task-text">Правильный порядок с громкостью в децибелах:</p><div id="olist"></div>${scale()}
+        <div class="fb ${ok===6?'ok':'info'}"><span class="m">${ok}/6</span><span>Всё, что громче 85 дБ, при долгом прослушивании вредит слуху. Наушники на максимуме — уже опасная зона!</span></div></div>`+doneCard("q3");
+      orderWidget($("olist"),DB.map(x=>({...x,extra:x.d+" дБ"})),DB.map(x=>x.id),true);}
+    else{$("q3c").textContent="Проверить (1)";$("q3fb").innerHTML=`<div class="fb no"><span class="m">${ok}/6</span><span>Зелёные — на месте, красные — переставь. Осталась одна проверка.</span></div>`;
+      setTimeout(()=>{document.querySelectorAll(".orow").forEach(r=>r.classList.remove("ok","no"));},2500);}
+  };
+  function scale(){return `<div style="margin-top:14px"><div class="step-tag">ШКАЛА ГРОМКОСТИ</div><div class="dbscale">${[0,30,60,85,110,140].map(v=>`<span style="left:${v/140*100}%">${v}${v===85?' ⚠':''}</span>`).join("")}</div><div style="height:18px"></div></div>`;}
+};
+
+/* ================= ЗАДАНИЕ 4: МАСТЕР РЕМОНТА ================= */
+const BASE=[["vol","🔊","Значок звука","включён"],["lvl","🎚","Громкость","45 %"],["out","🖥","Устройство вывода","Наушники"],["jack","🔌","Штекер наушников","в зелёном гнезде"]];
+const Q4=[
+ {t:"Миша: «В наушниках тишина!»",fault:"vol",val:"🔇 выключен",why:"Звук выключен (значок перечёркнут). Нажми на значок, чтобы включить."},
+ {t:"Аня: «Фильм идёт, а звука нет».",fault:"lvl",val:"0 %",why:"Громкость на нуле — передвинь ползунок."},
+ {t:"Дима: «Наушники подключены, а звук идёт в монитор».",fault:"out",val:"Монитор (HDMI)",why:"Выбрано не то устройство вывода. Нажми 🔊 на панели задач и выбери наушники."},
+ {t:"Лена: «Подключила наушники, но не слышу ничего».",fault:"jack",val:"в розовом гнезде",why:"Розовое — для микрофона! Наушники — в зелёное."}
+];
+VIEWS.q4=function(){
+  const A=S.part.q4||(S.part.q4=[]);
+  const top=head(5,"🛠 ЗАДАНИЕ 4","Мастер ремонта: нет звука!",'Друзья просят помочь. Посмотри на настройки и <b>нажми на ту, где поломка</b>. Одна попытка на каждый случай.');
+  if(S.done.q4||A.length>=Q4.length){if(!S.done.q4)finishStation("q4",A.filter((a,i)=>a===Q4[i].fault).length);$("sheet").innerHTML=top+doneCard("q4");return;}
+  const i=A.length,q=Q4[i];
+  $("sheet").innerHTML=top+`<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">случай <b>${i+1}</b> из ${Q4.length}</span></div>
+    <p class="task-text" style="font-size:20px">${q.t}</p>
+    <div class="mock" id="mk">${shuffle(BASE,i+3).map(b=>`<button class="mi" type="button" data-f="${b[0]}"><span class="ic">${b[0]===q.fault&&b[0]==="vol"?"🔇":b[1]}</span>${b[2]}<span class="v">${b[0]===q.fault?q.val:b[3]}</span></button>`).join("")}</div><div id="q4fb"></div></div>`;
+  document.querySelectorAll("#mk .mi").forEach(b=>b.onclick=()=>{const ok=b.dataset.f===q.fault;A.push(b.dataset.f);save();
+    document.querySelectorAll("#mk .mi").forEach(x=>{x.disabled=true;if(x.dataset.f===q.fault)x.classList.add("right");});if(!ok)b.classList.add("wrong");
+    $("q4fb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${q.why}</span></div><div class="row" style="margin-top:12px"><button class="btn" type="button" id="q4n">${A.length>=Q4.length?'Завершить задание':'Следующий случай →'}</button></div>`;
+    $("q4n").onclick=VIEWS.q4;});
+};
+
+/* ================= ЗАДАНИЕ 5: РАСШИФРУЙ КОРОБКУ ================= */
+const BOX=[["hz","20–20 000 Hz","какие частоты (высоту звука) воспроизводят"],["bt","Bluetooth 5.3","беспроводное подключение"],["anc","ANC","активное шумоподавление"],
+ ["h","40 ч","сколько работают от батареи"],["j","3,5 мм","разъём для проводного подключения"],["mic","Mic","встроенный микрофон"]];
+VIEWS.q5=function(){
+  const P=S.part.q5||(S.part.q5={sel:{}});
+  const top=head(6,"📦 ЗАДАНИЕ 5","Расшифруй коробку",'На коробке наушников написаны характеристики. Для каждой надписи выбери, что она значит. Одна проверка, 1 балл за каждую.');
+  if(S.done.q5){$("sheet").innerHTML=top+doneCard("q5");return;}
+  const opts=shuffle(BOX.map(b=>b[0]),11);
+  $("sheet").innerHTML=top+`<div class="card"><div class="box">
+    <div class="pack"><div class="big">🎧</div><b style="font-family:var(--display)">SoundWave X</b><div class="lbls">${BOX.map(b=>`<b>${b[1]}</b>`).join("")}</div></div>
+    <div class="match">${BOX.map(b=>`<label><code>${b[1]}</code><select data-k="${b[0]}"><option value="">— что это? —</option>${opts.map(o=>`<option value="${o}" ${P.sel[b[0]]===o?"selected":""}>${BOX.find(x=>x[0]===o)[2]}</option>`).join("")}</select></label>`).join("")}</div>
+    </div><div class="row"><button class="btn" type="button" id="q5c">Проверить</button></div><div id="q5fb"></div></div>`;
+  document.querySelectorAll(".match select").forEach(s=>s.onchange=()=>{P.sel[s.dataset.k]=s.value;save();});
+  $("q5c").onclick=()=>{if(BOX.some(b=>!P.sel[b[0]])){$("q5fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Выбери значение для каждой надписи.</span></div>`;return;}
+    let ok=0;document.querySelectorAll(".match select").forEach(s=>{const r=s.value===s.dataset.k;if(r)ok++;s.classList.add(r?"ok":"no");s.disabled=true;});
+    finishStation("q5",ok);$("q5fb").innerHTML=`<div class="fb ${ok===6?'ok':'info'}"><span class="m">${ok}/6</span><span>${BOX.map(b=>`<b>${b[1]}</b> — ${b[2]}`).join("; ")}.</span></div>`+doneCard("q5");};
+};
+
+/* ================= ЗАДАНИЕ 6: ТЕХНИЧЕСКОЕ ЗАДАНИЕ (ИИ) ================= */
+const CAT=[
+ {id:"p1",i:"🎧",n:"Вкладыши «Bass Mini»",d:"проводные, 3,5 мм, без микрофона",pr:150},
+ {id:"p2",i:"🎧🎤",n:"Гарнитура «EduTalk USB»",d:"накладные, микрофон с шумоподавлением, USB",pr:450},
+ {id:"p3",i:"🎧",n:"Наушники «Silence Pro»",d:"полноразмерные, Bluetooth 5.3, ANC, 40 ч, микрофон",pr:1900},
+ {id:"p4",i:"🔊",n:"Колонки «Desk 2.0»",d:"2 × 3 Вт, питание USB, 3,5 мм",pr:350},
+ {id:"p5",i:"🔊🔊",n:"Акустика «Cinema 5.1»",d:"5 колонок + сабвуфер, 120 Вт, объёмный звук",pr:3200},
+ {id:"p6",i:"🎧",n:"Вкладыши «Run Buds»",d:"Bluetooth, влагозащита, микрофон, 6 ч",pr:700}
+];
+const TZ=[
+ {k:"o1",who:"Учительница",t:"«Мне нужно проводить онлайн-уроки: я должна хорошо слышать учеников, а они — меня. Бюджет — до 600 лей.»",a:"p2"},
+ {k:"o2",who:"Папа Андрея",t:"«Хотим смотреть фильмы дома всей семьёй, чтобы звук был объёмный, как в кино. Бюджет — до 4000 лей.»",a:"p5"}
+];
+VIEWS.q6=function(){
+  const P=S.part.q6||(S.part.q6={pick:{}});const ro=!!S.done.q6;
+  const top=head(7,"📝 ЗАДАНИЕ 6","Техническое задание",'Ты — консультант магазина. Прочитай задание клиента, <b>выбери товар</b> из каталога (1 балл) и <b>объясни выбор</b> 2–3 предложениями: какие характеристики подходят и почему (до 2 баллов, проверит ИИ).');
+  $("sheet").innerHTML=top+TZ.map(z=>`<div class="card"><div class="step-tag">КЛИЕНТ: ${z.who.toUpperCase()}</div><div class="client">${z.t}</div>
+    <div class="catalog" data-z="${z.k}">${CAT.map(p=>`<button class="prod${ro?(p.id===z.a?' right':P.pick[z.k]===p.id?' wrong':''):''}" type="button" data-p="${p.id}" aria-pressed="${P.pick[z.k]===p.id}" ${ro?"disabled":""}><span class="pi">${p.i}</span><b>${p.n}</b><small>${p.d}</small><span class="pr">${p.pr} лей</span></button>`).join("")}</div>
+    <textarea class="ans" data-k="${z.k}" maxlength="1200" ${ro?"readonly":""} placeholder="Почему этот товар подходит клиенту? Какие характеристики важны?">${esc(S.open[z.k]?.replace(/^Выбор: [^.]*\. /,"")||"")}</textarea><div class="chars" id="ch_${z.k}"></div></div>`).join("")+
+    (ro?doneCard("q6"):`<div class="card finish-theory"><h3>Готово?</h3><p style="margin:0;color:#BFD6FF">После сохранения изменить выбор и ответы будет нельзя.</p>
+     <div class="row"><button class="btn" type="button" id="q6s">💾 Сохранить и перейти к Аудиобоссу</button></div><div id="q6fb"></div></div>`);
+  const cnt=t=>{const n=t.value.trim().length;$("ch_"+t.dataset.k).textContent=n+" символов"+(n<40?" · напиши подробнее":"");};
+  document.querySelectorAll("textarea.ans").forEach(t=>{cnt(t);t.oninput=()=>{P.text=P.text||{};P.text[t.dataset.k]=t.value;compose();save();cnt(t);clearTimeout(t._s);t._s=setTimeout(syncProgress,1500);};});
+  if(ro)return;
+  document.querySelectorAll(".catalog").forEach(c=>c.querySelectorAll(".prod").forEach(b=>b.onclick=()=>{P.pick[c.dataset.z]=b.dataset.p;compose();save();
+    c.querySelectorAll(".prod").forEach(x=>x.setAttribute("aria-pressed",x===b));}));
+  function compose(){TZ.forEach(z=>{const p=CAT.find(x=>x.id===P.pick[z.k]);const txt=(P.text&&P.text[z.k])!=null?P.text[z.k]:(S.open[z.k]||"").replace(/^Выбор: [^.]*\. /,"");
+    S.open[z.k]=(p?`Выбор: ${p.n} (${p.d}, ${p.pr} лей). `:"")+txt;});}
+  $("q6s").onclick=()=>{
+    if(TZ.some(z=>!P.pick[z.k])){$("q6fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Выбери товар для каждого клиента.</span></div>`;return;}
+    const short=TZ.filter(z=>((P.text&&P.text[z.k])||"").trim().length<25);
+    if(short.length&&!confirm("Объяснение очень короткое — за него могут поставить мало баллов. Всё равно сохранить?"))return;
+    compose();finishStation("q6",TZ.filter(z=>P.pick[z.k]===z.a).length);VIEWS.q6();};
+};
+
+/* ================= ЗАДАНИЕ 7: АУДИОБОСС ================= */
+const BOSS=[
+ {q:"В какое гнездо подключают наушники со штекером 3,5 мм?",o:["Зелёное","Розовое","Голубое","HDMI"],a:0,w:"Зелёное — выход звука."},
+ {q:"Человек слышит звуки частотой примерно…",o:["от 2 до 200 Гц","от 20 до 20 000 Гц","от 200 до 2 000 000 Гц","от 85 до 130 дБ"],a:1,w:"От 20 до 20 000 Гц."},
+ {q:"Что означает ANC на коробке наушников?",o:["Автоматическая настройка звука","Активное шумоподавление","Аккумулятор на 100 часов","Аналоговый разъём"],a:1,w:"ANC — активное шумоподавление."},
+ {q:"Правило 60/60 — это…",o:["60 % громкости и не дольше 60 минут","60 дБ и 60 Гц","60 песен в день","60 минут сна после музыки"],a:0,w:"Не громче 60 % и не дольше 60 минут подряд."},
+ {q:"Акустическая система 5.1 — это…",o:["5 сабвуферов и 1 колонка","5 колонок и сабвуфер","5 наушников и 1 микрофон","колонка мощностью 5,1 Вт"],a:1,w:"Пять колонок + сабвуфер."},
+ {q:"Стерео — это…",o:["один канал","два канала: левый и правый","звук без проводов","звук с микрофоном"],a:1,w:"Стерео — два канала (L и R)."},
+ {q:"Беспроводные наушники не подключаются. Что проверить первым?",o:["Включён ли Bluetooth","Цвет гнезда","Разрешение экрана","Мощность колонок в Вт"],a:0,w:"Сначала — включён ли Bluetooth и заряжены ли наушники."},
+ {q:"Звук громче скольких децибел при долгом прослушивании вредит слуху?",o:["30 дБ","50 дБ","85 дБ","20 000 дБ"],a:2,w:"Опасная зона — громче 85 дБ."}
+];
+VIEWS.q7=()=>seqQuiz({key:"q7",n:8,tag:"🏆 ФИНАЛ",title:"Аудиобосс",lead:"Финальная проверка по всей теме. На каждый вопрос — <b>20 секунд</b> и одна попытка!",timer:20,
+  items:BOSS,ask:i=>`<p class="task-text" style="font-size:20px">${BOSS[i].q}</p>`,answer:i=>String(BOSS[i].a),why:i=>BOSS[i].w,choices:i=>BOSS[i].o.map((t,j)=>[String(j),t])});
+
+/* ================= БОНУС 1: РАССТАВЬ 5.1 ================= */
+const SPK=[["FL","Фронтальная левая"],["C","Центральная"],["FR","Фронтальная правая"],["SL","Тыловая левая"],["SR","Тыловая правая"],["SW","Сабвуфер"]];
+const SPOTS=[["s1",120,95,"FL"],["s2",280,95,"C"],["s3",440,95,"FR"],["s4",90,290,"SL"],["s5",470,290,"SR"],["s6",480,175,"SW"]];
+VIEWS.b1=function(){
+  const P=S.part.b1||(S.part.b1={place:{},cur:null});
+  const top=head(0,"","Расставь колонки 5.1",'Выбери колонку внизу и нажми на кружок в комнате, куда её поставить. Зритель сидит на диване, телевизор — впереди. 1 балл за каждую верную колонку.',"b1");
+  if(S.done.b1){$("sheet").innerHTML=top+`<div class="card">${room(true)}</div>`+doneCard("b1");return;}
+  $("sheet").innerHTML=top+`<div class="card">${room(false)}<div class="chips" id="spk">${SPK.map(s=>`<button type="button" data-s="${s[0]}" aria-pressed="${P.cur===s[0]}" ${Object.values(P.place).includes(s[0])?"disabled":""}>${s[1]}</button>`).join("")}</div>
+    <div class="row"><button class="btn" type="button" id="b1c">Проверить</button><button class="reset" type="button" id="b1r">↺ сначала</button></div><div id="b1fb"></div></div>`;
+  document.querySelectorAll("#spk button").forEach(b=>b.onclick=()=>{P.cur=b.dataset.s;save();VIEWS.b1();});
+  document.querySelectorAll(".spot").forEach(g=>g.onclick=()=>{if(!P.cur){toast("Сначала выбери колонку внизу");return;}P.place[g.dataset.s]=P.cur;P.cur=null;save();VIEWS.b1();});
+  $("b1r").onclick=()=>{P.place={};P.cur=null;save();VIEWS.b1();};
+  $("b1c").onclick=()=>{if(Object.keys(P.place).length<6){$("b1fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Расставь все 6 колонок.</span></div>`;return;}
+    const ok=SPOTS.filter(s=>P.place[s[0]]===s[3]).length;finishStation("b1",ok);VIEWS.b1();};
+  function room(res){return `<svg class="room" viewBox="0 0 560 380" role="img" aria-label="План комнаты">
+    <rect x="4" y="4" width="552" height="372" rx="16" fill="#0F1230" stroke="#2E3474" stroke-width="2"/>
+    <rect x="200" y="20" width="160" height="16" rx="4" fill="#45D3FF"/><text x="280" y="52" fill="#9BE6FF" font-family="monospace" font-size="12" text-anchor="middle">ТЕЛЕВИЗОР</text>
+    <rect x="190" y="230" width="180" height="60" rx="14" fill="#B26BFF" opacity=".55"/><text x="280" y="266" fill="#fff" font-family="monospace" font-size="13" text-anchor="middle">ДИВАН 🙂</text>
+    ${SPOTS.map(s=>{const v=P.place[s[0]];const good=res&&v===s[3];const col=res?(good?"#2EE59D":"#FF5C7A"):v?"#45D3FF":"#3a3f78";
+      return `<g class="spot" data-s="${s[0]}"><circle cx="${s[1]}" cy="${s[2]}" r="24" fill="${col}" opacity=".9"/><text x="${s[1]}" y="${s[2]+5}" fill="#0B0D24" font-family="monospace" font-weight="700" font-size="14" text-anchor="middle">${v||"?"}</text>
+      ${res&&!good?`<text x="${s[1]}" y="${s[2]+42}" fill="#7DF5C4" font-family="monospace" font-size="12" text-anchor="middle">${s[3]}</text>`:""}</g>`;}).join("")}
+    <text x="280" y="360" fill="#A3A9D9" font-family="monospace" font-size="12" text-anchor="middle">FL, FR — фронтальные · C — центр · SL, SR — тыловые · SW — сабвуфер</text></svg>`;}
+};
+
+/* ================= БОНУС 2: ЗВУКОВАЯ ВОЛНА ================= */
+const WT=[{t:"Сделай звук <b>громче</b>, а высоту оставь как есть.",a:5,f:2},{t:"Сделай звук <b>выше</b> (писк комара), но тихим.",a:1,f:5},{t:"Повтори волну по пунктиру.",a:3,f:4}];
+VIEWS.b2=function(){
+  const P=S.part.b2||(S.part.b2={i:0,pts:0,tries:0,a:3,f:2});
+  const top=head(0,"","Звуковая волна без звука",'Двигай ползунки: <b>громкость</b> меняет высоту волны (амплитуду), <b>высота звука</b> — частоту. Совмести свою волну (голубую) с жёлтой пунктирной. 2 попытки на волну.',"b2");
+  if(S.done.b2||P.i>=WT.length){if(!S.done.b2)finishStation("b2",P.pts);$("sheet").innerHTML=top+doneCard("b2");return;}
+  const w=WT[P.i];
+  $("sheet").innerHTML=top+`<div class="card"><span class="counter">волна <b>${P.i+1}</b> из 3 · баллы: <b>${P.pts}</b></span><p class="task-text">${w.t}</p>
+    <canvas class="wave" id="wv" width="900" height="170"></canvas>
+    <label class="sl">🔊 Громкость<input type="range" min="1" max="5" id="sa" value="${P.a}"><b id="sav">${P.a}</b></label>
+    <label class="sl">🎵 Высота<input type="range" min="1" max="5" id="sf" value="${P.f}"><b id="sfv">${P.f}</b></label>
+    <div class="row"><button class="btn" type="button" id="b2c">Проверить</button></div><div id="b2fb"></div></div>`;
+  const draw=()=>drawWave($("wv"),P.a,P.f,false,[w.a,w.f]);draw();
+  $("sa").oninput=e=>{P.a=+e.target.value;$("sav").textContent=P.a;save();draw();};
+  $("sf").oninput=e=>{P.f=+e.target.value;$("sfv").textContent=P.f;save();draw();};
+  $("b2c").onclick=()=>{const ok=P.a===w.a&&P.f===w.f;
+    if(ok||P.tries>=1){if(ok)P.pts++;P.i++;P.tries=0;save();
+      $("b2fb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗'}</span><span>${ok?'Совпало!':'Нужно было: громкость '+w.a+', высота '+w.f+'.'}</span></div><div class="row" style="margin-top:12px"><button class="btn" type="button" id="b2n">Дальше →</button></div>`;
+      $("b2c").disabled=true;$("b2n").onclick=VIEWS.b2;}
+    else{P.tries++;save();$("b2fb").innerHTML=`<div class="fb no"><span class="m">✗</span><span>Пока не совпадает. ${P.a!==w.a?"Посмотри на высоту волны. ":""}${P.f!==w.f?"Посчитай, сколько волн помещается.":""}</span></div>`;}};
+};
+
+/* ================= БОНУС 3: СОБЕРИ НАУШНИКИ ================= */
+const HP=[["head","оголовье"],["cup","амбушюра"],["drv","динамик"],["mic","микрофон"],["cab","кабель"],["plug","штекер"]];
+VIEWS.b3=function(){
+  const P=S.part.b3||(S.part.b3={sel:{}});
+  const top=head(0,"","Собери наушники",'Подпиши части гарнитуры: для каждой цифры выбери название. Одна проверка, 1 балл за каждую часть.',"b3");
+  const opts=shuffle(HP.map(h=>h[0]),4);
+  $("sheet").innerHTML=top+`<div class="card"><div class="box">
+    <svg class="hp" viewBox="0 0 300 300" role="img" aria-label="Схема гарнитуры">
+      <path d="M60 150 V120 a90 90 0 0 1 180 0 V150" fill="none" stroke="#B26BFF" stroke-width="16" stroke-linecap="round"/>
+      <rect x="34" y="140" width="52" height="80" rx="20" fill="#2E3474"/><rect x="214" y="140" width="52" height="80" rx="20" fill="#2E3474"/>
+      <rect x="44" y="152" width="32" height="56" rx="12" fill="#45D3FF" opacity=".7"/><circle cx="240" cy="180" r="14" fill="#9BE6FF"/>
+      <path d="M60 210 Q30 240 70 255" fill="none" stroke="#B26BFF" stroke-width="6"/><circle cx="74" cy="257" r="7" fill="#FFD36B"/>
+      <path d="M240 220 Q250 270 200 280 L150 285" fill="none" stroke="#C9CEF5" stroke-width="4"/><rect x="120" y="279" width="32" height="12" rx="3" fill="#C9CEF5"/>
+      ${[[150,30,1],[30,175,2],[240,150,3],[95,262,4],[215,262,5],[110,276,6]].map(([x,y,n])=>`<circle cx="${x}" cy="${y}" r="13" fill="#0B0D24" stroke="#FFD36B" stroke-width="2"/><text x="${x}" y="${y+5}" fill="#FFD36B" font-family="monospace" font-weight="700" font-size="14" text-anchor="middle">${n}</text>`).join("")}
+    </svg>
+    <div class="match">${HP.map((h,n)=>`<label><code>${n+1}</code><select data-k="${h[0]}" ${S.done.b3?"disabled":""}><option value="">— выбери —</option>${opts.map(o=>`<option value="${o}" ${P.sel[h[0]]===o?"selected":""}>${HP.find(x=>x[0]===o)[1]}</option>`).join("")}</select></label>`).join("")}</div>
+    </div>${S.done.b3?"":`<div class="row"><button class="btn" type="button" id="b3c">Проверить</button></div><div id="b3fb"></div>`}</div>`+(S.done.b3?doneCard("b3"):"");
+  if(S.done.b3)return;
+  document.querySelectorAll(".match select").forEach(s=>s.onchange=()=>{P.sel[s.dataset.k]=s.value;save();});
+  $("b3c").onclick=()=>{if(HP.some(h=>!P.sel[h[0]])){$("b3fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Подпиши все 6 частей.</span></div>`;return;}
+    let ok=0;document.querySelectorAll(".match select").forEach(s=>{const r=s.value===s.dataset.k;if(r)ok++;s.classList.add(r?"ok":"no");s.disabled=true;});
+    finishStation("b3",ok);$("b3fb").innerHTML=`<div class="fb ${ok===6?'ok':'info'}"><span class="m">${ok}/6</span><span>1 — оголовье, 2 — амбушюра, 3 — динамик, 4 — микрофон, 5 — кабель, 6 — штекер.</span></div>`+doneCard("b3");};
+};
+
+/* ================= БОНУС 4: BLUETOOTH ПО ПОРЯДКУ ================= */
+const BT=[{id:"a",t:"🔋 Зарядить наушники"},{id:"b",t:"💻 Включить Bluetooth на компьютере"},{id:"c",t:"🔵 Перевести наушники в режим сопряжения (мигает индикатор)"},
+ {id:"d",t:"🔍 Найти наушники в списке устройств"},{id:"e",t:"🤝 Нажать «Подключить»"},{id:"f",t:"🔊 Выбрать наушники как устройство вывода"}];
+VIEWS.b4=function(){
+  const P=S.part.b4||(S.part.b4={order:shuffle(BT.map(x=>x.id),9)});
+  const top=head(0,"","Подключи по Bluetooth",'Шаги перепутались! Расставь их по порядку стрелками ↑↓. Одна проверка: 3 балла — всё верно, 2 — 4–5 шагов на месте, 1 — 2–3 шага.',"b4");
+  if(S.done.b4){$("sheet").innerHTML=top+`<div class="card"><div id="ol"></div></div>`+doneCard("b4");orderWidget($("ol"),BT,BT.map(x=>x.id),true);return;}
+  $("sheet").innerHTML=top+`<div class="card"><div id="ol"></div><div class="row"><button class="btn" type="button" id="b4c">Проверить</button></div><div id="b4fb"></div></div>`;
+  orderWidget($("ol"),BT,P.order);
+  $("b4c").onclick=()=>{const ok=P.order.filter((id,k)=>BT[k].id===id).length;finishStation("b4",ok===6?3:ok>=4?2:ok>=2?1:0);
+    $("sheet").innerHTML=top+`<div class="card"><p class="task-text">На месте: ${ok} из 6. Правильный порядок:</p><div id="ol"></div></div>`+doneCard("b4");orderWidget($("ol"),BT,BT.map(x=>x.id),true);};
+};
+
+/* ================= БОНУС 5: ЗВУКОВОЙ ЭТИКЕТ ================= */
+const ET=[
+ {t:"Слушаю музыку на колонке в автобусе.",a:"0",w:"В общественном месте звук мешает другим — только наушники."},
+ {t:"Даю другу свои вкладыши послушать.",a:"0",w:"Вкладыши — личная вещь, это негигиенично."},
+ {t:"Слушаю на 100 % громкости весь день.",a:"0",w:"Вредит слуху — правило 60/60."},
+ {t:"На онлайн-уроке надеваю гарнитуру.",a:"1",w:"Правильно: меня слышно, а я не мешаю домашним."},
+ {t:"Снимаю наушники, когда со мной говорят.",a:"1",w:"Это вежливо."},
+ {t:"Перехожу дорогу в наушниках с ANC на полной громкости.",a:"0",w:"Опасно — не слышно машин."}
+];
+VIEWS.b5=()=>seqQuiz({key:"b5",n:0,bonus:"b5",title:"Звуковой этикет: да или нет?",lead:"Быстро реши: так можно или нельзя? На каждую карточку — <b>8 секунд</b>!",timer:8,unit:"карточка",
+  items:ET,ask:i=>`<p class="task-text" style="font-size:20px">«${ET[i].t}»</p>`,answer:i=>ET[i].a,why:i=>ET[i].w,choices:()=>[["1","✅ Можно"],["0","❌ Нельзя"]]});
+
+/* ================= ФИНИШ ================= */
+function autoTotal(keys){return keys.reduce((s,k)=>s+(S.score[k]||0),0);}
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+VIEWS.fin=function(){
+  const m=autoTotal(MAIN),b=autoTotal(BKEYS),bleft=BKEYS.filter(k=>!S.done[k]);
+  $("sheet").innerHTML=head(9,"🏁 ФИНИШ","Миссия завершена!",'Проверь баллы, отметь, как прошёл урок, и отправь отчёт учителю. Отметку учитель увидит после проверки объяснений в «Техническом задании».')+`
+  <div class="card"><div class="result"><div class="grade"><small>БАЛЛЫ</small><b style="font-size:48px">${m+b}</b><small>+ ОБЪЯСНЕНИЯ</small></div>
+    <div style="display:grid;gap:8px;min-width:0"><div class="pts">${m}<span> / ${MAXMAIN - OPENMAX} + объяснения до ${OPENMAX}</span></div>
+    <div class="counter">⭐ бонус: <b>+${b}</b> · время ≈ <b>${minutes()} мин</b> · ${esc(S.fio)}, ${esc(S.cls)}</div></div></div>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>ЗАДАНИЕ</th><th>⭐</th><th>БАЛЛЫ</th></tr></thead><tbody>
+      ${MAIN.map(k=>`<tr><td>${NAMES[k]}</td><td>${stars(k)}</td><td>${S.score[k]??"—"} / ${MAXP[k]}</td></tr>`).join("")}
+      <tr><td>Задание 6 · объяснения</td><td>🤖</td><td>проверяется / ${OPENMAX}</td></tr>
+      ${BKEYS.map(k=>`<tr><td>${NAMES[k]}</td><td>${S.done[k]?stars(k):"—"}</td><td>${S.score[k]!=null?"+"+S.score[k]:"не пройдено"}</td></tr>`).join("")}</tbody></table></div>
+    ${bleft.length?`<div class="fb info"><span class="m">⭐</span><span>Есть время? Пройди бонусные задания (слева, внизу) — они повышают балл. После бонусов нажми «Обновить результат».</span></div>`:""}</div>
+  <div class="card"><h3>Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(x=>`<button type="button" aria-pressed="${S.mood===x[1]}" data-m="${x[1]}">${x[0]} ${x[1]}</button>`).join("")}</div>
+    <div class="row"><button class="btn" type="button" id="send" ${S.mood?"":"disabled"}>${S.sent?"↻ Обновить результат":"↑ Отправить учителю"}</button>
+      <span class="counter" id="sendHint">${S.mood?"":"сначала выбери ответ выше"}</span></div>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div></div>`;
+  document.querySelectorAll("#mood button").forEach(x=>x.onclick=()=>{S.mood=x.dataset.m;save();
+    document.querySelectorAll("#mood button").forEach(y=>y.setAttribute("aria-pressed",y===x));$("send").disabled=false;$("sendHint").textContent="";});
+  $("send").onclick=sendResult;
+};
+function sentHTML(ok,msg){return ok?`<div class="sent"><span class="p">&gt;</span> audio_lab.report()<br><span class="g">✓ отчёт передан учителю</span><br><span class="p">&gt;</span> Отличная работа, звукоинженер!</div>`
+  :`<div class="sent"><span class="p">&gt;</span> audio_lab.report()<br><span class="r">✗ ${msg}</span></div>`;}
+function sendResult(){
+  const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+  const data={score:S.score,open:S.open,minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:STEPS.length};
+  const ok=()=>{S.sent=1;S.done.fin=true;save();renderTools();$("sendOut").innerHTML=sentHTML(true);btn.disabled=false;btn.textContent="↻ Обновить результат";toast("✓ Отправлено учителю");};
+  const fail=()=>{$("sendOut").innerHTML=sentHTML(false,"Не получилось отправить. Проверь интернет и нажми ещё раз или позови учителя.");btn.disabled=false;btn.textContent="↑ Отправить учителю";};
+  if(!S.rec){fail();return;}
+  TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+}
+
+load();
+if(S.fio){openApp();}
+</script>
+</body>
+</html>
