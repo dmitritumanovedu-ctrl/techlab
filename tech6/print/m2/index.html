@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Миссия 2 · Смена в типографии · 6 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: экран входа как окно редактора поверх «проявляющейся» пиксельной картинки;
+   внутри — тёмная панель инструментов слева + белый лист с заданием справа. */
+:root{
+  --ink:#0B0D24;      /* космос */
+  --deep:#15183A;     /* панели */
+  --line:#2C3170;     /* линии */
+  --blue:#7B6CFF;     /* основной акцент (фиолетовый неон) */
+  --cyan:#45D3FF;     /* голубой неон */
+  --violet:#B26BFF;
+  --paper:#171A3F;    /* карточки */
+  --mist:#0F1230;     /* фон листа */
+  --frost:#2E3474;    /* рамки */
+  --text:#EEF0FF;
+  --muted:#A3A9D9;
+  --ok:#14B87A;
+  --warn:#FFB020;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+/* ===== СТАРТ ===== */
+#start{position:fixed;inset:0;display:grid;place-items:center;overflow:auto;
+  padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#bg{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0}
+#start::before{content:"";position:fixed;inset:0;z-index:1;
+  background:radial-gradient(ellipse at 30% 20%,rgba(33,96,255,.25),transparent 60%),linear-gradient(180deg,rgba(7,22,52,.55),rgba(7,22,52,.85))}
+.grid-ov{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(rgba(69,211,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(69,211,255,.07) 1px,transparent 1px);background-size:24px 24px}
+.win{position:relative;z-index:2;width:min(560px,100%);background:var(--paper);border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.45),0 0 60px rgba(33,96,255,.35)}
+.titlebar{display:flex;align-items:center;gap:10px;background:var(--deep);color:#CFE2FF;padding:10px 14px;font-family:var(--mono);font-size:13px}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#2A4A8A;display:block}
+.dots i:first-child{background:#FF5F57}.dots i:nth-child(2){background:#FEBC2E}.dots i:nth-child(3){background:#28C840}
+.titlebar span{opacity:.85}.titlebar b{margin-left:auto;color:var(--cyan);font-weight:600}
+.win-body{padding:26px 28px 28px;display:grid;gap:18px}
+.term{background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:14px 16px;line-height:1.7;min-height:120px}
+.term .p{color:var(--cyan)}.term .g{color:#5BE3A8}.term .c{color:#6E87B8}
+.cursor{display:inline-block;width:8px;height:15px;background:var(--cyan);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.brand{display:grid;gap:6px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:600}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--blue)}
+.sub{margin:0;color:var(--muted)}
+.fields{display:grid;grid-template-columns:1fr 150px;gap:12px}
+.field{display:grid;gap:6px;min-width:0}
+.field label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.field input,.field select{font:inherit;font-size:16px;padding:12px 14px;border:2px solid var(--frost);border-radius:10px;background:var(--mist);color:var(--text);width:100%}
+.field input:focus,.field select:focus{border-color:var(--blue);outline:none;background:#fff}
+.err{color:#D9304B;font-size:14px;font-weight:600;min-height:20px;margin:-6px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;padding:14px 22px;font-weight:800;font-size:16px;
+  background:var(--blue);color:#fff;box-shadow:0 6px 0 #133FB0,0 10px 24px rgba(33,96,255,.35);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #133FB0}
+.btn[disabled]{background:#9DB2D8;box-shadow:0 6px 0 #7E93BA;cursor:not-allowed;transform:none}
+.btn .k{font-family:var(--mono);font-weight:600;opacity:.8}
+.rules{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--muted)}
+.rules li{display:flex;gap:10px}.rules li b{font-family:var(--mono);color:var(--blue)}
+
+/* ===== ПРИЛОЖЕНИЕ ===== */
+#app{min-height:100%;display:grid;grid-template-columns:96px 1fr;grid-template-rows:auto 1fr}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--ink);color:#DDE9FF;border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.logo{font-family:var(--mono);font-weight:700;font-size:15px;color:#fff;letter-spacing:.02em}
+.logo i{font-style:normal;color:var(--cyan)}
+.file{font-family:var(--mono);font-size:12px;color:#7F98C7}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:13px;background:var(--deep);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.chip b{color:var(--cyan);font-weight:600}
+.linkbtn{background:none;border:0;color:#7F98C7;font-family:var(--mono);font-size:12px;text-decoration:underline;padding:4px}
+
+.tools{background:var(--deep);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.tool{position:relative;display:grid;justify-items:center;gap:4px;padding:10px 4px;border-radius:10px;border:1px solid transparent;background:transparent;color:#AFC4EC;font-size:11px;font-weight:700;line-height:1.2;text-align:center}
+.tool svg{width:26px;height:26px}
+.tool:hover{background:rgba(69,211,255,.08)}
+.tool[aria-current="true"]{background:var(--blue);color:#fff;box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(69,211,255,.35)}
+.tool.locked{opacity:.45}
+.tool .st{position:absolute;top:4px;right:6px;font-size:11px}
+.tool.done .st{color:var(--ok)}
+.tools .sep{height:1px;background:var(--line);margin:6px 4px}
+.preview{display:grid;gap:6px;justify-items:center;margin-top:auto;padding-top:8px}
+.preview canvas{width:72px;height:54px;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated}
+.preview small{font-family:var(--mono);font-size:10px;color:#7F98C7;text-align:center}
+
+main{background:var(--mist);min-width:0;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{max-width:920px;margin:0 auto;display:grid;gap:22px}
+.sec-head{display:grid;gap:8px}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(24px,4vw,32px);line-height:1.15;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;margin:0;line-height:1.3}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.card{background:var(--paper);border:1px solid var(--frost);border-radius:14px;padding:22px;display:grid;gap:14px;min-width:0}
+.step-tag{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.06em}
+
+/* блок «в тетрадь» */
+.note{position:relative;background:#FFFDF4;border:2px dashed #E9C46A;border-radius:12px;padding:16px 18px 16px 18px;display:grid;gap:8px}
+.note .tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;color:#9A6B00;letter-spacing:.06em;text-transform:uppercase}
+.note p{margin:0;font-size:17px;font-weight:600;color:#2A2410;max-width:65ch}
+.note ul{margin:0;padding-left:22px;font-size:17px;font-weight:600;color:#2A2410;display:grid;gap:4px}
+.note mark{background:#FFE58A;color:inherit;padding:0 3px;border-radius:3px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.vs{border-radius:12px;padding:16px;display:grid;gap:6px;border:1px solid var(--frost);background:var(--mist)}
+.vs b{font-family:var(--display);font-size:16px}
+.vs p{margin:0;color:var(--muted);font-size:15px}
+.vs .ico{font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:700}
+
+/* пиксели */
+.pix{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center}
+.pix canvas{width:100%;max-width:100%;aspect-ratio:4/3;border-radius:10px;border:1px solid var(--frost);image-rendering:pixelated;background:#000}
+.range{display:grid;gap:6px}
+.range label{font-family:var(--mono);font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+.range label b{color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.pix-txt{display:grid;gap:12px}
+.pix-txt p{margin:0}
+
+/* редактор-демо */
+.editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
+.stage{background:#0B1A3B;border-radius:12px;padding:14px;display:grid;place-items:center;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.stage canvas{max-width:100%;height:auto;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.ops{display:grid;gap:8px;align-content:start}
+.op{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;text-align:left;background:var(--mist);border:1px solid var(--frost);border-radius:10px;padding:10px 12px;color:var(--text)}
+.op:hover{border-color:var(--blue);background:#fff}
+.op svg{width:24px;height:24px;color:var(--blue)}
+.op b{display:block;font-size:15px}
+.op small{display:block;color:var(--muted);font-size:13px;line-height:1.3}
+.op.on{border-color:var(--blue);background:#E3ECFF}
+.console{grid-column:1/-1;background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:10px 14px;min-height:84px;max-height:120px;overflow:auto;line-height:1.6}
+.console .p{color:var(--cyan)}
+.reset{justify-self:start;background:none;border:1px solid var(--frost);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+.opslist{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.opcard{background:var(--mist);border:1px solid var(--frost);border-radius:12px;padding:14px;display:grid;gap:6px}
+.opcard svg{width:28px;height:28px;color:var(--blue)}
+.opcard b{font-size:15px}.opcard span{font-size:14px;color:var(--muted);line-height:1.4}
+
+.finish-theory{background:var(--deep);color:#DDE9FF;border:0}
+.finish-theory h3{color:#fff}
+.check{display:flex;gap:12px;align-items:flex-start;font-weight:600;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--cyan);margin-top:2px;flex:none}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+.locked-screen{text-align:center;justify-items:center;padding:48px 22px}
+.locked-screen .big{font-family:var(--mono);font-size:48px;color:var(--blue)}
+
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;
+  padding:12px 18px;border-radius:10px;border:1px solid var(--cyan);opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* общие для станций */
+.imgbox{background:#0B1A3B;border-radius:12px;height:220px;display:grid;place-items:center;padding:10px;position:relative;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;min-width:0}
+.imgbox canvas{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.imgbox .lbl{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:rgba(7,22,52,.75);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+.imgbox.tall{height:300px}
+.counter{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.counter b{color:var(--blue)}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.choice{display:flex;align-items:center;gap:10px;text-align:left;background:var(--mist);border:2px solid var(--frost);border-radius:10px;padding:12px 14px;color:var(--text);font-weight:700;font-size:15px;line-height:1.3}
+.choice svg{width:22px;height:22px;color:var(--blue);flex:none}
+.choice:hover:not([disabled]){border-color:var(--blue);background:#fff}
+.choice[disabled]{cursor:default}
+.choice.right{border-color:var(--ok);background:#E3F8EF}
+.choice.wrong{border-color:#E5484D;background:#FDECEE}
+.fb{border-radius:10px;padding:12px 16px;font-weight:600;display:flex;gap:10px;align-items:flex-start}
+.fb.ok{background:#E3F8EF;color:#0B6B47}
+.fb.no{background:#FDECEE;color:#A3202E}
+.fb.info{background:#E3ECFF;color:#1B3F9E}
+.fb .m{font-family:var(--mono);font-weight:700}
+.dotsbar{display:flex;gap:6px;flex-wrap:wrap}
+.dotsbar i{width:28px;height:8px;border-radius:4px;background:var(--frost);display:block}
+.dotsbar i.ok{background:var(--ok)}.dotsbar i.no{background:#E5484D}.dotsbar i.cur{background:var(--blue)}
+.task-text{margin:0;font-size:17px;font-weight:600;max-width:65ch}
+
+.q1grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{display:grid;gap:16px}
+.meter{display:grid;gap:6px}
+.meter .mt{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.meter .bar{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#1B2A4E,#5A6E93 50%,#F2F6FF)}
+.meter .zone{position:absolute;top:-3px;bottom:-3px;left:42.5%;width:15%;border:2px solid var(--ok);border-radius:6px;background:rgba(20,184,122,.18)}
+.meter .needle{position:absolute;top:-6px;width:4px;height:28px;background:var(--blue);border-radius:2px;transform:translateX(-2px);transition:left .15s}
+.meter.c .bar{background:linear-gradient(90deg,#8E9BB5,#5A6E93 50%,#0B1A3B)}
+
+.q2grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tbtns{display:flex;flex-wrap:wrap;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;font-size:15px;color:var(--text)}
+.tbtn svg{width:20px;height:20px;color:var(--blue)}
+.tbtn:hover{border-color:var(--blue)}
+.tbtn .v{font-family:var(--mono);font-size:12px;color:var(--blue);background:var(--mist);padding:2px 6px;border-radius:5px}
+
+/* финиш */
+.result{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.grade{width:150px;height:150px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;align-content:center;
+  box-shadow:0 0 0 6px #D6E6FF,0 0 40px rgba(33,96,255,.45)}
+.grade small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;font-weight:700}
+.grade b{font-family:var(--display);font-size:64px;line-height:1}
+.pts{font-family:var(--display);font-size:clamp(40px,7vw,60px);font-weight:800;line-height:1}
+.pts span{font-size:.45em;color:var(--muted)}
+.scale{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;font-family:var(--mono);font-size:11px;text-align:center}
+.scale div{border:1px solid var(--frost);border-radius:6px;padding:6px 2px;background:var(--paper);line-height:1.3}
+.scale div b{display:block;font-size:14px}
+.scale div.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{padding:10px 8px;border-bottom:1px solid var(--frost);text-align:left}
+.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.tbl td:last-child,.tbl th:last-child{text-align:right;font-family:var(--mono);font-weight:700}
+.mood{display:flex;flex-wrap:wrap;gap:10px}
+.mood button{background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;color:var(--text)}
+.mood button[aria-pressed="true"]{border-color:var(--blue);background:#E3ECFF}
+.sent{font-family:var(--mono);background:var(--ink);color:#BFD6FF;border-radius:10px;padding:14px 16px;line-height:1.7}
+.sent .g{color:#5BE3A8}.sent .p{color:var(--cyan)}.sent .r{color:#FF8A8A}
+
+@media (max-width:760px){
+  .q1grid,.q2grid,.result{grid-template-columns:1fr}
+  .grade{width:120px;height:120px}.grade b{font-size:50px}
+  .scale{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr}
+  .tools{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}
+  .tool{min-width:76px}
+  .tools .sep{display:none}
+  .preview{display:none}
+  .two,.pix,.editor{grid-template-columns:1fr}
+  .fields{grid-template-columns:1fr}
+  .file{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== НЕОНОВЫЙ КОСМОС (TechLab) ===== */
+body{background:radial-gradient(circle at 15% 0%,#2a1766 0,var(--ink) 55%) fixed}
+main{background:transparent}
+#start::before{background:radial-gradient(ellipse at 30% 20%,rgba(178,107,255,.30),transparent 60%),linear-gradient(180deg,rgba(11,13,36,.55),rgba(11,13,36,.9))}
+.win{background:var(--paper);box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.55),0 0 70px rgba(123,108,255,.45)}
+.titlebar{background:#0B0D24}
+.eyebrow,.step-tag{color:var(--cyan)}
+h1 em,.grad{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.term,.console,.sent{background:#070818;border:1px solid var(--line)}
+.field input,.field select{background:#0F1230;color:var(--text);border-color:var(--frost)}
+.field input:focus,.field select:focus{background:#13163a;border-color:var(--cyan)}
+.btn{background:linear-gradient(90deg,var(--cyan),var(--violet));color:#0B0D24;box-shadow:0 0 0 0 transparent,0 8px 26px rgba(123,108,255,.45)}
+.btn:active{box-shadow:0 2px 10px rgba(123,108,255,.4)}
+.btn[disabled]{background:#3a3f78;color:#9aa0d0;box-shadow:none}
+.rules li b,.counter b,.range label b{color:var(--cyan)}
+.card{background:rgba(23,26,63,.88);border-color:var(--frost);backdrop-filter:blur(6px)}
+.tool[aria-current="true"]{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 1px var(--cyan),0 0 22px rgba(123,108,255,.55)}
+.note{background:rgba(255,206,84,.08);border-color:#E9C46A}
+.note .tag{color:#FFD36B}.note p,.note ul{color:#FFF1CC}
+.note mark{background:#FFD36B;color:#241a00}
+.vs,.opcard,.op,.choice,.tbtn,.mood button,.scale div{background:#12153A;border-color:var(--frost);color:var(--text)}
+.op:hover,.choice:hover:not([disabled]),.tbtn:hover{background:#1a1e4d;border-color:var(--cyan)}
+.op.on{background:rgba(123,108,255,.25);border-color:var(--violet)}
+.op svg,.opcard svg,.choice svg,.tbtn svg,.vs .ico{color:var(--cyan)}
+.tbtn .v{background:#0B0D24;color:var(--cyan)}
+.choice.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.choice.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.fb.ok{background:rgba(46,229,157,.15);color:#7DF5C4}
+.fb.no{background:rgba(255,92,122,.15);color:#FF9BAE}
+.fb.info{background:rgba(69,211,255,.12);color:#9BE6FF}
+.reset{border-color:var(--frost);color:var(--muted)}
+.dotsbar i{background:#2E3474}.dotsbar i.cur{background:var(--cyan)}
+.grade{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 6px rgba(123,108,255,.25),0 0 50px rgba(178,107,255,.6)}
+.scale div.on{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#0B0D24;border-color:transparent}
+.mood button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.15)}
+.tbl td,.tbl th{border-color:var(--frost)}
+.finish-theory{background:linear-gradient(135deg,#1b1650,#0f2a55);border:1px solid var(--line)}
+.meter .bar{background:linear-gradient(90deg,#0b0d24,#5A6E93 50%,#F2F6FF)}
+.meter .needle{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.stars{font-size:22px;letter-spacing:4px}
+.fuel{height:6px;border-radius:9px;background:#22265a;overflow:hidden;min-width:120px}
+.fuel i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .4s}
+.imgbox canvas{width:auto;height:auto;max-width:100%;max-height:196px}
+.imgbox.tall canvas{max-height:276px}
+.pxgrid{width:max-content}
+.back{color:var(--muted);font-family:var(--mono);font-size:12px;text-decoration:none}
+.back:hover{color:var(--cyan)}
+
+/* пиксель-художник */
+.pxwrap{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+.pxgrid{display:grid;grid-template-columns:repeat(8,34px);grid-template-rows:repeat(8,34px);gap:2px;background:#070818;padding:6px;border-radius:10px;border:1px solid var(--line);user-select:none;touch-action:none}
+.pxgrid.small{grid-template-columns:repeat(8,16px);grid-template-rows:repeat(8,16px);gap:1px;padding:4px;cursor:default}
+.pxgrid i{display:block;border-radius:3px;cursor:crosshair}
+.pxgrid.small i{border-radius:2px;cursor:default}
+.palette{display:flex;flex-wrap:wrap;gap:8px}
+.palette button{width:42px;height:42px;border-radius:10px;border:3px solid transparent;box-shadow:0 0 0 1px var(--frost)}
+.palette button[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--cyan),0 0 16px var(--cyan)}
+.pct{font-family:var(--display);font-size:28px;font-weight:800}
+
+/* блиц */
+.blitz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.clock60{font-family:var(--display);font-size:40px;font-weight:800;color:var(--cyan);text-shadow:0 0 18px rgba(69,211,255,.6)}
+.clock60.low{color:#FF5C7A;text-shadow:0 0 18px rgba(255,92,122,.6)}
+@media (max-width:760px){.pxwrap{grid-template-columns:1fr}.pxgrid{grid-template-columns:repeat(8,30px);grid-template-rows:repeat(8,30px)}}
+</style>
+<style>
+/* ===== «Смена в типографии» — свои цвета CMYK ===== */
+:root{--blue:#E2399A;--violet:#E2399A;--cyan:#33C6F0}
+body{background:radial-gradient(circle at 12% 0%,#4a1240 0,#0B0D24 55%) fixed}
+.cmyk{height:5px;background:linear-gradient(90deg,#00AEEF 0 25%,#EC008C 25% 50%,#FFE600 50% 75%,#222 75%)}
+.btn{background:linear-gradient(90deg,#33C6F0,#E2399A)}
+.hud{display:flex;gap:8px;align-items:center}
+.hud .chip b{color:#FFE600}
+.order{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;border-radius:16px;padding:16px;background:linear-gradient(135deg,rgba(226,57,154,.12),rgba(51,198,240,.08));border:1px solid rgba(255,255,255,.18)}
+.order .av{font-size:44px;line-height:1}
+.order .bub{background:#0F1230;border:1px solid var(--frost);border-radius:14px;padding:12px 14px;font-size:17px;position:relative}
+.order .bub b{color:#FFE600}
+.order .who{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:6px}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.shelf button{display:grid;justify-items:center;gap:4px;background:#12153A;border:2px solid var(--frost);border-radius:14px;padding:12px 8px;color:var(--text);font-weight:700}
+.shelf button .e{font-size:34px}.shelf button small{color:var(--muted);font-weight:500;font-size:12px;text-align:center}
+.shelf button:hover:not([disabled]){border-color:var(--cyan)}
+.shelf button.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}.shelf button.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.mix{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:center}
+.sw{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sw div{height:130px;border-radius:14px;border:1px solid var(--line);display:grid;place-items:end center;padding:8px;font-family:var(--mono);font-size:12px;color:#fff;text-shadow:0 1px 3px #000}
+.sl{display:grid;grid-template-columns:120px 1fr 54px;gap:12px;align-items:center;font-weight:700}
+.sl input{width:100%}
+.sl .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.pd{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:0;border-radius:14px;overflow:hidden;border:1px solid var(--frost);background:#F3F4F8;color:#1d2733}
+.pd .l{padding:16px;display:grid;gap:10px;background:#fff}
+.pd .l h4{margin:0 0 4px;font-size:18px}
+.pd label{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center;font-size:14px;font-weight:600}
+.pd select,.pd input{font:inherit;font-size:14px;padding:7px 8px;border-radius:8px;border:1px solid #c7ccd8;background:#fff;color:#1d2733}
+.pd select.ok,.pd input.ok{border-color:#16a34a;background:#ecfdf3}.pd select.no,.pd input.no{border-color:#dc2626;background:#fef2f2}
+.pd .r{display:grid;place-items:center;padding:16px;background:#E6E9F0;gap:8px}
+.pd .sheet-p{background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);display:grid;place-items:center;font-size:11px;color:#667;transition:all .25s}
+.pd .lines{width:70%;display:grid;gap:5px}.pd .lines i{display:block;height:5px;border-radius:3px;background:#9aa3b5}
+.pd .cap{font-size:12px;color:#556}
+.paper{width:100%;max-width:520px;justify-self:center}
+.paper .rg{cursor:pointer}
+.paper .rg:hover rect{filter:brightness(1.25)}
+.lcd{font-family:var(--mono);background:#0b2a1f;color:#7CFFB2;border:4px solid #2a2f4a;border-radius:12px;padding:14px 16px;font-size:18px;letter-spacing:.04em;box-shadow:inset 0 0 18px rgba(124,255,178,.25)}
+.lcd small{display:block;color:#5fc492;font-size:12px;margin-top:4px}
+.printer{width:100%;max-width:330px;justify-self:center}
+.eco{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.eco .big{font-family:var(--display);font-size:46px;font-weight:800;color:#FFE600;line-height:1}
+.eco .trees{font-size:26px;letter-spacing:2px}
+.tog{display:flex;gap:8px;flex-wrap:wrap}
+.tog button{background:#12153A;border:2px solid var(--frost);border-radius:10px;padding:9px 14px;color:var(--text);font-weight:700}
+.tog button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(51,198,240,.15)}
+.mini{display:grid;grid-template-columns:repeat(2,40px);gap:3px;background:#fff;padding:6px;border-radius:6px;justify-content:center}
+.pwbox input{font-family:var(--mono);font-size:20px;padding:10px 12px;border-radius:10px;border:2px solid var(--frost);background:#0F1230;color:var(--text);width:160px}
+textarea.ans{width:100%;min-height:130px;resize:vertical;font:inherit;font-size:16px;line-height:1.5;padding:12px 14px;border-radius:10px;border:2px solid var(--frost);background:#0F1230;color:var(--text)}
+textarea.ans:focus{outline:none;border-color:var(--cyan)}
+.chars{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+.match{display:grid;gap:8px}
+.match label{display:grid;grid-template-columns:60px 1fr;gap:10px;align-items:center;font-weight:700}
+.match label code{font-family:var(--mono);color:#FFE600}
+.match select{background:#0F1230;color:var(--text);border:2px solid var(--frost);border-radius:10px;padding:8px 10px;font:inherit;font-size:15px}
+.match select.ok{border-color:#2EE59D}.match select.no{border-color:#FF5C7A}
+.box{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.qtimer{height:6px;border-radius:9px;background:#22265a;overflow:hidden}.qtimer i{display:block;height:100%;background:linear-gradient(90deg,#33C6F0,#E2399A)}
+.tools .bonus-h{font-family:var(--mono);font-size:10px;color:#FFE600;text-align:center;letter-spacing:.08em;padding:4px 0}
+.bonus-tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;color:#241a00;background:#FFE600;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+.rep{font-size:30px;letter-spacing:4px}
+@media (max-width:760px){.mix,.pd,.eco,.box{grid-template-columns:1fr}.pd label{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<section id="start">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="grid-ov" aria-hidden="true"></div>
+  <div class="win" role="dialog" aria-labelledby="ttl">
+    <div class="cmyk"></div>
+    <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div><span>print_lab.exe</span><b>6 класс</b></div>
+    <div class="win-body">
+      <div class="brand">
+        <div class="eyebrow">🖨 Экспедиция «Устройства вывода» · Миссия 2</div>
+        <h1 id="ttl">Смена в <em>типографии</em></h1>
+        <p class="sub">Печатаем на бумаге — что нужно знать?</p>
+      </div>
+      <div class="term" id="term" aria-live="polite"></div>
+      <form id="login" class="win-body" style="padding:0" novalidate>
+        <div class="fields">
+          <div class="field"><label for="fio">&gt; фамилия_и_имя</label><input id="fio" autocomplete="off" placeholder="Например, Руссу Анна" maxlength="60"></div>
+          <div class="field"><label for="cls">&gt; класс</label>
+            <select id="cls"><option value="">выбери…</option><option>6 «А»</option><option>6 «Б»</option><option>6 «В»</option><option>6 «Г»</option></select></div>
+        </div>
+        <p class="err" id="err"></p>
+        <button class="btn" type="submit">🖨 Начать смену <span class="k">Enter</span></button>
+      </form>
+      <ul class="rules">
+        <li><b>01</b>Ты — новый мастер типографии «PrintLab». Сначала изучи «Справочник мастера» и перепиши жёлтые блоки в тетрадь.</li>
+        <li><b>02</b>Выполняй заказы клиентов: каждый заказ приносит <b>лей</b> 💰 и <b>репутацию</b> ⭐.</li>
+        <li><b>03</b>Финальный «Босс-заказ» — письменный, его проверит ИИ и учитель.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div id="app" hidden>
+  <div class="cmyk"></div>
+  <header class="topbar">
+    <a class="back" href="../../../#tech-6">← TechLab</a>
+    <span class="logo">print<i>_</i>lab</span>
+    <span class="file" id="fileName">shift / handbook.md</span>
+    <div class="top-right">
+      <span class="chip">💰 <b id="cash">0</b> лей</span>
+      <span class="chip">⭐ <b id="repu">—</b></span>
+      <span class="chip">👤 <b id="who">—</b></span>
+      <span class="chip">⏱ <b id="timer">00:00</b></span>
+      <button class="linkbtn" id="logout" type="button">сменить ученика</button>
+    </div>
+  </header>
+  <nav class="tools" aria-label="Заказы смены" id="tools"></nav>
+  <main id="main"><div class="sheet" id="sheet"></div></main>
+</div>
+<div id="toast" role="status"></div>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech6-print-m2";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Справочник", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- фон: капли краски CMYK ---------- */
+const bg=$("bg");let bgOn=true;
+(function(){const c=bg.getContext("2d");let D=[];const col=["#00AEEF","#EC008C","#FFE600","#ffffff"];
+  function size(){bg.width=innerWidth;bg.height=innerHeight;D=Array.from({length:60},()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,r:2+Math.random()*7,v:.3+Math.random()*1.2,c:col[Math.floor(Math.random()*4)]}));}
+  function draw(){if(!bgOn)return;c.clearRect(0,0,bg.width,bg.height);
+    D.forEach(d=>{c.globalAlpha=.55;c.fillStyle=d.c;c.beginPath();c.arc(d.x,d.y,d.r,0,6.28);c.fill();d.y+=d.v;if(d.y>bg.height+10){d.y=-10;d.x=Math.random()*bg.width;}});
+    c.globalAlpha=1;if(!reduce)requestAnimationFrame(draw);}
+  size();addEventListener("resize",size);requestAnimationFrame(draw);})();
+
+const termLines=['<span class="c">// типография «PrintLab» открывается…</span>','<span class="p">&gt;</span> print_lab.start_shift()',
+  '<span class="g">✓</span> краски CMYK заправлены, бумага A4 загружена','<span class="p">&gt;</span> мастер, введи фамилию и класс <span class="cursor"></span>'];
+(function type(i){if(i>=termLines.length)return;$("term").innerHTML+=(i?'<br>':'')+termLines[i];setTimeout(()=>type(i+1),reduce?0:450);})(0);
+
+/* ---------- этапы ---------- */
+const IC={
+ doc:'<path d="M5 4h10l4 4v12H5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h8M8 15h8M8 7h5" stroke="currentColor" stroke-width="2"/>',
+ pr:'<path d="M6 9V3h12v6M6 17H3v-7h18v7h-3M6 14h12v7H6z" fill="none" stroke="currentColor" stroke-width="2"/>',
+ drop:'<path d="M12 2c4 6 7 9 7 13a7 7 0 0 1-14 0c0-4 3-7 7-13z" fill="currentColor"/>',
+ win:'<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M7 13h6M7 16h4" stroke="currentColor" stroke-width="2"/>',
+ sheet:'<rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v18M3 12h9" stroke="currentColor" stroke-width="2"/>',
+ alarm:'<path d="M12 3l10 18H2z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 10v5M12 17v1" stroke="currentColor" stroke-width="2.5"/>',
+ leaf:'<path d="M20 4C9 4 4 9 4 16c0 2 1 4 1 4s9 1 13-5c2-3 2-7 2-11zM5 20l9-9" fill="none" stroke="currentColor" stroke-width="2"/>',
+ boss:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z" fill="currentColor"/>',
+ fin:'<path d="M5 21V4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2"/>',
+ star:'<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" fill="currentColor"/>'
+};
+const STEPS=[
+ {id:"theory",label:"Справочник",file:"handbook.md",icon:IC.doc},
+ {id:"q1",label:"Заказ 1",file:"order_01_printer.js",icon:IC.pr},
+ {id:"q2",label:"Заказ 2",file:"order_02_cmyk.js",icon:IC.drop},
+ {id:"q3",label:"Заказ 3",file:"order_03_ctrl_p.js",icon:IC.win},
+ {id:"q4",label:"Заказ 4",file:"order_04_paper.js",icon:IC.sheet},
+ {id:"q5",label:"Авария",file:"order_05_alarm.js",icon:IC.alarm},
+ {id:"q6",label:"Эко-заказ",file:"order_06_eco.js",icon:IC.leaf},
+ {id:"q7",label:"Босс-заказ",file:"order_boss.md",icon:IC.boss},
+ {id:"fin",label:"Итоги",file:"shift_report.json",icon:IC.fin}
+];
+const BONUS=[{id:"b1",label:"Миф/правда",file:"bonus_myths.js"},{id:"b2",label:"Устройство",file:"bonus_parts.js"}];
+const MAXP={q1:5,q2:3,q3:6,q4:5,q5:4,q6:3,b1:6,b2:5};
+const AUTO=["q1","q2","q3","q4","q5","q6"],BKEYS=["b1","b2"];
+const OPENMAX=5,MAXMAIN=31;
+const NAMES={q1:"Заказ 1 · Подбери принтер",q2:"Заказ 2 · Смешай краску CMYK",q3:"Заказ 3 · Окно печати (Ctrl+P)",q4:"Заказ 4 · Форматы бумаги",
+ q5:"Авария на смене",q6:"Эко-заказ · Сэкономь бумагу",q7:"Босс-заказ (письменный, ИИ)",b1:"⭐ Миф или правда?",b2:"⭐ Устройство принтера"};
+function fresh(fio,cls){return {fio,cls,start:Date.now(),done:{},cur:"theory",score:{},part:{},open:{o1:"",o2:""},mood:"",sent:0,rec:""};}
+let S=fresh("","");
+const KEY="techlab_tech6_m2";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2400);}
+function TL(){return Promise.race([window.TL_READY,new Promise((_,rej)=>setTimeout(()=>rej(new Error("нет связи")),10000))]);}
+function allSteps(){return STEPS.concat(BONUS);}
+function stageLabel(){const st=allSteps().find(x=>x.id===S.cur);return st?(BKEYS.includes(st.id)?"⭐ "+st.label:st.label):"";}
+function syncProgress(){if(!S.rec)return;
+  TL().then(t=>t.progress(S.rec,{score:S.score,open:S.open,stage:S.sent?"Итоги":stageLabel(),doneCount:STEPS.filter(x=>S.done[x.id]).length})).catch(()=>{});}
+
+/* ---------- экономика смены ---------- */
+const PRICE=40; /* лей за 1 балл */
+function cash(){return AUTO.concat(BKEYS).reduce((s,k)=>s+(S.score[k]||0),0)*PRICE;}
+function rep(){const d=AUTO.filter(k=>S.score[k]!=null);if(!d.length)return 0;
+  const r=d.reduce((s,k)=>s+S.score[k],0)/d.reduce((s,k)=>s+MAXP[k],0);return Math.max(1,Math.round(r*5));}
+function hud(){$("cash").textContent=cash();const r=rep();$("repu").textContent=r?"★".repeat(r)+"☆".repeat(5-r):"—";}
+
+$("login").addEventListener("submit",e=>{
+  e.preventDefault();
+  const fio=$("fio").value.trim().replace(/\s+/g," "),cls=$("cls").value,err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";$("cls").focus();return;}
+  err.textContent="Подключаюсь к TechLab…";const btn=document.querySelector("#login .btn");btn.disabled=true;
+  TL().then(async t=>{
+    if(!(await t.isOpen())){err.textContent="🔒 Миссия ещё не открыта учителем. Подожди и нажми ещё раз.";btn.disabled=false;return;}
+    S=fresh(fio,cls);S.rec=await t.start({name:fio,cls});err.textContent="";save();openApp();
+  }).catch(()=>{err.textContent="Нет связи с сайтом. Проверь интернет и нажми ещё раз.";btn.disabled=false;});
+});
+$("logout").addEventListener("click",()=>{if(!confirm("Выйти и начать заново под другим именем?"))return;try{localStorage.removeItem(KEY)}catch(e){}location.reload();});
+
+let timerId=null;
+function openApp(){bgOn=false;$("start").hidden=true;$("app").hidden=false;$("who").textContent=S.fio+" · "+S.cls;
+  show(S.cur);tickTimer();clearInterval(timerId);timerId=setInterval(tickTimer,1000);}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+function tickTimer(){const s=Math.max(0,Math.floor((Date.now()-S.start)/1000));$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+
+function unlocked(id){if(BKEYS.includes(id))return !!S.done.theory;const i=STEPS.findIndex(s=>s.id===id);return i===0||!!S.done[STEPS[i-1].id];}
+function renderTools(){
+  const btn=(s,bonus)=>{const lock=!unlocked(s.id),done=!!S.done[s.id];
+    return `<button class="tool${lock?' locked':''}${done?' done':''}" data-id="${s.id}" aria-current="${S.cur===s.id}" type="button">
+      <span class="st">${done?(bonus?'⭐':'✓'):lock?'🔒':''}</span><svg viewBox="0 0 24 24" aria-hidden="true">${bonus?IC.star:s.icon}</svg>${s.label}</button>`;};
+  $("tools").innerHTML=STEPS.map((s,i)=>(i===1||i===STEPS.length-1?'<div class="sep"></div>':'')+btn(s,false)).join("")+
+    '<div class="sep"></div><div class="bonus-h">⭐ БОНУС</div>'+BONUS.map(b=>btn(b,true)).join("")+
+    `<div class="preview"><div style="font-size:30px">🖨</div><small id="progTxt"></small></div>`;
+  $("tools").querySelectorAll(".tool").forEach(b=>b.onclick=()=>{const id=b.dataset.id;if(!unlocked(id)){toast("🔒 Сначала выполни предыдущий заказ");return;}show(id);});
+  const n=STEPS.filter(s=>S.done[s.id]).length;$("progTxt").textContent="смена "+Math.round(n/STEPS.length*100)+"%";hud();
+}
+const VIEWS={};
+function show(id){if(!unlocked(id))id="theory";S.cur=id;save();$("fileName").textContent="shift / "+allSteps().find(s=>s.id===id).file;renderTools();
+  clearInterval(window.__qt);VIEWS[id]();syncProgress();scrollTo({top:0,behavior:reduce?"auto":"smooth"});}
+function next(id){if(BKEYS.includes(id))return null;const i=STEPS.findIndex(s=>s.id===id);return STEPS[i+1];}
+function finishStation(id,pts){const before=cash();S.score[id]=Math.min(MAXP[id],Math.max(0,pts));S.done[id]=true;save();renderTools();syncProgress();
+  const got=cash()-before;if(got>0)toast(`💰 +${got} лей в кассу типографии!`);}
+function stars(id){if(S.score[id]==null)return"—";const r=S.score[id]/MAXP[id];return r>=.99?"⭐⭐⭐":r>=.6?"⭐⭐☆":r>0?"⭐☆☆":"☆☆☆";}
+function nextMainId(){const s=STEPS.find(x=>!S.done[x.id]&&unlocked(x.id));return s?s.id:"fin";}
+function doneCard(id){const nx=next(id);const bonus=!nx;
+  const go=bonus?`<button class="btn" type="button" onclick="show('${nextMainId()}')">↩ Вернуться к заказам</button>`:`<button class="btn" type="button" onclick="show('${nx.id}')">Следующий: ${nx.label} →</button>`;
+  return `<div class="card finish-theory"><div class="step-tag" style="color:${bonus?'#FFE600':'var(--cyan)'}">✓ ${bonus?'БОНУС ПОЛУЧЕН':'ЗАКАЗ ВЫПОЛНЕН'}</div><div class="stars">${stars(id)}</div>
+    <h3>${NAMES[id]}: ${S.score[id]} из ${MAXP[id]} баллов · 💰 +${S.score[id]*PRICE} лей</h3><div class="row">${go}</div></div>`;}
+function head(n,tag,title,lead,bonus){return `<div class="sec-head"><div class="step-tag">${bonus?'⭐ БОНУСНЫЙ ЗАКАЗ':'ЭТАП '+n+' ИЗ '+STEPS.length}${tag?' · '+tag:''}${bonus?'<span class="bonus-tag">+ до '+MAXP[bonus]+' б.</span>':''}</div><h2>${title}</h2><p class="lead">${lead}</p></div>`;}
+function order(av,who,text){return `<div class="order"><div class="av">${av}</div><div><div class="who">ЗАКАЗЧИК: ${who}</div><div class="bub">${text}</div></div></div>`;}
+function shuffle(a,seed){a=a.slice();let s=seed||1;for(let i=a.length-1;i>0;i--){s=(s*9301+49297)%233280;const j=Math.floor(s/233280*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function seqQuiz(o){
+  const A=S.part[o.key]||(S.part[o.key]=[]);const top=head(o.n,o.tag,o.title,o.lead,o.bonus);
+  const dots=`<div class="dotsbar">${o.items.map((w,i)=>`<i class="${i<A.length?(A[i]===o.answer(i)?'ok':'no'):i===A.length?'cur':''}"></i>`).join("")}</div>`;
+  if(S.done[o.key]||A.length>=o.items.length){if(!S.done[o.key])finishStation(o.key,A.filter((a,i)=>a===o.answer(i)).length);
+    $("sheet").innerHTML=top+`<div class="card">${dots}<p class="task-text">Верно: ${A.filter((a,i)=>a===o.answer(i)).length} из ${o.items.length}.</p></div>`+doneCard(o.key);return;}
+  const i=A.length;
+  $("sheet").innerHTML=top+`<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">${o.unit||'вопрос'} <b>${i+1}</b> из ${o.items.length}</span>${dots}</div>
+    ${o.timer?`<div class="qtimer"><i id="qtb" style="width:100%"></i></div>`:""}
+    ${o.ask(i)}<div class="${o.wrap||'choices'}" id="sq">${o.choices(i).map(c=>`<button class="choice" type="button" data-k="${esc(c[0])}">${c[1]}</button>`).join("")}</div><div id="sqfb"></div></div>`;
+  const ans=o.answer(i);
+  function decide(v,b){clearInterval(window.__qt);const ok=v===ans;A.push(v);save();
+    document.querySelectorAll("#sq .choice").forEach(x=>{x.disabled=true;if(x.dataset.k===String(ans))x.classList.add("right");});
+    if(b&&!ok)b.classList.add("wrong");
+    $("sqfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${v==="__time"?"Время вышло! ":""}${o.why(i)}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="sqn">${A.length>=o.items.length?'Завершить':'Дальше →'}</button></div>`;
+    $("sqn").onclick=()=>seqQuiz(o);$("sqn").focus();}
+  document.querySelectorAll("#sq .choice").forEach(b=>b.onclick=()=>decide(b.dataset.k,b));
+  if(o.timer){const end=Date.now()+o.timer*1000;window.__qt=setInterval(()=>{const l=end-Date.now();const el=$("qtb");if(el)el.style.width=Math.max(0,l/(o.timer*1000)*100)+"%";if(l<=0)decide("__time",null);},100);}
+}
+
+/* ================= СПРАВОЧНИК МАСТЕРА ================= */
+VIEWS.theory=function(){
+ $("sheet").innerHTML=head(1,"📘 СПРАВОЧНИК МАСТЕРА","Печатаем на бумаге — что нужно знать?",
+  'Мастер, перед сменой изучи справочник. Всё в <b>жёлтой рамке</b> перепиши в тетрадь — без этого клиенты не дождутся заказов!')+`
+ <div class="card"><div class="step-tag">1 · ВИДЫ ПРИНТЕРОВ</div>
+  <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+   <p><mark>Принтер</mark> — устройство вывода, которое переносит текст и изображения на бумагу (или другой материал).</p>
+   <ul><li><mark>Струйный</mark> — печатает капельками жидких чернил; хорош для цветных фото.</li>
+   <li><mark>Лазерный</mark> — печатает порошком-<mark>тонером</mark>; быстрый, лист печати дешёвый; удобен для документов.</li>
+   <li><mark>МФУ</mark> (многофункциональное устройство) — принтер + сканер + копир.</li>
+   <li><mark>Плоттер</mark> — печатает очень большие чертежи и плакаты.</li>
+   <li><mark>3D-принтер</mark> — «печатает» объёмные предметы слоями пластика.</li></ul></div></div>
+ <div class="card"><div class="step-tag">2 · ЦВЕТА ПЕЧАТИ</div>
+  <div class="mix"><div class="sw"><div style="background:#00AEEF">C · Cyan<br>голубой</div><div style="background:#EC008C">M · Magenta<br>пурпурный</div><div style="background:#FFE600;color:#222;text-shadow:none">Y · Yellow<br>жёлтый</div><div style="background:#1b1b1b">K · Key<br>чёрный</div></div>
+  <div class="note"><span class="tag">✎ Запиши в тетрадь</span><p>Принтер смешивает четыре краски: <mark>CMYK</mark> — голубой (C), пурпурный (M), жёлтый (Y) и чёрный (K).</p>
+   <p>Экран показывает цвета светом — <mark>RGB</mark> (красный, зелёный, синий). Поэтому цвета на экране и на бумаге могут немного отличаться.</p></div></div></div>
+ <div class="card"><div class="step-tag">3 · БУМАГА</div>
+  <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+   <p>Обычный лист — <mark>A4: 210 × 297 мм</mark>. <mark>A3</mark> вдвое больше A4, <mark>A5</mark> — вдвое меньше (половина A4).</p>
+   <p><mark>Ориентация</mark>: книжная (лист стоит) и альбомная (лист лежит).</p>
+   <p>Чёткость печати — <mark>dpi</mark> (точек на дюйм): чем больше, тем чётче.</p></div></div>
+ <div class="card"><div class="step-tag">4 · ОКНО ПЕЧАТИ</div>
+  <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+   <p>Открыть окно печати: <mark>Ctrl + P</mark>. В нём выбирают: принтер, <mark>число копий</mark>, <mark>страницы</mark> (все или, например, 3–5), ориентацию, формат бумаги, цветная или ч/б печать, <mark>двусторонняя печать</mark>, сколько страниц на листе.</p>
+   <p>Перед печатью смотри <mark>предварительный просмотр</mark>.</p></div></div>
+ <div class="card"><div class="step-tag">5 · ЕСЛИ ПРИНТЕР НЕ ПЕЧАТАЕТ · ЭКОНОМИЯ</div>
+  <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+   <ul><li><mark>Замятие бумаги</mark>: выключи принтер, открой крышку и аккуратно вытащи лист <mark>по ходу движения</mark>.</li>
+   <li>Нет бумаги — заполни лоток; закончились чернила/тонер — замени <mark>картридж</mark>; принтер «не в сети» — проверь питание и кабель/Wi-Fi.</li>
+   <li>Экономия: печатай только нужное, используй <mark>двустороннюю печать</mark>, 2 страницы на листе; старые картриджи сдавай на переработку.</li></ul></div></div>
+ <div class="card finish-theory"><h3>Готов(а) открыть типографию?</h3>
+  <label class="check"><input type="checkbox" id="copied"> Я изучил(а) справочник и переписал(а) все жёлтые блоки в тетрадь</label>
+  <div class="row"><button class="btn" type="button" id="goNext" disabled>🔔 Принять первый заказ →</button></div></div>`;
+  const cb=$("copied"),nx=$("goNext");cb.checked=!!S.done.theory;nx.disabled=!cb.checked;cb.onchange=()=>nx.disabled=!cb.checked;
+  nx.onclick=()=>{if(!S.done.theory){S.done.theory=true;save();toast("✓ Типография открыта! Пришёл первый клиент.");}show("q1");};
+};
+
+/* ================= ЗАКАЗ 1: ПОДБЕРИ ПРИНТЕР ================= */
+const PRN=[["ink","🖨","Струйный","капли чернил"],["laser","🖨","Лазерный","тонер, быстро"],["mfu","📠","МФУ","печать+скан+копия"],["plot","📐","Плоттер","огромные листы"],["3d","🧊","3D-принтер","объёмные предметы"]];
+const Q1=[
+ {av:"📸",who:"Фотограф Марина",t:"Хочу дома печатать <b>яркие цветные фотографии</b> для семейного альбома.",a:"ink",w:"Для цветных фото дома — струйный принтер."},
+ {av:"🏢",who:"Бухгалтерия завода",t:"Каждый день печатаем <b>500 страниц чёрно-белых документов</b>. Нужно быстро и дёшево.",a:"laser",w:"Много ч/б документов — лазерный: быстрый и лист дешёвый."},
+ {av:"👩‍💼",who:"Секретарь школы",t:"Нужно и печатать, и <b>сканировать документы</b>, и <b>делать копии</b> — а места на столе мало.",a:"mfu",w:"Печать + сканер + копир в одном — МФУ."},
+ {av:"👷",who:"Архитектор",t:"Нужно напечатать <b>чертёж дома длиной больше метра</b>.",a:"plot",w:"Большие чертежи печатает плоттер."},
+ {av:"🤖",who:"Кружок робототехники",t:"Нам нужна <b>пластиковая шестерёнка</b> для робота.",a:"3d",w:"Объёмную деталь из пластика сделает 3D-принтер."}
+];
+VIEWS.q1=()=>seqQuiz({key:"q1",n:2,tag:"🔔 ЗАКАЗ 1",title:"Подбери принтер",lead:"Клиенты приходят по одному. Выбери с витрины принтер, который лучше всего подойдёт. Одна попытка на клиента.",unit:"клиент",wrap:"shelf",
+  items:Q1,ask:i=>order(Q1[i].av,Q1[i].who,Q1[i].t),answer:i=>Q1[i].a,why:i=>Q1[i].w,
+  choices:()=>PRN.map(p=>[p[0],`<span class="e">${p[1]}</span>${p[2]}<small>${p[3]}</small>`])});
+
+/* ================= ЗАКАЗ 2: СМЕШАЙ КРАСКУ CMYK ================= */
+function cmyk2rgb(c,m,y,k){c/=100;m/=100;y/=100;k/=100;const f=v=>Math.round(255*(1-v)*(1-k));return `rgb(${f(c)},${f(m)},${f(y)})`;}
+const Q2=[{name:"Зелёный (трава на афише)",t:[100,0,100,0]},{name:"Красный (логотип пиццерии)",t:[0,100,100,0]},{name:"Оранжевый (апельсин на упаковке)",t:[0,50,100,0]}];
+VIEWS.q2=function(){
+  const P=S.part.q2||(S.part.q2={i:0,pts:0,chk:0,v:[0,0,0,0]});
+  const top=head(3,"🎨 ЗАКАЗ 2","Смешай краску CMYK",'Клиенту нужен точный цвет. Двигай ползунки красок C, M, Y, K (шаг 25 %), пока твой цвет не совпадёт с образцом. Балл даётся, если цвет совпал <b>не больше чем за 2 проверки</b>.');
+  if(S.done.q2||P.i>=Q2.length){if(!S.done.q2)finishStation("q2",P.pts);$("sheet").innerHTML=top+doneCard("q2");return;}
+  const q=Q2[P.i],N=["C · голубой","M · пурпурный","Y · жёлтый","K · чёрный"],D=["#00AEEF","#EC008C","#FFE600","#ccc"];
+  $("sheet").innerHTML=top+order("🎨","Дизайнер",`Нужен цвет: <b>${q.name}</b>. Смешай его из красок CMYK!`)+`<div class="card">
+    <span class="counter">цвет <b>${P.i+1}</b> из ${Q2.length} · баллы: <b>${P.pts}</b></span>
+    <div class="mix"><div class="sw"><div style="background:${cmyk2rgb(...q.t)}">образец</div><div id="mine" style="background:${cmyk2rgb(...P.v)}">твой цвет</div></div>
+    <div style="display:grid;gap:10px">${N.map((n,j)=>`<label class="sl"><span><span class="dot" style="background:${D[j]}"></span>${n}</span><input type="range" min="0" max="100" step="25" value="${P.v[j]}" data-j="${j}"><b id="v${j}">${P.v[j]}%</b></label>`).join("")}</div></div>
+    <div class="row"><button class="btn" type="button" id="q2c">Проверить</button></div><div id="q2fb"></div></div>`;
+  document.querySelectorAll(".sl input").forEach(r=>r.oninput=()=>{const j=+r.dataset.j;P.v[j]=+r.value;$("v"+j).textContent=r.value+"%";$("mine").style.background=cmyk2rgb(...P.v);save();});
+  $("q2c").onclick=()=>{P.chk++;const ok=P.v.every((x,j)=>x===q.t[j]);
+    if(ok){const got=P.chk<=2;if(got)P.pts++;P.i++;P.chk=0;P.v=[0,0,0,0];save();
+      $("q2fb").innerHTML=`<div class="fb ok"><span class="m">✓ ${got?'+1':'0'}</span><span>Цвет совпал! ${q.name.split(" (")[0]} = C${q.t[0]} M${q.t[1]} Y${q.t[2]} K${q.t[3]}.${got?'':' Но проверок было больше двух.'}</span></div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="q2n">${P.i>=Q2.length?'Сдать заказ':'Следующий цвет →'}</button></div>`;
+      $("q2c").disabled=true;$("q2n").onclick=VIEWS.q2;}
+    else{save();const hint=q.t.map((x,j)=>P.v[j]<x?"больше "+"CMYK"[j]:P.v[j]>x?"меньше "+"CMYK"[j]:null).filter(Boolean);
+      $("q2fb").innerHTML=`<div class="fb no"><span class="m">✗ ${P.chk}</span><span>Пока не совпадает. ${P.chk>=2?"Подсказка: нужно "+hint.join(", ")+".":"Сравни свой цвет с образцом. Подсказка появится после второй проверки."}</span></div>`;}};
+};
+
+/* ================= ЗАКАЗ 3: ОКНО ПЕЧАТИ ================= */
+const Q3=[
+ {av:"🧑‍🎓",who:"Ученик 9 класса",t:"Распечатай <b>только страницы 3–5</b> моего доклада, <b>2 копии</b>, лист <b>книжный</b>, <b>с двух сторон</b>, <b>чёрно-белым</b>.",
+  a:{pages:"3-5",copies:"2",orient:"portrait",duplex:"yes",color:"bw",size:"A4"},check:["pages","copies","orient","duplex","color"]},
+ {av:"🎭",who:"Школьный театр",t:"Нужна <b>афиша</b>: <b>1 копия</b>, <b>в цвете</b>, на листе <b>A3</b>, лист <b>альбомный</b> (лежит), печать <b>с одной стороны</b>.",
+  a:{pages:"all",copies:"1",orient:"landscape",duplex:"no",color:"color",size:"A3"},check:["copies","orient","duplex","color","size"]}
+];
+VIEWS.q3=function(){
+  const P=S.part.q3||(S.part.q3={i:0,pts:0,v:{}});
+  const top=head(4,"🖥 ЗАКАЗ 3","Окно печати (Ctrl + P)",'Настрой окно печати точно по заказу клиента. Справа — предварительный просмотр. Одна проверка на заказ; за 5 верных настроек — 3 балла, за 3–4 — 2 балла, за 1–2 — 1 балл.');
+  if(S.done.q3||P.i>=Q3.length){if(!S.done.q3)finishStation("q3",P.pts);$("sheet").innerHTML=top+doneCard("q3");return;}
+  const q=Q3[P.i];const v=P.v[P.i]||(P.v[P.i]={pages:"all",pr:"",copies:"1",orient:"portrait",duplex:"no",color:"color",size:"A4",range:""});
+  $("sheet").innerHTML=top+order(q.av,q.who,q.t)+`<div class="card"><span class="counter">заказ <b>${P.i+1}</b> из ${Q3.length}</span>
+    <div class="pd"><div class="l"><h4>🖨 Печать</h4>
+      <label>Принтер<select data-f="pr"><option value="">PrintLab Office</option></select></label>
+      <label>Страницы<select data-f="pages"><option value="all">Все</option><option value="range">Диапазон…</option></select></label>
+      <label id="rgRow" ${v.pages==="range"?"":"hidden"}>Какие страницы<input data-f="range" placeholder="например 2-4" value="${esc(v.range)}"></label>
+      <label>Копии<input type="number" min="1" max="99" data-f="copies" value="${esc(v.copies)}"></label>
+      <label>Ориентация<select data-f="orient"><option value="portrait">Книжная</option><option value="landscape">Альбомная</option></select></label>
+      <label>Формат бумаги<select data-f="size"><option>A4</option><option>A3</option><option>A5</option></select></label>
+      <label>Цвет<select data-f="color"><option value="color">Цветная</option><option value="bw">Чёрно-белая</option></select></label>
+      <label>Двусторонняя<select data-f="duplex"><option value="no">Нет, одна сторона</option><option value="yes">Да, с двух сторон</option></select></label>
+      <div class="row"><button class="btn" type="button" id="q3c">🖨 Печать</button></div></div>
+     <div class="r" id="prev"></div></div><div id="q3fb"></div></div>`;
+  document.querySelectorAll(".pd [data-f]").forEach(el=>{if(el.tagName==="SELECT"&&v[el.dataset.f]!=null)el.value=v[el.dataset.f];
+    const h=()=>{v[el.dataset.f]=el.value;if(el.dataset.f==="pages")$("rgRow").hidden=el.value!=="range";save();prev();};el.oninput=h;el.onchange=h;});
+  function prev(){const land=v.orient==="landscape",big=v.size==="A3"?1.25:v.size==="A5"?.75:1;const w=Math.round((land?150:106)*big),h=Math.round((land?106:150)*big);
+    const n=Math.max(1,Math.min(4,parseInt(v.copies)||1));
+    $("prev").innerHTML=`<div style="display:flex;gap:6px">${Array.from({length:n},()=>`<div class="sheet-p" style="width:${w}px;height:${h}px;${v.color==="color"?"":"filter:grayscale(1)"}"><div class="lines"><i style="background:${v.color==="color"?"#EC008C":"#9aa3b5"}"></i><i></i><i style="width:70%"></i><i></i></div></div>`).join("")}</div>
+      <div class="cap">${v.size} · ${land?"альбомная":"книжная"} · ${v.color==="color"?"цвет":"ч/б"} · копий: ${esc(v.copies)}${v.duplex==="yes"?" · 2 стороны":""}${v.pages==="range"?" · стр. "+esc(v.range||"?"):""}</div>`;}
+  prev();
+  $("q3c").onclick=()=>{
+    const val={...v,pages:v.pages==="range"?String(v.range).replace(/\s/g,"").replace(/[–—]/,"-"):"all"};
+    const ok=q.check.filter(f=>String(val[f])===String(q.a[f]));const n=ok.length;const pts=n>=5?3:n>=3?2:n>=1?1:0;
+    P.pts+=pts;P.i++;save();
+    document.querySelectorAll(".pd [data-f]").forEach(el=>{el.disabled=true;const f=el.dataset.f==="range"?"pages":el.dataset.f;if(q.check.includes(f)&&(el.dataset.f!=="pages"||q.a.pages==="all"))el.classList.add(String(val[f])===String(q.a[f])?"ok":"no");});
+    $("q3c").disabled=true;
+    $("q3fb").innerHTML=`<div class="fb ${n===5?'ok':'info'}"><span class="m">${n}/5 · +${pts}</span><span>${n===5?"Клиент доволен — всё как заказывал!":"Красным отмечены настройки, которые не совпали с заказом. Перечитай заказ внимательнее."}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="q3n">${P.i>=Q3.length?'Сдать заказ':'Следующий клиент →'}</button></div>`;
+    $("q3n").onclick=VIEWS.q3;};
+};
+
+/* ================= ЗАКАЗ 4: ФОРМАТЫ БУМАГИ ================= */
+const Q4=[{k:"click",t:"Покажи лист <b>A4</b>",a:"A4"},{k:"click",t:"Покажи лист <b>A5</b>",a:"A5"},{k:"click",t:"Покажи лист <b>A6</b> (открытка)",a:"A6"},
+ {k:"mc",t:"Сколько листов A4 помещается в одном листе A3?",o:["1","2","4","8"],a:"2"},{k:"mc",t:"Какой размер у листа A4?",o:["148 × 210 мм","210 × 297 мм","297 × 420 мм","100 × 150 мм"],a:"210 × 297 мм"}];
+VIEWS.q4=function(){
+  const A=S.part.q4||(S.part.q4=[]);
+  const top=head(5,"📄 ЗАКАЗ 4","Форматы бумаги",'На складе лежит большой лист A3. Если сложить его пополам — получится A4, ещё раз — A5, и так далее. Нажимай на нужный лист или выбирай ответ. Одна попытка.');
+  if(S.done.q4||A.length>=Q4.length){if(!S.done.q4)finishStation("q4",A.filter((a,i)=>a===Q4[i].a).length);$("sheet").innerHTML=top+`<div class="card">${paper(true)}</div>`+doneCard("q4");return;}
+  const i=A.length,q=Q4[i];
+  $("sheet").innerHTML=top+order("📦","Склад типографии",q.t)+`<div class="card"><span class="counter">вопрос <b>${i+1}</b> из ${Q4.length}</span>
+    ${q.k==="click"?paper(false):`<div class="choices" id="mc">${q.o.map(o=>`<button class="choice" type="button" data-k="${o}">${o}</button>`).join("")}</div>`}<div id="q4fb"></div></div>`;
+  const decide=(v,el)=>{const ok=v===q.a;A.push(v);save();
+    $("q4fb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${ok?'Верно!':'Правильный ответ: '+q.a+'.'} A3 = 2 × A4, A4 = 2 × A5, A5 = 2 × A6.</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="q4n">${A.length>=Q4.length?'Сдать заказ':'Дальше →'}</button></div>`;
+    document.querySelectorAll(".rg,.choice").forEach(x=>{x.onclick=null;if(x.disabled!==undefined)x.disabled=true;});
+    if(el&&el.classList.contains("choice")){document.querySelectorAll("#mc .choice").forEach(x=>{if(x.dataset.k===q.a)x.classList.add("right");});if(!ok)el.classList.add("wrong");}
+    $("q4n").onclick=VIEWS.q4;};
+  document.querySelectorAll(".rg").forEach(g=>g.onclick=()=>decide(g.dataset.a,g));
+  document.querySelectorAll("#mc .choice").forEach(b=>b.onclick=()=>decide(b.dataset.k,b));
+  function paper(lbl){const R=(a,x,y,w,h,c)=>`<g class="rg" data-a="${a}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}" stroke="#0B0D24" stroke-width="3"/>${lbl?`<text x="${x+w/2}" y="${y+h/2+6}" fill="#0B0D24" font-family="monospace" font-weight="700" font-size="${Math.max(12,w/6)}" text-anchor="middle">${a}</text>`:""}</g>`;
+    return `<svg class="paper" viewBox="0 0 424 300" role="img" aria-label="Лист A3, разделённый на меньшие форматы">
+      ${R("A4",2,2,210,296,"#33C6F0")}${R("A5",212,2,210,148,"#E2399A")}${R("A6",212,150,105,148,"#FFE600")}${R("A7",317,150,105,74,"#9AE6B4")}${R("A7",317,224,105,74,"#C4B5FD")}
+      <text x="212" y="296" fill="#fff" font-family="monospace" font-size="11" text-anchor="middle" opacity=".6">весь лист — A3</text></svg>`;}
+};
+
+/* ================= ЗАКАЗ 5: АВАРИЯ ================= */
+const Q5=[
+ {lcd:"ERROR E-02 · PAPER JAM",sub:"бумага застряла внутри",o:["Резко дёрнуть лист на себя, не выключая принтер","Выключить принтер, открыть крышку и аккуратно вытащить лист по ходу движения","Нажать «Печать» ещё 10 раз","Потрясти принтер"],a:1,w:"При замятии — выключить, открыть крышку и вытянуть лист аккуратно по ходу движения бумаги."},
+ {lcd:"LOAD PAPER · A4",sub:"лоток пуст",o:["Заменить картридж","Положить бумагу A4 в лоток","Переустановить Windows","Выбрать альбомную ориентацию"],a:1,w:"Сообщение «Load paper» — закончилась бумага, нужно заполнить лоток."},
+ {lcd:"TONER LOW ▓░░░░",sub:"листы печатаются бледными",o:["Заменить картридж (тонер)","Положить другую бумагу","Сделать двустороннюю печать","Увеличить число копий"],a:0,w:"Бледная печать и «Toner low» — заканчивается тонер, нужен новый картридж."},
+ {lcd:"OFFLINE ⦸",sub:"компьютер пишет: «Принтер не в сети»",o:["Купить новый принтер","Проверить питание принтера и кабель / Wi-Fi","Заменить бумагу","Поменять цвет печати"],a:1,w:"«Не в сети» — принтер выключен или не подключён: проверь питание, кабель или Wi-Fi."}
+];
+VIEWS.q5=()=>seqQuiz({key:"q5",n:6,tag:"🚨 АВАРИЯ",title:"Авария на смене!",lead:"Принтер выдаёт ошибки, а клиенты ждут. Прочитай экран принтера и выбери правильное действие. На каждую аварию — <b>25 секунд</b>!",timer:25,unit:"авария",
+  items:Q5,answer:i=>String(Q5[i].a),why:i=>Q5[i].w,choices:i=>Q5[i].o.map((t,j)=>[String(j),t]),
+  ask:i=>`<div class="box" style="align-items:center"><svg class="printer" viewBox="0 0 200 140" aria-hidden="true"><rect x="20" y="40" width="160" height="70" rx="10" fill="#2E3474"/><rect x="45" y="10" width="110" height="34" rx="4" fill="#C9CEF5"/><rect x="45" y="104" width="110" height="26" fill="#fff"/><circle cx="160" cy="58" r="6" fill="#FF5C7A"><animate attributeName="opacity" values="1;.2;1" dur="1s" repeatCount="indefinite"/></circle></svg>
+    <div class="lcd">⚠ ${Q5[i].lcd}<small>${Q5[i].sub}</small></div></div>`});
+
+/* ================= ЗАКАЗ 6: ЭКО-ЗАКАЗ ================= */
+VIEWS.q6=function(){
+  const P=S.part.q6||(S.part.q6={dup:false,per:1,ans:""});
+  const top=head(7,"🌳 ЭКО-ЗАКАЗ","Сэкономь бумагу",'Директор просит напечатать <b>памятку на 40 страниц</b> для <b>25 учеников</b> — но потратить как можно меньше бумаги, и чтобы текст можно было <b>прочитать</b>. Подбери настройки и посчитай листы. 2 балла — экономные и читаемые настройки, 1 балл — верный расчёт.');
+  if(S.done.q6){$("sheet").innerHTML=top+doneCard("q6");return;}
+  const sheets=()=>Math.ceil(40/P.per/(P.dup?2:1))*25;
+  $("sheet").innerHTML=top+order("👨‍🏫","Директор школы","40 страниц × 25 учеников. <b>Бумаги мало!</b> Но памятку должны прочитать все — мелкий шрифт не подойдёт.")+`<div class="card"><div class="eco"><div style="display:grid;gap:14px">
+     <div><div class="step-tag">ДВУСТОРОННЯЯ ПЕЧАТЬ</div><div class="tog" id="tDup"><button type="button" data-v="0" aria-pressed="${!P.dup}">Нет</button><button type="button" data-v="1" aria-pressed="${P.dup}">Да, с двух сторон</button></div></div>
+     <div><div class="step-tag">СТРАНИЦ НА ОДНОЙ СТОРОНЕ ЛИСТА</div><div class="tog" id="tPer">${[1,2,4,8].map(n=>`<button type="button" data-v="${n}" aria-pressed="${P.per===n}">${n}</button>`).join("")}</div></div>
+     <div id="read"></div></div>
+    <div style="display:grid;gap:10px"><div class="step-tag">СЧЁТЧИК БУМАГИ</div><div class="big" id="cnt"></div><div class="counter">листов бумаги</div><div class="trees" id="trees"></div>
+     <div class="pwbox" style="display:grid;gap:6px"><span class="counter">Посчитай сам: сколько листов нужно при выбранных настройках?</span><input id="calc" type="number" min="0" value="${esc(P.ans)}"></div></div></div>
+    <div class="row"><button class="btn" type="button" id="q6c">Сдать заказ</button></div><div id="q6fb"></div></div>`;
+  function upd(){const n=sheets();$("cnt").textContent="???";
+    $("trees").textContent=n<=250?"🌳🌳🌳 экономно!":n<=500?"🌳🌳 можно лучше":"🌳 много бумаги";
+    $("read").innerHTML=`<div class="mini" style="grid-template-columns:repeat(${P.per>=4?2:1},${P.per>=4?40:84}px)">${Array.from({length:P.per},()=>`<div style="height:${P.per>=4?30:P.per===2?44:110}px;border:1px solid #ccd;border-radius:2px;display:grid;place-items:center;font-size:${P.per>=8?4:P.per>=4?6:P.per===2?10:14}px;color:#333">Текст памятки</div>`).join("")}</div>
+      <div class="counter">${P.per>=4?"⚠ шрифт слишком мелкий — прочитать трудно":"✓ текст читается"}</div>`;}
+  upd();
+  document.querySelectorAll("#tDup button").forEach(b=>b.onclick=()=>{P.dup=b.dataset.v==="1";save();document.querySelectorAll("#tDup button").forEach(x=>x.setAttribute("aria-pressed",x===b));upd();});
+  document.querySelectorAll("#tPer button").forEach(b=>b.onclick=()=>{P.per=+b.dataset.v;save();document.querySelectorAll("#tPer button").forEach(x=>x.setAttribute("aria-pressed",x===b));upd();});
+  $("calc").oninput=e=>{P.ans=e.target.value;save();};
+  $("q6c").onclick=()=>{if(P.ans===""){$("q6fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Впиши, сколько листов понадобится.</span></div>`;return;}
+    const n=sheets(),best=P.dup&&P.per===2;const set=best?2:(P.per<4&&(P.dup||P.per===2))?1:0;const calc=+P.ans===n?1:0;
+    finishStation("q6",set+calc);$("cnt").textContent=n;
+    $("q6fb").innerHTML=`<div class="fb ${set+calc===3?'ok':'info'}"><span class="m">${set+calc}/3</span><span>При твоих настройках нужно <b>${n}</b> листов (40 стр. ÷ ${P.per} ÷ ${P.dup?2:1} = ${Math.ceil(40/P.per/(P.dup?2:1))} листа на ученика × 25).
+      Самый экономный читаемый вариант: <b>двусторонняя печать + 2 страницы на листе = 250 листов</b> вместо 1000. ${P.per>=4?"4 и больше страниц на листе — слишком мелко.":""}</span></div>`+doneCard("q6");};
+};
+
+/* ================= БОСС-ЗАКАЗ (ИИ) ================= */
+const BOSSQ=[
+ {k:"o1",max:3,t:"Письмо от директора",q:"«Школа покупает принтер для кабинета информатики. Печатать будем около 300 страниц в день, в основном чёрно-белые документы, а иногда нужно сканировать и делать копии. Какой принтер вы посоветуете и почему?»"},
+ {k:"o2",max:2,t:"Вопрос от клиента",q:"«Я распечатал фото, а цвета на бумаге немного другие, чем на экране. Почему так? И дайте мне совет, как не тратить зря бумагу и краску.»"}
+];
+VIEWS.q7=function(){
+  const ro=!!S.done.q7;
+  const top=head(8,"👑 БОСС-ЗАКАЗ","Ответь главным клиентам",'Это письменный заказ: ответь каждому клиенту <b>полными предложениями</b> (3–4 предложения), объясни свой совет. Ответы проверит <b>ИИ</b>, а учитель утвердит оценку.');
+  $("sheet").innerHTML=top+BOSSQ.map(c=>`<div class="card">${order(c.k==="o1"?"🏫":"📷",c.t,c.q)}<div class="step-tag">ТВОЙ ОТВЕТ · до ${c.max} б.</div>
+    <textarea class="ans" data-k="${c.k}" maxlength="1500" ${ro?"readonly":""} placeholder="Уважаемый клиент, советую…">${esc(S.open[c.k]||"")}</textarea><div class="chars" id="ch_${c.k}"></div></div>`).join("")+
+    (ro?`<div class="card finish-theory"><div class="step-tag" style="color:var(--cyan)">✓ ОТВЕТЫ ОТПРАВЛЕНЫ КЛИЕНТАМ</div><h3>Их оценят ИИ и учитель</h3><div class="row"><button class="btn" type="button" onclick="show('fin')">К итогам смены →</button></div></div>`
+      :`<div class="card finish-theory"><h3>Отправить ответы клиентам?</h3><p style="margin:0;color:#BFD6FF">После отправки изменить ответы будет нельзя.</p>
+      <div class="row"><button class="btn" type="button" id="q7s">✉ Отправить и закрыть смену</button></div></div>`);
+  const cnt=t=>{const n=t.value.trim().length;$("ch_"+t.dataset.k).textContent=n+" символов"+(n<60?" · напиши подробнее":"");};
+  document.querySelectorAll("textarea.ans").forEach(t=>{cnt(t);t.oninput=()=>{S.open[t.dataset.k]=t.value;save();cnt(t);clearTimeout(t._s);t._s=setTimeout(syncProgress,1500);};});
+  if(ro)return;
+  $("q7s").onclick=()=>{const short=BOSSQ.filter(c=>(S.open[c.k]||"").trim().length<30);
+    if(short.length&&!confirm("Некоторые ответы очень короткие — за них могут поставить мало баллов. Всё равно отправить?"))return;
+    S.done.q7=true;save();renderTools();syncProgress();show("fin");};
+};
+
+/* ================= БОНУС 1: МИФ ИЛИ ПРАВДА ================= */
+const MY=[
+ {t:"Лазерный принтер печатает жидкими чернилами.",a:"0",w:"Миф: лазерный печатает порошком — тонером. Чернила — у струйного."},
+ {t:"МФУ умеет печатать, сканировать и копировать.",a:"1",w:"Правда."},
+ {t:"Цвета на экране (RGB) и на бумаге (CMYK) получаются по-разному.",a:"1",w:"Правда: экран светит, а бумага отражает свет красок."},
+ {t:"Замятый лист нужно резко дёрнуть, не выключая принтер.",a:"0",w:"Миф: сначала выключить, потом аккуратно вытянуть."},
+ {t:"Лист A3 больше листа A4.",a:"1",w:"Правда: A3 = два листа A4."},
+ {t:"Использованные картриджи можно выбросить в обычный мусор — это безопасно.",a:"0",w:"Миф: их сдают на переработку."}
+];
+VIEWS.b1=()=>seqQuiz({key:"b1",n:0,bonus:"b1",title:"Миф или правда?",lead:"Быстро реши: правда это или миф. На каждую карточку — <b>10 секунд</b>!",timer:10,unit:"карточка",
+  items:MY,ask:i=>`<p class="task-text" style="font-size:20px">«${MY[i].t}»</p>`,answer:i=>MY[i].a,why:i=>MY[i].w,choices:()=>[["1","✅ Правда"],["0","❌ Миф"]]});
+
+/* ================= БОНУС 2: УСТРОЙСТВО ПРИНТЕРА ================= */
+const PP=[["in","лоток подачи бумаги"],["out","лоток вывода (готовые листы)"],["pan","панель управления с экраном"],["cart","крышка картриджа"],["pow","кнопка питания"]];
+VIEWS.b2=function(){
+  const P=S.part.b2||(S.part.b2={sel:{}});
+  const top=head(0,"","Устройство принтера",'Подпиши части принтера: для каждой цифры выбери название. Одна проверка, 1 балл за каждую часть.',"b2");
+  const opts=shuffle(PP.map(p=>p[0]),6);
+  $("sheet").innerHTML=top+`<div class="card"><div class="box">
+    <svg viewBox="0 0 300 230" style="width:100%;max-width:380px;justify-self:center" role="img" aria-label="Схема принтера">
+      <rect x="70" y="10" width="160" height="50" rx="4" fill="#C9CEF5" transform="skewX(-8)"/>
+      <rect x="30" y="55" width="240" height="100" rx="14" fill="#2E3474"/><rect x="150" y="70" width="100" height="26" rx="5" fill="#0b2a1f" stroke="#7CFFB2"/>
+      <rect x="60" y="66" width="70" height="40" rx="6" fill="#3a3f78" stroke="#9aa0d0"/><circle cx="250" cy="130" r="9" fill="#2EE59D"/>
+      <rect x="60" y="150" width="180" height="50" rx="4" fill="#fff"/>
+      ${[[150,30,1],[150,186,2],[200,83,3],[95,86,4],[250,130,5]].map(([x,y,n])=>`<circle cx="${x}" cy="${y}" r="13" fill="#0B0D24" stroke="#FFE600" stroke-width="2"/><text x="${x}" y="${y+5}" fill="#FFE600" font-family="monospace" font-weight="700" font-size="14" text-anchor="middle">${n}</text>`).join("")}
+    </svg>
+    <div class="match">${PP.map((p,n)=>`<label><code>${n+1}</code><select data-k="${p[0]}" ${S.done.b2?"disabled":""}><option value="">— выбери —</option>${opts.map(o=>`<option value="${o}" ${P.sel[p[0]]===o?"selected":""}>${PP.find(x=>x[0]===o)[1]}</option>`).join("")}</select></label>`).join("")}</div>
+    </div>${S.done.b2?"":`<div class="row"><button class="btn" type="button" id="b2c">Проверить</button></div><div id="b2fb"></div>`}</div>`+(S.done.b2?doneCard("b2"):"");
+  if(S.done.b2)return;
+  document.querySelectorAll(".match select").forEach(s=>s.onchange=()=>{P.sel[s.dataset.k]=s.value;save();});
+  $("b2c").onclick=()=>{if(PP.some(p=>!P.sel[p[0]])){$("b2fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Подпиши все 5 частей.</span></div>`;return;}
+    let ok=0;document.querySelectorAll(".match select").forEach(s=>{const r=s.value===s.dataset.k;if(r)ok++;s.classList.add(r?"ok":"no");s.disabled=true;});
+    finishStation("b2",ok);$("b2fb").innerHTML=`<div class="fb ${ok===5?'ok':'info'}"><span class="m">${ok}/5</span><span>1 — лоток подачи, 2 — лоток вывода, 3 — панель управления, 4 — крышка картриджа, 5 — кнопка питания.</span></div>`+doneCard("b2");};
+};
+
+/* ================= ИТОГИ СМЕНЫ ================= */
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+VIEWS.fin=function(){
+  const m=AUTO.reduce((s,k)=>s+(S.score[k]||0),0),b=BKEYS.reduce((s,k)=>s+(S.score[k]||0),0),r=rep(),bleft=BKEYS.filter(k=>!S.done[k]);
+  $("sheet").innerHTML=head(9,"🧾 ИТОГИ СМЕНЫ","Смена закрыта!",'Посмотри, сколько заработала твоя типография, отметь, как прошёл урок, и отправь отчёт учителю. Отметку учитель увидит после проверки Босс-заказа.')+`
+  <div class="card"><div class="result"><div class="grade"><small>КАССА</small><b style="font-size:40px">${cash()}</b><small>ЛЕЙ</small></div>
+    <div style="display:grid;gap:8px;min-width:0"><div class="rep">${"★".repeat(r)}${"☆".repeat(5-r)}</div>
+    <div class="pts">${m}<span> / ${MAXMAIN-OPENMAX} + Босс-заказ до ${OPENMAX}</span></div>
+    <div class="counter">⭐ бонус: <b>+${b}</b> · время ≈ <b>${minutes()} мин</b> · ${esc(S.fio)}, ${esc(S.cls)}</div></div></div>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>ЗАКАЗ</th><th>⭐</th><th>БАЛЛЫ</th><th>💰</th></tr></thead><tbody>
+      ${AUTO.map(k=>`<tr><td>${NAMES[k]}</td><td>${stars(k)}</td><td>${S.score[k]??"—"} / ${MAXP[k]}</td><td>${(S.score[k]||0)*PRICE}</td></tr>`).join("")}
+      <tr><td>${NAMES.q7}</td><td>🤖</td><td>проверяется / ${OPENMAX}</td><td>—</td></tr>
+      ${BKEYS.map(k=>`<tr><td>${NAMES[k]}</td><td>${S.done[k]?stars(k):"—"}</td><td>${S.score[k]!=null?"+"+S.score[k]:"не пройдено"}</td><td>${(S.score[k]||0)*PRICE}</td></tr>`).join("")}</tbody></table></div>
+    ${bleft.length?`<div class="fb info"><span class="m">⭐</span><span>Есть время? Выполни бонусные заказы (слева внизу) — они приносят деньги и баллы. Потом нажми «Обновить отчёт».</span></div>`:""}</div>
+  <div class="card"><h3>Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(x=>`<button type="button" aria-pressed="${S.mood===x[1]}" data-m="${x[1]}">${x[0]} ${x[1]}</button>`).join("")}</div>
+    <div class="row"><button class="btn" type="button" id="send" ${S.mood?"":"disabled"}>${S.sent?"↻ Обновить отчёт":"↑ Отправить отчёт учителю"}</button>
+      <span class="counter" id="sendHint">${S.mood?"":"сначала выбери ответ выше"}</span></div>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div></div>`;
+  document.querySelectorAll("#mood button").forEach(x=>x.onclick=()=>{S.mood=x.dataset.m;save();
+    document.querySelectorAll("#mood button").forEach(y=>y.setAttribute("aria-pressed",y===x));$("send").disabled=false;$("sendHint").textContent="";});
+  $("send").onclick=sendResult;
+};
+function sentHTML(ok,msg){return ok?`<div class="sent"><span class="p">&gt;</span> print_lab.close_shift()<br><span class="g">✓ отчёт смены передан учителю</span><br><span class="p">&gt;</span> Отличная работа, мастер!</div>`
+  :`<div class="sent"><span class="p">&gt;</span> print_lab.close_shift()<br><span class="r">✗ ${msg}</span></div>`;}
+function sendResult(){
+  const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+  const data={score:S.score,open:S.open,minutes:minutes(),mood:S.mood,stage:"Итоги",doneCount:STEPS.length,cash:cash()};
+  const ok=()=>{S.sent=1;S.done.fin=true;save();renderTools();$("sendOut").innerHTML=sentHTML(true);btn.disabled=false;btn.textContent="↻ Обновить отчёт";toast("✓ Отправлено учителю");};
+  const fail=()=>{$("sendOut").innerHTML=sentHTML(false,"Не получилось отправить. Проверь интернет и нажми ещё раз или позови учителя.");btn.disabled=false;btn.textContent="↑ Отправить отчёт учителю";};
+  if(!S.rec){fail();return;}
+  TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+}
+
+load();
+if(S.fio){openApp();}
+</script>
+</body>
+</html>
