@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#2E4BFF">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Миссия 1 · Цифровой щит · 7 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://dmitri-bcd33-default-rtdb.europe-west1.firebasedatabase.app">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: экран входа как окно редактора поверх «проявляющейся» пиксельной картинки;
+   внутри — тёмная панель инструментов слева + белый лист с заданием справа. */
+:root{
+  --ink:#14214D;      /* тёмно-синий: терминалы */
+  --deep:#FFFFFF;     /* панели */
+  --line:#DCE4F2;     /* линии */
+  --blue:#2E4BFF;     /* основной акцент */
+  --cyan:#2E4BFF;
+  --violet:#5B6CFF;
+  --paper:#FFFFFF;    /* карточки */
+  --mist:#EEF2F8;     /* фон листа */
+  --frost:#DCE4F2;    /* рамки */
+  --text:#0B1A3B;
+  --muted:#556A92;
+  --ok:#12A46B;
+  --warn:#FFB020;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+/* ===== СТАРТ ===== */
+#start{position:fixed;inset:0;display:grid;place-items:center;overflow:auto;
+  padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#bg{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:0}
+#start::before{content:"";position:fixed;inset:0;z-index:1;
+  background:radial-gradient(ellipse at 30% 20%,rgba(33,96,255,.25),transparent 60%),linear-gradient(180deg,rgba(7,22,52,.55),rgba(7,22,52,.85))}
+.grid-ov{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(rgba(69,211,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(69,211,255,.07) 1px,transparent 1px);background-size:24px 24px}
+.win{position:relative;z-index:2;width:min(560px,100%);background:var(--paper);border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.45),0 0 60px rgba(33,96,255,.35)}
+.titlebar{display:flex;align-items:center;gap:10px;background:var(--deep);color:#CFE2FF;padding:10px 14px;font-family:var(--mono);font-size:13px}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#2A4A8A;display:block}
+.dots i:first-child{background:#FF5F57}.dots i:nth-child(2){background:#FEBC2E}.dots i:nth-child(3){background:#28C840}
+.titlebar span{opacity:.85}.titlebar b{margin-left:auto;color:var(--cyan);font-weight:600}
+.win-body{padding:26px 28px 28px;display:grid;gap:18px}
+.term{background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:14px 16px;line-height:1.7;min-height:120px}
+.term .p{color:var(--cyan)}.term .g{color:#5BE3A8}.term .c{color:#6E87B8}
+.cursor{display:inline-block;width:8px;height:15px;background:var(--cyan);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.brand{display:grid;gap:6px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:600}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,6vw,40px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--blue)}
+.sub{margin:0;color:var(--muted)}
+.fields{display:grid;grid-template-columns:1fr 150px;gap:12px}
+.field{display:grid;gap:6px;min-width:0}
+.field label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.field input,.field select{font:inherit;font-size:16px;padding:12px 14px;border:2px solid var(--frost);border-radius:10px;background:var(--mist);color:var(--text);width:100%}
+.field input:focus,.field select:focus{border-color:var(--blue);outline:none;background:#fff}
+.err{color:#D9304B;font-size:14px;font-weight:600;min-height:20px;margin:-6px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:10px;padding:14px 22px;font-weight:800;font-size:16px;
+  background:var(--blue);color:#fff;box-shadow:0 6px 0 #133FB0,0 10px 24px rgba(33,96,255,.35);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #133FB0}
+.btn[disabled]{background:#9DB2D8;box-shadow:0 6px 0 #7E93BA;cursor:not-allowed;transform:none}
+.btn .k{font-family:var(--mono);font-weight:600;opacity:.8}
+.rules{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px;color:var(--muted)}
+.rules li{display:flex;gap:10px}.rules li b{font-family:var(--mono);color:var(--blue)}
+
+/* ===== ПРИЛОЖЕНИЕ ===== */
+#app{min-height:100%;display:grid;grid-template-columns:96px 1fr;grid-template-rows:auto 1fr}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--ink);color:#DDE9FF;border-bottom:1px solid var(--line);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.logo{font-family:var(--mono);font-weight:700;font-size:15px;color:#fff;letter-spacing:.02em}
+.logo i{font-style:normal;color:var(--cyan)}
+.file{font-family:var(--mono);font-size:12px;color:#7F98C7}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:13px;background:var(--deep);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.chip b{color:var(--cyan);font-weight:600}
+.linkbtn{background:none;border:0;color:#7F98C7;font-family:var(--mono);font-size:12px;text-decoration:underline;padding:4px}
+
+.tools{background:var(--deep);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.tool{position:relative;display:grid;justify-items:center;gap:4px;padding:10px 4px;border-radius:10px;border:1px solid transparent;background:transparent;color:#AFC4EC;font-size:11px;font-weight:700;line-height:1.2;text-align:center}
+.tool svg{width:26px;height:26px}
+.tool:hover{background:rgba(69,211,255,.08)}
+.tool[aria-current="true"]{background:var(--blue);color:#fff;box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(69,211,255,.35)}
+.tool.locked{opacity:.45}
+.tool .st{position:absolute;top:4px;right:6px;font-size:11px}
+.tool.done .st{color:var(--ok)}
+.tools .sep{height:1px;background:var(--line);margin:6px 4px}
+.preview{display:grid;gap:6px;justify-items:center;margin-top:auto;padding-top:8px}
+.preview canvas{width:72px;height:54px;border-radius:6px;border:1px solid var(--line);image-rendering:pixelated}
+.preview small{font-family:var(--mono);font-size:10px;color:#7F98C7;text-align:center}
+
+main{background:var(--mist);min-width:0;padding-block:28px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{max-width:920px;margin:0 auto;display:grid;gap:22px}
+.sec-head{display:grid;gap:8px}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(24px,4vw,32px);line-height:1.15;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;margin:0;line-height:1.3}
+.lead{margin:0;color:var(--muted);max-width:62ch}
+.card{background:var(--paper);border:1px solid var(--frost);border-radius:14px;padding:22px;display:grid;gap:14px;min-width:0}
+.step-tag{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.06em}
+
+/* блок «в тетрадь» */
+.note{position:relative;background:#FFFDF4;border:2px dashed #E9C46A;border-radius:12px;padding:16px 18px 16px 18px;display:grid;gap:8px}
+.note .tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;color:#9A6B00;letter-spacing:.06em;text-transform:uppercase}
+.note p{margin:0;font-size:17px;font-weight:600;color:#2A2410;max-width:65ch}
+.note ul{margin:0;padding-left:22px;font-size:17px;font-weight:600;color:#2A2410;display:grid;gap:4px}
+.note mark{background:#FFE58A;color:inherit;padding:0 3px;border-radius:3px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.vs{border-radius:12px;padding:16px;display:grid;gap:6px;border:1px solid var(--frost);background:var(--mist)}
+.vs b{font-family:var(--display);font-size:16px}
+.vs p{margin:0;color:var(--muted);font-size:15px}
+.vs .ico{font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:700}
+
+/* пиксели */
+.pix{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center}
+.pix canvas{width:100%;max-width:100%;aspect-ratio:4/3;border-radius:10px;border:1px solid var(--frost);image-rendering:pixelated;background:#000}
+.range{display:grid;gap:6px}
+.range label{font-family:var(--mono);font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+.range label b{color:var(--blue)}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.pix-txt{display:grid;gap:12px}
+.pix-txt p{margin:0}
+
+/* редактор-демо */
+.editor{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
+.stage{background:#0B1A3B;border-radius:12px;padding:14px;display:grid;place-items:center;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.stage canvas{max-width:100%;height:auto;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.ops{display:grid;gap:8px;align-content:start}
+.op{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;text-align:left;background:var(--mist);border:1px solid var(--frost);border-radius:10px;padding:10px 12px;color:var(--text)}
+.op:hover{border-color:var(--blue);background:#fff}
+.op svg{width:24px;height:24px;color:var(--blue)}
+.op b{display:block;font-size:15px}
+.op small{display:block;color:var(--muted);font-size:13px;line-height:1.3}
+.op.on{border-color:var(--blue);background:#E3ECFF}
+.console{grid-column:1/-1;background:var(--ink);color:#BFD6FF;font-family:var(--mono);font-size:13px;border-radius:10px;padding:10px 14px;min-height:84px;max-height:120px;overflow:auto;line-height:1.6}
+.console .p{color:var(--cyan)}
+.reset{justify-self:start;background:none;border:1px solid var(--frost);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+.opslist{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.opcard{background:var(--mist);border:1px solid var(--frost);border-radius:12px;padding:14px;display:grid;gap:6px}
+.opcard svg{width:28px;height:28px;color:var(--blue)}
+.opcard b{font-size:15px}.opcard span{font-size:14px;color:var(--muted);line-height:1.4}
+
+.finish-theory{background:var(--deep);color:#DDE9FF;border:0}
+.finish-theory h3{color:#fff}
+.check{display:flex;gap:12px;align-items:flex-start;font-weight:600;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--cyan);margin-top:2px;flex:none}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+.locked-screen{text-align:center;justify-items:center;padding:48px 22px}
+.locked-screen .big{font-family:var(--mono);font-size:48px;color:var(--blue)}
+
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-family:var(--mono);font-size:14px;
+  padding:12px 18px;border-radius:10px;border:1px solid var(--cyan);opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:calc(100% - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* общие для станций */
+.imgbox{background:#0B1A3B;border-radius:12px;height:220px;display:grid;place-items:center;padding:10px;position:relative;
+  background-image:linear-gradient(45deg,#11244B 25%,transparent 25%),linear-gradient(-45deg,#11244B 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11244B 75%),linear-gradient(-45deg,transparent 75%,#11244B 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;min-width:0}
+.imgbox canvas{max-width:100%;max-height:100%;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.imgbox .lbl{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:rgba(7,22,52,.75);border:1px solid var(--line);padding:3px 8px;border-radius:6px}
+.imgbox.tall{height:300px}
+.counter{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.counter b{color:var(--blue)}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.choice{display:flex;align-items:center;gap:10px;text-align:left;background:var(--mist);border:2px solid var(--frost);border-radius:10px;padding:12px 14px;color:var(--text);font-weight:700;font-size:15px;line-height:1.3}
+.choice svg{width:22px;height:22px;color:var(--blue);flex:none}
+.choice:hover:not([disabled]){border-color:var(--blue);background:#fff}
+.choice[disabled]{cursor:default}
+.choice.right{border-color:var(--ok);background:#E3F8EF}
+.choice.wrong{border-color:#E5484D;background:#FDECEE}
+.fb{border-radius:10px;padding:12px 16px;font-weight:600;display:flex;gap:10px;align-items:flex-start}
+.fb.ok{background:#E3F8EF;color:#0B6B47}
+.fb.no{background:#FDECEE;color:#A3202E}
+.fb.info{background:#E3ECFF;color:#1B3F9E}
+.fb .m{font-family:var(--mono);font-weight:700}
+.dotsbar{display:flex;gap:6px;flex-wrap:wrap}
+.dotsbar i{width:28px;height:8px;border-radius:4px;background:var(--frost);display:block}
+.dotsbar i.ok{background:var(--ok)}.dotsbar i.no{background:#E5484D}.dotsbar i.cur{background:var(--blue)}
+.task-text{margin:0;font-size:17px;font-weight:600;max-width:65ch}
+
+.q1grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{display:grid;gap:16px}
+.meter{display:grid;gap:6px}
+.meter .mt{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.meter .bar{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#1B2A4E,#5A6E93 50%,#F2F6FF)}
+.meter .zone{position:absolute;top:-3px;bottom:-3px;left:42.5%;width:15%;border:2px solid var(--ok);border-radius:6px;background:rgba(20,184,122,.18)}
+.meter .needle{position:absolute;top:-6px;width:4px;height:28px;background:var(--blue);border-radius:2px;transform:translateX(-2px);transition:left .15s}
+.meter.c .bar{background:linear-gradient(90deg,#8E9BB5,#5A6E93 50%,#0B1A3B)}
+
+.q2grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tbtns{display:flex;flex-wrap:wrap;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:8px;background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;font-size:15px;color:var(--text)}
+.tbtn svg{width:20px;height:20px;color:var(--blue)}
+.tbtn:hover{border-color:var(--blue)}
+.tbtn .v{font-family:var(--mono);font-size:12px;color:var(--blue);background:var(--mist);padding:2px 6px;border-radius:5px}
+
+/* финиш */
+.result{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.grade{width:150px;height:150px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;align-content:center;
+  box-shadow:0 0 0 6px #D6E6FF,0 0 40px rgba(33,96,255,.45)}
+.grade small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;font-weight:700}
+.grade b{font-family:var(--display);font-size:64px;line-height:1}
+.pts{font-family:var(--display);font-size:clamp(40px,7vw,60px);font-weight:800;line-height:1}
+.pts span{font-size:.45em;color:var(--muted)}
+.scale{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;font-family:var(--mono);font-size:11px;text-align:center}
+.scale div{border:1px solid var(--frost);border-radius:6px;padding:6px 2px;background:var(--paper);line-height:1.3}
+.scale div b{display:block;font-size:14px}
+.scale div.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{padding:10px 8px;border-bottom:1px solid var(--frost);text-align:left}
+.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.tbl td:last-child,.tbl th:last-child{text-align:right;font-family:var(--mono);font-weight:700}
+.mood{display:flex;flex-wrap:wrap;gap:10px}
+.mood button{background:var(--paper);border:2px solid var(--frost);border-radius:10px;padding:10px 14px;font-weight:700;color:var(--text)}
+.mood button[aria-pressed="true"]{border-color:var(--blue);background:#E3ECFF}
+.sent{font-family:var(--mono);background:var(--ink);color:#BFD6FF;border-radius:10px;padding:14px 16px;line-height:1.7}
+.sent .g{color:#5BE3A8}.sent .p{color:var(--cyan)}.sent .r{color:#FF8A8A}
+
+@media (max-width:760px){
+  .q1grid,.q2grid,.result{grid-template-columns:1fr}
+  .grade{width:120px;height:120px}.grade b{font-size:50px}
+  .scale{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr}
+  .tools{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}
+  .tool{min-width:76px}
+  .tools .sep{display:none}
+  .preview{display:none}
+  .two,.pix,.editor{grid-template-columns:1fr}
+  .fields{grid-template-columns:1fr}
+  .file{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== НЕОНОВЫЙ КОСМОС (TechLab) ===== */
+body{background:radial-gradient(circle at 15% 0%,#2a1766 0,var(--ink) 55%) fixed}
+main{background:transparent}
+#start::before{background:radial-gradient(ellipse at 30% 20%,rgba(178,107,255,.30),transparent 60%),linear-gradient(180deg,rgba(11,13,36,.55),rgba(11,13,36,.9))}
+.win{background:var(--paper);box-shadow:0 0 0 1px rgba(69,211,255,.35),0 30px 80px rgba(0,0,0,.55),0 0 70px rgba(123,108,255,.45)}
+.titlebar{background:#EEF2F8}
+.eyebrow,.step-tag{color:var(--cyan)}
+h1 em,.grad{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.term,.console,.sent{background:#14214D;border:1px solid var(--line)}
+.field input,.field select{background:#F5F8FD;color:var(--text);border-color:var(--frost)}
+.field input:focus,.field select:focus{background:#FFFFFF;border-color:var(--cyan)}
+.btn{background:linear-gradient(90deg,var(--cyan),var(--violet));color:#FFFFFF;box-shadow:0 0 0 0 transparent,0 8px 26px rgba(123,108,255,.45)}
+.btn:active{box-shadow:0 2px 10px rgba(123,108,255,.4)}
+.btn[disabled]{background:#B8C5E0;color:#FFFFFF;box-shadow:none}
+.rules li b,.counter b,.range label b{color:var(--cyan)}
+.card{background:rgba(23,26,63,.88);border-color:var(--frost)}
+.tool[aria-current="true"]{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 1px var(--cyan),0 0 22px rgba(123,108,255,.55)}
+.note{background:rgba(255,206,84,.08);border-color:#E9C46A}
+.note .tag{color:#A86A00}.note p,.note ul{color:#2A2410}
+.note mark{background:#FFD36B;color:#241a00}
+.vs,.opcard,.op,.choice,.tbtn,.mood button,.scale div{background:#FFFFFF;border-color:var(--frost);color:var(--text)}
+.op:hover,.choice:hover:not([disabled]),.tbtn:hover{background:#F0F4FF;border-color:var(--cyan)}
+.op.on{background:rgba(123,108,255,.25);border-color:var(--violet)}
+.op svg,.opcard svg,.choice svg,.tbtn svg,.vs .ico{color:var(--cyan)}
+.tbtn .v{background:#EEF2F8;color:var(--cyan)}
+.choice.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.choice.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.fb.ok{background:rgba(46,229,157,.15);color:#0B8A5A}
+.fb.no{background:rgba(255,92,122,.15);color:#C2253B}
+.fb.info{background:rgba(69,211,255,.12);color:#1B3F9E}
+.reset{border-color:var(--frost);color:var(--muted)}
+.dotsbar i{background:#DCE4F2}.dotsbar i.cur{background:var(--cyan)}
+.grade{background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 6px rgba(123,108,255,.25),0 0 50px rgba(178,107,255,.6)}
+.scale div.on{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#FFFFFF;border-color:transparent}
+.mood button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.15)}
+.tbl td,.tbl th{border-color:var(--frost)}
+.finish-theory{background:linear-gradient(135deg,#2E4BFF,#1F35C9);border:1px solid var(--line)}
+.meter .bar{background:linear-gradient(90deg,#EEF2F8,#5A6E93 50%,#F2F6FF)}
+.meter .needle{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.stars{font-size:22px;letter-spacing:4px}
+.fuel{height:6px;border-radius:9px;background:#DCE4F2;overflow:hidden;min-width:120px}
+.fuel i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .4s}
+.imgbox canvas{width:auto;height:auto;max-width:100%;max-height:196px}
+.imgbox.tall canvas{max-height:276px}
+.pxgrid{width:max-content}
+.back{color:var(--muted);font-family:var(--mono);font-size:12px;text-decoration:none}
+.back:hover{color:var(--cyan)}
+
+/* пиксель-художник */
+.pxwrap{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+.pxgrid{display:grid;grid-template-columns:repeat(8,34px);grid-template-rows:repeat(8,34px);gap:2px;background:#14214D;padding:6px;border-radius:10px;border:1px solid var(--line);user-select:none;touch-action:none}
+.pxgrid.small{grid-template-columns:repeat(8,16px);grid-template-rows:repeat(8,16px);gap:1px;padding:4px;cursor:default}
+.pxgrid i{display:block;border-radius:3px;cursor:crosshair}
+.pxgrid.small i{border-radius:2px;cursor:default}
+.palette{display:flex;flex-wrap:wrap;gap:8px}
+.palette button{width:42px;height:42px;border-radius:10px;border:3px solid transparent;box-shadow:0 0 0 1px var(--frost)}
+.palette button[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 2px var(--cyan),0 0 16px var(--cyan)}
+.pct{font-family:var(--display);font-size:28px;font-weight:800}
+
+/* блиц */
+.blitz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.clock60{font-family:var(--display);font-size:40px;font-weight:800;color:var(--cyan);text-shadow:0 0 18px rgba(69,211,255,.6)}
+.clock60.low{color:#FF5C7A;text-shadow:0 0 18px rgba(255,92,122,.6)}
+@media (max-width:760px){.pxwrap{grid-template-columns:1fr}.pxgrid{grid-template-columns:repeat(8,30px);grid-template-rows:repeat(8,30px)}}
+</style>
+<style>
+/* ===== дополнения для миссии 7 класса ===== */
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{background:#FFFFFF;border:2px solid var(--frost);border-radius:10px;padding:10px 14px;color:var(--text);font-weight:700;font-size:15px;text-align:left}
+.seg button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(69,211,255,.14)}
+.seg button.right{border-color:#2EE59D;background:rgba(46,229,157,.15)}
+.seg button.wrong{border-color:#FF5C7A;background:rgba(255,92,122,.15)}
+.param{display:grid;gap:8px;padding:14px 0;border-bottom:1px solid var(--frost)}
+.param:last-child{border-bottom:0}
+.param .pl{font-family:var(--mono);font-size:13px;color:var(--cyan);font-weight:700;letter-spacing:.04em}
+.desk{width:100%;max-width:420px;justify-self:center}
+.erg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px;align-items:start}
+.comfort{display:grid;gap:6px}
+.msg{border:1px solid var(--frost);border-radius:14px;background:#F5F8FD;padding:14px 16px;display:grid;gap:6px}
+.msg .from{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.msg .from b{color:var(--text)}
+.msg .body{font-size:16px}
+.msg .link{font-family:var(--mono);font-size:13px;color:#1E63E9;text-decoration:underline}
+.pwbox{display:grid;gap:10px}
+.pwbox input{font-family:var(--mono);font-size:18px;padding:12px 14px;border-radius:10px;border:2px solid var(--frost);background:#F5F8FD;color:var(--text)}
+.pwbox input:focus{outline:none;border-color:var(--cyan)}
+.crit{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-weight:600}
+.crit li{display:flex;gap:10px;align-items:center;color:var(--muted)}
+.crit li.ok{color:#0B8A5A}
+.crit li i{font-style:normal;width:22px;text-align:center}
+.strength{height:10px;border-radius:9px;background:#DCE4F2;overflow:hidden}
+.strength i{display:block;height:100%;transition:width .25s,background .25s}
+.cards2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bin{border:2px dashed var(--frost);border-radius:14px;padding:12px;min-height:120px;display:grid;gap:8px;align-content:start}
+.bin h4{margin:0;font-family:var(--display);font-size:15px}
+.item{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#FFFFFF;border:1px solid var(--frost);border-radius:10px;padding:10px 12px;font-weight:600}
+.item .btns{display:flex;gap:6px;flex:none}
+.item .btns button{border:1px solid var(--frost);background:#EEF2F8;color:var(--text);border-radius:8px;padding:6px 10px;font-weight:700}
+.item .btns button:hover{border-color:var(--cyan)}
+.item.ok{border-color:#2EE59D}.item.no{border-color:#FF5C7A}
+textarea.ans{width:100%;min-height:130px;resize:vertical;font:inherit;font-size:16px;line-height:1.5;padding:12px 14px;border-radius:10px;border:2px solid var(--frost);background:#F5F8FD;color:var(--text)}
+textarea.ans:focus{outline:none;border-color:var(--cyan)}
+.chars{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+.crack{font-family:var(--display);font-size:22px;font-weight:800}
+@media (max-width:760px){.erg,.cards2{grid-template-columns:1fr}}
+</style>
+<style>
+/* ===== TechLab · «Медиалаборатория» E2: светлая тема, синий акцент ===== */
+:root{--blue:#2E4BFF;--cyan:#2E4BFF;--violet:#5B6CFF}
+body{background:#EEF2F8!important}
+main{background:transparent}
+#start::before{background:linear-gradient(180deg,rgba(46,75,255,.94) 0,rgba(46,75,255,.94) 46%,rgba(238,242,248,.97) 46%)}
+.grid-ov{background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px)}
+.win{background:#fff;border:1px solid #DCE4F2;box-shadow:0 24px 50px rgba(11,26,59,.22)}
+.titlebar{background:#F5F8FD;color:#556A92;border-bottom:1px solid #DCE4F2}
+.titlebar b{color:#2E4BFF}
+.eyebrow,.step-tag{color:#2E4BFF}
+h1 em,.grad{background:none;-webkit-text-fill-color:currentColor;color:#2E4BFF}
+.term,.console,.sent{background:#14214D;border:0}
+.field input,.field select{background:#F5F8FD;color:#0B1A3B;border-color:#DCE4F2}
+.field input:focus,.field select:focus{background:#fff;border-color:#2E4BFF}
+.btn{background:#2E4BFF;color:#fff;box-shadow:0 6px 0 #1F35C9,0 10px 24px rgba(46,75,255,.28)}
+.btn:active{box-shadow:0 2px 0 #1F35C9}
+.btn[disabled]{background:#B8C5E0;color:#fff;box-shadow:0 6px 0 #9DAACB}
+.card{background:#fff;border-color:#DCE4F2;box-shadow:0 6px 18px rgba(11,26,59,.05)}
+.topbar{background:#2E4BFF;color:#fff;border-bottom:0}
+.topbar .logo{color:#fff}.topbar .logo i{color:#C9D3FF}
+.topbar .file{color:#C9D3FF}
+.topbar .chip{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff}
+.topbar .chip b,.topbar .hud .chip b{color:#fff}
+.topbar .linkbtn,.topbar .back{color:#E3E8FF}
+.topbar .fuel{background:rgba(255,255,255,.25)}.topbar .fuel i{background:#fff}
+.tools{background:#fff;border-right:1px solid #DCE4F2}
+.tool{color:#556A92}
+.tool:hover{background:#F0F4FF}
+.tool[aria-current="true"]{background:#2E4BFF;color:#fff;box-shadow:0 8px 18px rgba(46,75,255,.3)}
+.preview small{color:#8090B0}
+.note{background:#FFFDF4;border:2px dashed #E9C46A}
+.note .tag{color:#9A6B00}.note p,.note ul{color:#2A2410}
+.note mark{background:#FFE58A;color:inherit}
+.vs,.opcard,.op,.choice,.tbtn,.mood button,.scale div{background:#fff;border-color:#DCE4F2;color:#0B1A3B}
+.op:hover,.choice:hover:not([disabled]),.tbtn:hover{background:#F0F4FF;border-color:#2E4BFF}
+.op.on{background:#E8EDFF;border-color:#2E4BFF}
+.op svg,.opcard svg,.choice svg,.tbtn svg,.vs .ico{color:#2E4BFF}
+.tbtn .v{background:#EEF2F8;color:#2E4BFF}
+.choice.right{border-color:#12A46B;background:#E3F8EF}
+.choice.wrong{border-color:#E5484D;background:#FDECEE}
+.fb.ok{background:#E3F8EF;color:#0B6B47}
+.fb.no{background:#FDECEE;color:#A3202E}
+.fb.info{background:#E8EDFF;color:#1B3F9E}
+.reset{background:#fff;border-color:#DCE4F2;color:#556A92}
+.dotsbar i{background:#DCE4F2}.dotsbar i.cur{background:#2E4BFF}.dotsbar i.ok{background:#12A46B}.dotsbar i.no{background:#E5484D}
+.grade{background:#2E4BFF;box-shadow:0 0 0 6px #D6DEFF,0 14px 30px rgba(46,75,255,.35)}
+.scale div.on{background:#2E4BFF;color:#fff;border-color:#2E4BFF}
+.mood button[aria-pressed="true"]{border-color:#2E4BFF;background:#E8EDFF}
+.tbl td,.tbl th{border-color:#DCE4F2}
+.finish-theory{background:#2E4BFF;color:#fff;border:0;box-shadow:0 14px 30px rgba(46,75,255,.3)}
+.finish-theory h3{color:#fff}
+.finish-theory .step-tag{color:#C9D3FF!important}
+.finish-theory .btn{background:#fff;color:#2E4BFF;box-shadow:0 6px 0 #C9D3FF}
+.finish-theory .muted,.finish-theory p{color:#E3E8FF}
+.meter .bar{background:linear-gradient(90deg,#1B2A4E,#5A6E93 50%,#F2F6FF)}
+.meter .needle{background:#2E4BFF;box-shadow:none}
+.fuel{background:#DCE4F2}.fuel i{background:#2E4BFF}
+.palette button[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 3px #2E4BFF}
+.clock60{color:#2E4BFF;text-shadow:none}.clock60.low{color:#E5484D;text-shadow:none}
+.locked-screen .big{color:#2E4BFF}
+#toast{background:#0B1A3B;border:0}
+.seg button[aria-pressed="true"],.chips button[aria-pressed="true"],.prod[aria-pressed="true"]{border-color:#2E4BFF;background:#E8EDFF}
+.seg button.right,.mock .mi.right,.shelf button.right{border-color:#12A46B;background:#E3F8EF}
+.seg button.wrong,.mock .mi.wrong,.shelf button.wrong{border-color:#E5484D;background:#FDECEE}
+.item.ok,.orow.ok,.prod.right,.match select.ok{border-color:#12A46B}
+.crit li.ok{color:#0B8A5A}
+.qtimer{background:#DCE4F2}.qtimer i{background:#2E4BFF}
+.client{border-left-color:#2E4BFF;background:#E8EDFF}
+.order{background:#fff;border:1px solid #DCE4F2}
+.bonus-tag{background:#FFD36B;color:#241a00}
+@media (max-width:760px){.tools{border-right:0;border-bottom:1px solid #DCE4F2}}
+</style>
+</head>
+<body>
+
+<!-- ============ СТАРТ ============ -->
+<section id="start">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="grid-ov" aria-hidden="true"></div>
+  <div class="win" role="dialog" aria-labelledby="ttl">
+    <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div><span>cyber_shield.exe</span><b>7 класс</b></div>
+    <div class="win-body">
+      <div class="brand">
+        <div class="eyebrow">🛡 Экспедиция «Цифровой щит» · Миссия 1</div>
+        <h1 id="ttl">Цифровой <em>щит</em></h1>
+        <p class="sub">Эргономика и личная безопасность в цифровых средах</p>
+      </div>
+      <div class="term" id="term" aria-live="polite"></div>
+      <form id="login" class="win-body" style="padding:0" novalidate>
+        <div class="fields">
+          <div class="field"><label for="fio">&gt; фамилия_и_имя</label><input id="fio" autocomplete="off" placeholder="Например, Руссу Анна" maxlength="60"></div>
+          <div class="field"><label for="cls">&gt; класс</label>
+            <select id="cls"><option value="">выбери…</option><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div>
+        </div>
+        <p class="err" id="err"></p>
+        <button class="btn" type="submit">🚀 Начать миссию <span class="k">Enter</span></button>
+      </form>
+      <ul class="rules">
+        <li><b>01</b>Изучи «Бортовой журнал» и перепиши жёлтые блоки в тетрадь.</li>
+        <li><b>02</b>Пройди «Разогрев», четыре задания и «Ситуации» с развёрнутыми ответами.</li>
+        <li><b>03</b>Развёрнутые ответы проверит ИИ и учитель. Отметку увидишь у учителя.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ПРИЛОЖЕНИЕ ============ -->
+<div id="app" hidden>
+  <header class="topbar">
+    <a class="back" href="../../../#inf-7">← TechLab</a>
+    <span class="logo">cyber<i>_</i>shield</span>
+    <span class="file" id="fileName">mission_01 / journal.md</span>
+    <div class="fuel" title="Топливо — прогресс миссии"><i id="fuel" style="width:0%"></i></div>
+    <div class="top-right">
+      <span class="chip">👤 <b id="who">—</b></span>
+      <span class="chip">⏱ <b id="timer">00:00</b></span>
+      <button class="linkbtn" id="logout" type="button">сменить ученика</button>
+    </div>
+  </header>
+  <nav class="tools" aria-label="Этапы урока" id="tools"></nav>
+  <main id="main"><div class="sheet" id="sheet"></div></main>
+</div>
+<div id="toast" role="status"></div>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script type="module">
+/* Связь миссии с сайтом TechLab: результаты попадают в Центр управления */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "inf7-safe-m1";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Журнал", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const LITE=(()=>{try{const v=localStorage.getItem("techlab_lite");if(v)return v==="1";}catch(e){}return (navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||8)<=4;})();
+const reduce=LITE||matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- фон: «цифровой дождь» из замков и битов ---------- */
+const bg=$("bg");let bgTimer=null;
+(function(){const c=bg.getContext("2d");let cols=[];
+  function size(){bg.width=innerWidth;bg.height=innerHeight;cols=Array.from({length:Math.ceil(innerWidth/22)},()=>Math.random()*innerHeight);}
+  function draw(){c.fillStyle="rgba(11,13,36,.22)";c.fillRect(0,0,bg.width,bg.height);c.font="16px JetBrains Mono, monospace";
+    cols.forEach((y,i)=>{const ch=Math.random()<.06?"🔒":(Math.random()<.5?"0":"1");c.fillStyle=Math.random()<.5?"#45D3FF":"#B26BFF";c.globalAlpha=.55;c.fillText(ch,i*22,y);c.globalAlpha=1;
+      cols[i]=y>bg.height+Math.random()*400?0:y+18;});}
+  size();addEventListener("resize",size);if(!reduce)bgTimer=setInterval(draw,70);else draw();})();
+
+const termLines=['<span class="c">// загрузка модуля защиты</span>','<span class="p">&gt;</span> cyber_shield.launch()',
+  '<span class="g">✓</span> модули: эргономика, пароли, фишинг, цифровой след','<span class="p">&gt;</span> агент, введи фамилию и класс <span class="cursor"></span>'];
+(function type(i){if(i>=termLines.length)return;$("term").innerHTML+=(i?'<br>':'')+termLines[i];setTimeout(()=>type(i+1),reduce?0:450);})(0);
+
+/* ---------- этапы ---------- */
+const STEPS=[
+ {id:"theory",label:"Журнал",file:"journal.md",icon:'<path d="M5 4h10l4 4v12H5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11h8M8 15h8M8 7h5" stroke="currentColor" stroke-width="2"/>'},
+ {id:"warm",label:"Разогрев",file:"warmup.js",icon:'<path d="M12 2c3 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 0-3-1-5 0-7z" fill="currentColor"/>'},
+ {id:"q1",label:"Задание 1",file:"workplace.js",icon:'<rect x="3" y="4" width="18" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 20h6M12 16v4" stroke="currentColor" stroke-width="2"/>'},
+ {id:"q2",label:"Задание 2",file:"password.js",icon:'<rect x="5" y="10" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/>'},
+ {id:"q3",label:"Задание 3",file:"phishing.js",icon:'<path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 6l9 7 9-7" fill="none" stroke="currentColor" stroke-width="2"/>'},
+ {id:"q4",label:"Задание 4",file:"footprint.js",icon:'<ellipse cx="9" cy="15" rx="4" ry="6" fill="currentColor"/><circle cx="15" cy="6" r="2" fill="currentColor"/><circle cx="18" cy="9" r="1.6" fill="currentColor"/><circle cx="12" cy="4" r="1.6" fill="currentColor"/>'},
+ {id:"q5",label:"Ситуации",file:"cases.md",icon:'<path d="M4 4h16v12H8l-4 4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 9h8M8 12h5" stroke="currentColor" stroke-width="2"/>'},
+ {id:"fin",label:"Финиш",file:"report.json",icon:'<path d="M5 21V4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2"/>'}
+];
+const MAXP={warm:6,q1:6,q2:6,q3:6,q4:6,q5:9};
+const AUTO=["warm","q1","q2","q3","q4"];
+const MAXAUTO=30,MAXALL=39;
+const NAMES={warm:"Разогрев «Правда или миф»",q1:"Задание 1 · Рабочее место агента",q2:"Задание 2 · Взломостойкость",q3:"Задание 3 · Фишинг-детектор",q4:"Задание 4 · Цифровой след",q5:"Ситуации (развёрнутые ответы)"};
+function fresh(fio,cls){return {fio,cls,start:Date.now(),done:{},cur:"theory",score:{},part:{},open:{o1:"",o2:"",o3:""},mood:"",sent:0,rec:""};}
+let S=fresh("","");
+const KEY="techlab_inf7_m1";
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2400);}
+
+function TL(){return Promise.race([window.TL_READY,new Promise((_,rej)=>setTimeout(()=>rej(new Error("нет связи")),10000))]);}
+function stageLabel(){const st=STEPS.find(x=>x.id===S.cur);return st?st.label:"";}
+function syncProgress(){if(!S.rec||S.sent)return;
+  TL().then(t=>t.progress(S.rec,{score:S.score,open:S.open,stage:stageLabel(),doneCount:STEPS.filter(x=>S.done[x.id]).length})).catch(()=>{});}
+
+/* ---------- вход ---------- */
+$("login").addEventListener("submit",e=>{
+  e.preventDefault();
+  const fio=$("fio").value.trim().replace(/\s+/g," "),cls=$("cls").value,err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";$("cls").focus();return;}
+  err.textContent="Подключаюсь к TechLab…";
+  const btn=document.querySelector("#login .btn");btn.disabled=true;
+  TL().then(async t=>{
+    if(!(await t.isOpen())){err.textContent="🔒 Миссия ещё не открыта учителем. Подожди и нажми ещё раз.";btn.disabled=false;return;}
+    S=fresh(fio,cls);S.rec=await t.start({name:fio,cls});err.textContent="";save();openApp();
+  }).catch(()=>{err.textContent="Нет связи с сайтом. Проверь интернет и нажми ещё раз.";btn.disabled=false;});
+});
+$("logout").addEventListener("click",()=>{if(!confirm("Выйти и начать заново под другим именем?"))return;try{localStorage.removeItem(KEY)}catch(e){}location.reload();});
+
+let timerId=null;
+function openApp(){clearInterval(bgTimer);$("start").hidden=true;$("app").hidden=false;$("who").textContent=S.fio+" · "+S.cls;
+  show(S.cur);tickTimer();clearInterval(timerId);timerId=setInterval(tickTimer,1000);}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+function tickTimer(){const s=Math.max(0,Math.floor((Date.now()-S.start)/1000));$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+
+/* ---------- панель этапов ---------- */
+function unlocked(id){const i=STEPS.findIndex(s=>s.id===id);return i===0||!!S.done[STEPS[i-1].id];}
+function renderTools(){
+  const nav=$("tools");
+  nav.innerHTML=STEPS.map((s,i)=>{const lock=!unlocked(s.id),done=!!S.done[s.id];
+    return (i===1||i===STEPS.length-1?'<div class="sep"></div>':'')+`<button class="tool${lock?' locked':''}${done?' done':''}" data-id="${s.id}" aria-current="${S.cur===s.id}" type="button">
+      <span class="st">${done?'✓':lock?'🔒':''}</span><svg viewBox="0 0 24 24" aria-hidden="true">${s.icon}</svg>${s.label}</button>`;}).join("")+
+    `<div class="preview"><div style="font-size:34px">🛡</div><small id="progTxt"></small></div>`;
+  nav.querySelectorAll(".tool").forEach(b=>b.onclick=()=>{const id=b.dataset.id;if(!unlocked(id)){toast("🔒 Сначала пройди предыдущий этап");return;}show(id);});
+  const n=STEPS.filter(s=>S.done[s.id]).length,pc=Math.round(n/STEPS.length*100);
+  $("progTxt").textContent="щит "+pc+"%";$("fuel").style.width=pc+"%";
+}
+function show(id){
+  if(!unlocked(id))id="theory";
+  S.cur=id;save();$("fileName").textContent="mission_01 / "+STEPS.find(s=>s.id===id).file;renderTools();
+  ({theory:showTheory,warm:showWarm,q1:showQ1,q2:showQ2,q3:showQ3,q4:showQ4,q5:showQ5,fin:showFin})[id]();
+  syncProgress();scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+}
+function next(id){const i=STEPS.findIndex(s=>s.id===id);return STEPS[i+1];}
+function finishStation(id,pts){S.score[id]=pts;S.done[id]=true;save();renderTools();syncProgress();}
+function stars(id){if(S.score[id]==null)return"—";const r=S.score[id]/MAXP[id];return r>=.99?"⭐⭐⭐":r>=.6?"⭐⭐☆":r>0?"⭐☆☆":"☆☆☆";}
+function doneCard(id){const nx=next(id);
+  return `<div class="card finish-theory"><div class="step-tag" style="color:var(--cyan)">✓ ЗАДАНИЕ ВЫПОЛНЕНО</div><div class="stars">${stars(id)}</div>
+    <h3>${NAMES[id]}: ${S.score[id]} из ${MAXP[id]} баллов</h3>
+    <div class="row"><button class="btn" type="button" onclick="show('${nx.id}')">Дальше: ${nx.label} →</button></div></div>`;}
+function head(n,tag,title,lead){return `<div class="sec-head"><div class="step-tag">ЭТАП ${n} ИЗ ${STEPS.length} · ${tag}</div><h2>${title}</h2><p class="lead">${lead}</p></div>`;}
+function shuffle(a,seed){a=a.slice();let s=seed||1;for(let i=a.length-1;i>0;i--){s=(s*9301+49297)%233280;const j=Math.floor(s/233280*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ================= БОРТОВОЙ ЖУРНАЛ ================= */
+function crackTime(pw){
+  if(!pw)return "—";
+  let pool=0;if(/[a-z]/.test(pw))pool+=26;if(/[A-Z]/.test(pw))pool+=26;if(/[а-яё]/.test(pw))pool+=33;if(/[А-ЯЁ]/.test(pw))pool+=33;if(/\d/.test(pw))pool+=10;if(/[^a-zA-Zа-яёА-ЯЁ0-9]/.test(pw))pool+=32;
+  if(COMMON.some(w=>pw.toLowerCase().includes(w)))return "мгновенно ⚡ (есть в словарях взломщиков)";
+  const sec=Math.pow(pool,pw.length)/2/1e10; /* 10 млрд попыток в секунду */
+  const units=[[31536e6,"тысяч лет"],[31536e3,"лет"],[86400,"дней"],[3600,"часов"],[60,"минут"],[1,"секунд"]];
+  if(sec<1)return "меньше секунды ⚡";
+  if(sec>31536e9)return "миллионы лет 🛡";
+  for(const [u,n] of units)if(sec>=u)return "≈ "+Math.round(sec/u).toLocaleString("ru-RU")+" "+n;
+}
+const COMMON=["123456","password","qwerty","111111","12345","abc123","iloveyou","admin","parola","пароль","йцукен","1234"];
+function showTheory(){
+ $("sheet").innerHTML=head(1,"🛰 БОРТОВОЙ ЖУРНАЛ","Эргономика и личная безопасность в цифровых средах",
+  'Агент, изучи журнал. Всё, что в <b>жёлтой рамке</b>, перепиши в тетрадь — это пригодится на суммативном оценивании 19.11.')+`
+ <div class="card">
+   <div class="step-tag">ШАГ 1 · ЭРГОНОМИКА</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p><mark>Эргономика</mark> — наука о том, как сделать работу человека удобной, безопасной и эффективной.</p>
+     <p>Тема урока: «Эргономика и личная безопасность в цифровых средах».</p></div>
+   <div class="erg">
+     ${deskSVG(true)}
+     <div class="note"><span class="tag">✎ Правила рабочего места</span><ul>
+       <li>расстояние до экрана <mark>50–70 см</mark> (вытянутая рука);</li>
+       <li>верхний край экрана — <mark>на уровне глаз</mark> или чуть ниже;</li>
+       <li>спина прямая, локти и колени ≈ <mark>90°</mark>, стопы на полу;</li>
+       <li>свет падает <mark>сбоку</mark>, на экране нет бликов;</li>
+       <li>перерыв <mark>каждые 30–45 минут</mark>;</li>
+       <li>правило <mark>20-20-20</mark>: каждые 20 минут смотри 20 секунд вдаль (≈ 6 м).</li></ul></div>
+   </div>
+ </div>
+ <div class="card">
+   <div class="step-tag">ШАГ 2 · ПАРОЛИ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p>Надёжный пароль: <mark>не короче 12 символов</mark>; заглавные и строчные буквы, цифры, символы; <mark>без личных данных</mark> (имя, дата рождения) и словарных слов; <mark>для каждого сайта — свой</mark>.</p>
+     <p><mark>Двухфакторная аутентификация (2FA)</mark> — вход по паролю + коду из SMS или приложения.</p></div>
+   <h3>Лаборатория взлома: сколько времени нужно компьютеру, чтобы подобрать пароль?</h3>
+   <p class="lead" style="margin:0">Введи <b>выдуманный</b> пароль (не свой настоящий!). Никуда не отправляется.</p>
+   <div class="pwbox"><input id="labPw" type="text" autocomplete="off" spellcheck="false" placeholder="например: kot123">
+     <div class="row"><span class="counter">время подбора (10 млрд попыток/с):</span><span class="crack" id="labOut">—</span></div></div>
+ </div>
+ <div class="card">
+   <div class="step-tag">ШАГ 3 · ФИШИНГ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p><mark>Фишинг</mark> — мошенничество, когда преступник притворяется другом, банком или сервисом, чтобы выманить пароль, код или деньги.</p>
+     <p>Признаки: срочность и угрозы («аккаунт удалят через час»), «вы выиграли приз», странный адрес отправителя, просьба <mark>пароля или кода из SMS</mark>, подозрительная ссылка.</p>
+     <p>Правило: <mark>не переходи — проверь — сообщи взрослому</mark>.</p></div>
+ </div>
+ <div class="card">
+   <div class="step-tag">ШАГ 4 · ЦИФРОВОЙ СЛЕД И КИБЕРБУЛЛИНГ</div>
+   <div class="note"><span class="tag">✎ Запиши в тетрадь</span>
+     <p><mark>Персональные данные</mark>: ФИО вместе с адресом, телефон, школа и класс, геолокация, фото документов, пароли. Их <mark>нельзя публиковать</mark>.</p>
+     <p><mark>Цифровой след</mark> — всё, что мы оставляем в интернете. Удалить его полностью почти невозможно.</p>
+     <p>При <mark>кибербуллинге</mark>: не отвечай агрессией, сохрани скриншоты, заблокируй и пожалуйся, расскажи взрослым.</p></div>
+ </div>
+ <div class="card finish-theory">
+   <h3>Готов(а) к миссии?</h3>
+   <label class="check"><input type="checkbox" id="copied"> Я изучил(а) журнал и переписал(а) все жёлтые блоки в тетрадь</label>
+   <div class="row"><button class="btn" type="button" id="goNext" disabled>🔥 Перейти к разогреву →</button>
+   <span style="font-family:var(--mono);font-size:13px;color:#7F98C7">учитель может проверить тетрадь</span></div>
+ </div>`;
+  $("labPw").oninput=e=>{$("labOut").textContent=crackTime(e.target.value);};
+  const cb=$("copied"),nx=$("goNext");cb.checked=!!S.done.theory;nx.disabled=!cb.checked;
+  cb.onchange=()=>nx.disabled=!cb.checked;
+  nx.onclick=()=>{if(!S.done.theory){S.done.theory=true;save();toast("✓ Журнал изучен. Разогрев открыт!");}show("warm");};
+}
+function deskSVG(lbl,st){
+  st=Object.assign({d:1,h:1,a:1},st||{});
+  const mx=[175,235,300][st.d],my=[40,72,112][st.h],ang=[0,1,2][st.a];
+  return `<svg class="desk" viewBox="0 0 400 260" role="img" aria-label="Схема рабочего места">
+    <rect x="0" y="0" width="400" height="260" rx="14" fill="#0F1230"/>
+    <rect x="150" y="150" width="230" height="10" rx="3" fill="#3a3f78"/><rect x="360" y="160" width="8" height="80" fill="#3a3f78"/>
+    <rect x="${mx}" y="${my}" width="70" height="52" rx="5" fill="#12153A" stroke="#45D3FF" stroke-width="3"/>
+    <rect x="${mx+31}" y="${my+52}" width="8" height="${150-my-52}" fill="#45D3FF" opacity=".6"/>
+    <circle cx="95" cy="62" r="20" fill="#B26BFF"/>
+    <path d="M95 82 L${ang===2?110:95} 150" stroke="#B26BFF" stroke-width="12" stroke-linecap="round"/>
+    <path d="M${ang===2?110:95} 150 L160 150 L160 ${ang===0?235:ang===1?235:210}" stroke="#B26BFF" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M97 105 L135 ${ang===1?105:125} L165 ${ang===1?120:140}" stroke="#B26BFF" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="60" y="150" width="70" height="10" rx="3" fill="#2E3474"/><rect x="88" y="160" width="8" height="70" fill="#2E3474"/>
+    <line x1="115" y1="62" x2="${mx}" y2="${my+14}" stroke="#FFD36B" stroke-width="2" stroke-dasharray="5 5"/>
+    ${lbl?`<text x="${(115+mx)/2-20}" y="${Math.min(62,my+14)-8}" fill="#FFD36B" font-family="monospace" font-size="13">50–70 см</text>
+    <text x="168" y="200" fill="#9BE6FF" font-family="monospace" font-size="13">90°</text>
+    <text x="${mx+75}" y="${my+20}" fill="#9BE6FF" font-family="monospace" font-size="12">уровень глаз</text>`:""}
+  </svg>`;
+}
+
+/* ================= РАЗОГРЕВ ================= */
+const WARM=[
+  {q:"Чем ближе монитор к глазам, тем лучше для зрения.",a:false,why:"Нужно 50–70 см — примерно вытянутая рука."},
+  {q:"Пароль «Masha2012» надёжный, потому что в нём есть буквы и цифры.",a:false,why:"Имя и год рождения легко угадать — это личные данные."},
+  {q:"Двухфакторная аутентификация защищает аккаунт, даже если пароль узнали.",a:true,why:"Без второго кода из SMS или приложения войти нельзя."},
+  {q:"Код из SMS можно сказать «сотруднику банка», если он позвонил сам.",a:false,why:"Настоящие сотрудники никогда не просят код — это мошенники."},
+  {q:"Правило 20-20-20 помогает глазам отдыхать.",a:true,why:"Каждые 20 минут — 20 секунд смотреть вдаль."},
+  {q:"Если удалить пост, он навсегда исчезнет из интернета.",a:false,why:"Его могли сохранить или сделать скриншот — цифровой след остаётся."}
+];
+function showWarm(){
+  const A=S.part.warm||(S.part.warm=[]);
+  const top=head(2,"🔥 РАЗОГРЕВ","Правда или миф?",'Реши, правда это или миф. На каждое утверждение <b>одна попытка</b>.');
+  const dots=`<div class="dotsbar">${WARM.map((w,i)=>`<i class="${i<A.length?(A[i]===w.a?'ok':'no'):i===A.length?'cur':''}"></i>`).join("")}</div>`;
+  if(S.done.warm||A.length>=WARM.length){if(!S.done.warm)finishStation("warm",A.filter((a,i)=>a===WARM[i].a).length);
+    $("sheet").innerHTML=top+`<div class="card">${dots}<p class="task-text">Верно: ${S.score.warm} из ${WARM.length}.</p></div>`+doneCard("warm");return;}
+  const i=A.length,w=WARM[i];
+  $("sheet").innerHTML=top+`<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">утверждение <b>${i+1}</b> из ${WARM.length}</span>${dots}</div>
+    <p class="task-text" style="font-size:20px">«${w.q}»</p>
+    <div class="choices" id="wch"><button class="choice" type="button" data-k="1">✅ Правда</button><button class="choice" type="button" data-k="0">❌ Миф</button></div><div id="wfb"></div></div>`;
+  document.querySelectorAll("#wch .choice").forEach(b=>b.onclick=()=>{
+    const v=b.dataset.k==="1",ok=v===w.a;A.push(v);save();
+    document.querySelectorAll("#wch .choice").forEach(x=>{x.disabled=true;if((x.dataset.k==="1")===w.a)x.classList.add("right");});
+    if(!ok)b.classList.add("wrong");
+    $("wfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${w.a?'Правда. ':'Миф. '}${w.why}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="wnext">${A.length>=WARM.length?'Завершить разогрев':'Дальше →'}</button></div>`;
+    $("wnext").onclick=showWarm;$("wnext").focus();});
+}
+
+/* ================= ЗАДАНИЕ 1: РАБОЧЕЕ МЕСТО ================= */
+const Q1=[
+  {k:"d",t:"Расстояние от глаз до монитора",o:["20–30 см","50–70 см","100–120 см"],a:1},
+  {k:"h",t:"Высота монитора",o:["верхний край выше головы","верхний край на уровне глаз или чуть ниже","экран на уровне груди"],a:1},
+  {k:"a",t:"Поза",o:["сутулюсь, ноги под стулом","спина прямая, локти и колени ≈ 90°","полулёжа на кровати"],a:1},
+  {k:"l",t:"Освещение",o:["лампа сзади, блики на экране","свет сбоку, без бликов","темнота, светит только экран"],a:1},
+  {k:"b",t:"Перерывы",o:["раз в 3 часа","каждые 30–45 минут","перерывы не нужны"],a:1},
+  {k:"s",t:"Яркость экрана",o:["максимальная в тёмной комнате","примерно как освещение комнаты","минимальная, чтобы еле видно"],a:1}
+];
+function showQ1(){
+  const P=S.part.q1||(S.part.q1={sel:{},tries:0});
+  const top=head(3,"🚀 ЗАДАНИЕ 1","Рабочее место агента",'Настрой рабочее место так, чтобы глаза, спина и шея не уставали. У тебя <b>две проверки</b>: после первой увидишь, что неверно; после второй баллы засчитаются (1 балл за каждый верный параметр).');
+  if(S.done.q1){$("sheet").innerHTML=top+doneCard("q1");return;}
+  const order=Q1.map((q,i)=>({q,i}));
+  $("sheet").innerHTML=top+`<div class="card"><div class="erg"><div id="deskBox">${deskSVG(false,{d:P.sel.d??0,h:P.sel.h??0,a:P.sel.a??0})}</div>
+    <div>${order.map(({q})=>`<div class="param"><span class="pl">${q.t}</span><div class="seg" data-k="${q.k}">${shuffle(q.o.map((o,j)=>[o,j]),q.k.charCodeAt(0)*7).map(([o,j])=>`<button type="button" data-j="${j}" aria-pressed="${P.sel[q.k]===j}">${o}</button>`).join("")}</div></div>`).join("")}</div></div>
+    <div class="row"><button class="btn" type="button" id="q1chk">Проверить (${2-P.tries})</button><span class="counter">выбрано: <b id="q1n">${Object.keys(P.sel).length}</b> из 6</span></div><div id="q1fb"></div></div>`;
+  document.querySelectorAll(".seg").forEach(g=>g.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    if(S.done.q1)return;P.sel[g.dataset.k]=+b.dataset.j;save();
+    g.querySelectorAll("button").forEach(x=>{x.setAttribute("aria-pressed",x===b);x.classList.remove("wrong","right");});
+    $("q1n").textContent=Object.keys(P.sel).length;
+    $("deskBox").innerHTML=deskSVG(false,{d:P.sel.d??0,h:P.sel.h??0,a:P.sel.a??0});}));
+  $("q1chk").onclick=()=>{
+    if(Object.keys(P.sel).length<6){$("q1fb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Выбери вариант в каждой строке.</span></div>`;return;}
+    P.tries++;save();
+    const ok=Q1.filter(q=>P.sel[q.k]===q.a).length;
+    document.querySelectorAll(".seg").forEach(g=>{const q=Q1.find(x=>x.k===g.dataset.k);const b=g.querySelector(`[data-j="${P.sel[q.k]}"]`);b.classList.add(P.sel[q.k]===q.a?"right":"wrong");});
+    if(ok===6||P.tries>=2){finishStation("q1",ok);
+      $("q1fb").innerHTML=`<div class="fb ${ok===6?'ok':'info'}"><span class="m">${ok}/6</span><span>${ok===6?'Идеальное рабочее место!':'Сравни свой выбор с правилами рабочего места из бортового журнала.'}</span></div>`+doneCard("q1");
+    }else{$("q1chk").textContent="Проверить (1)";
+      $("q1fb").innerHTML=`<div class="fb no"><span class="m">${ok}/6</span><span>Красным отмечены ошибки. Исправь их — осталась одна проверка.</span></div>`;}
+  };
+}
+
+/* ================= ЗАДАНИЕ 2: ВЗЛОМОСТОЙКОСТЬ ================= */
+const PWS=[["Andrei2013",false,"имя + год рождения"],["Tr0mb@n!Lun@-47",true,"длинный, все типы символов, без личных данных"],["qwerty12345",false,"клавиши подряд — есть в словарях взломщиков"]];
+const CRIT=[["не короче 12 символов",p=>p.length>=12],["есть заглавная буква",p=>/[A-ZА-ЯЁ]/.test(p)],["есть строчная буква",p=>/[a-zа-яё]/.test(p)],
+  ["есть цифра",p=>/\d/.test(p)],["есть символ (!@#$%…)",p=>/[^a-zA-Zа-яёА-ЯЁ0-9\s]/.test(p)],["нет словарных паролей (qwerty, 1234, password…)",p=>p.length>0&&!COMMON.some(w=>p.toLowerCase().includes(w))]];
+function showQ2(){
+  const P=S.part.q2||(S.part.q2={a:[],bFails:0,b:null});
+  const top=head(4,"🔐 ЗАДАНИЕ 2","Взломостойкость",'Часть А: оцени три пароля (1 балл за каждый). Часть Б: придумай <b>выдуманный</b> надёжный пароль, который выполнит все 6 требований (3 балла; за каждую неудачную проверку −1). Пароль никуда не отправляется.');
+  if(S.done.q2){$("sheet").innerHTML=top+doneCard("q2");return;}
+  if(P.a.length<PWS.length){
+    const i=P.a.length,p=PWS[i];
+    $("sheet").innerHTML=top+`<div class="card"><div class="step-tag">ЧАСТЬ А · ПАРОЛЬ ${i+1} ИЗ 3</div>
+      <p class="task-text" style="font-family:var(--mono);font-size:24px">${esc(p[0])}</p>
+      <div class="choices" id="pch"><button class="choice" type="button" data-k="1">🛡 Надёжный</button><button class="choice" type="button" data-k="0">⚠ Ненадёжный</button></div><div id="pfb"></div></div>`;
+    document.querySelectorAll("#pch .choice").forEach(b=>b.onclick=()=>{
+      const v=b.dataset.k==="1",ok=v===p[1];P.a.push(v);save();
+      document.querySelectorAll("#pch .choice").forEach(x=>{x.disabled=true;if((x.dataset.k==="1")===p[1])x.classList.add("right");});if(!ok)b.classList.add("wrong");
+      $("pfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${p[1]?'Надёжный':'Ненадёжный'}: ${p[2]}.</span></div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="pnext">Дальше →</button></div>`;
+      $("pnext").onclick=showQ2;});
+    return;
+  }
+  const aPts=P.a.filter((v,i)=>v===PWS[i][1]).length;
+  $("sheet").innerHTML=top+`<div class="card"><div class="step-tag">ЧАСТЬ А · ГОТОВО: ${aPts} из 3</div></div>
+    <div class="card"><div class="step-tag">ЧАСТЬ Б · ПРИДУМАЙ НАДЁЖНЫЙ ПАРОЛЬ</div>
+      <div class="pwbox"><input id="pwIn" type="text" autocomplete="off" spellcheck="false" placeholder="придумай пароль (не свой настоящий!)">
+      <div class="strength"><i id="pwBar" style="width:0%"></i></div>
+      <ul class="crit" id="pwCrit">${CRIT.map(c=>`<li><i>○</i>${c[0]}</li>`).join("")}</ul>
+      <div class="row"><span class="counter">время подбора:</span><span class="crack" id="pwCrack">—</span></div></div>
+      <div class="row"><button class="btn" type="button" id="pwChk">Проверить</button><span class="counter">можно получить: <b id="pwMax">${Math.max(1,3-P.bFails)}</b> балла</span></div><div id="pwFb"></div></div>`;
+  const inp=$("pwIn");
+  const upd=()=>{const p=inp.value;const res=CRIT.map(c=>c[1](p));const n=res.filter(Boolean).length;
+    document.querySelectorAll("#pwCrit li").forEach((li,i)=>{li.classList.toggle("ok",res[i]);li.querySelector("i").textContent=res[i]?"✓":"○";});
+    $("pwBar").style.width=(n/6*100)+"%";$("pwBar").style.background=n<3?"#FF5C7A":n<6?"#FFC857":"linear-gradient(90deg,#45D3FF,#2EE59D)";$("pwCrack").textContent=crackTime(p);return n;};
+  inp.oninput=upd;upd();
+  $("pwChk").onclick=()=>{const n=upd();
+    if(n===6){const bPts=Math.max(1,3-P.bFails);inp.disabled=true;finishStation("q2",aPts+bPts);
+      $("pwFb").innerHTML=`<div class="fb ok"><span class="m">✓ +${bPts}</span><span>Отличный пароль! Запомни правила, а настоящий пароль никому не показывай.</span></div>`+doneCard("q2");}
+    else{P.bFails++;save();$("pwMax").textContent=Math.max(1,3-P.bFails);
+      $("pwFb").innerHTML=`<div class="fb no"><span class="m">✗</span><span>Выполнено ${n} из 6 требований. Посмотри, какие пункты ещё не отмечены.</span></div>`;}};
+}
+
+/* ================= ЗАДАНИЕ 3: ФИШИНГ-ДЕТЕКТОР ================= */
+const MSGS=[
+  {from:"support@g00gle-security.com",type:"✉ e-mail",body:"Ваш аккаунт будет УДАЛЁН через 24 часа! Срочно подтвердите пароль по ссылке:",link:"http://g00gle-security.com/verify",ph:true,why:"Угроза, срочность, адрес «g00gle» с нулями и просьба пароля."},
+  {from:"Электронный дневник",type:"🔔 уведомление",body:"Учитель информатики опубликовал домашнее задание на 19.11. Посмотрите его в дневнике.",link:"",ph:false,why:"Обычное уведомление: ничего не просят, нет подозрительных ссылок."},
+  {from:"+373 6X XXX XXX",type:"💬 SMS",body:"Поздравляем! Вы выиграли iPhone 17! Оплатите только доставку 50 лей:",link:"bit.ly/iphone-win17",ph:true,why:"«Вы выиграли» + просьба заплатить + короткая ссылка — классический фишинг."},
+  {from:"Друг (новый номер)",type:"💬 мессенджер",body:"Привет, это я, потерял телефон. Тебе сейчас придёт код в SMS, скинь мне его срочно, это по ошибке.",link:"",ph:true,why:"Код из SMS нельзя сообщать никому — так угоняют аккаунты."},
+  {from:"Steam (в приложении)",type:"🔔 уведомление",body:"Выполнен вход с нового устройства. Если это были вы — ничего делать не нужно. Если нет — смените пароль в настройках приложения.",link:"",ph:false,why:"Нет ссылки и не просят пароль — советуют действовать в самом приложении."},
+  {from:"free-robux-gift@mail-bonus.ru",type:"✉ e-mail",body:"Бесплатные 10 000 робуксов! Введи логин и пароль от Roblox на нашем сайте:",link:"free-robux-gift.ru/login",ph:true,why:"Обещание бесплатной валюты и ввод пароля на чужом сайте."}
+];
+function showQ3(){
+  const A=S.part.q3||(S.part.q3=[]);
+  const top=head(5,"🎣 ЗАДАНИЕ 3","Фишинг-детектор",'Тебе пришли 6 сообщений. Реши, безопасное оно или это фишинг. Одна попытка на каждое.');
+  const dots=`<div class="dotsbar">${MSGS.map((m,i)=>`<i class="${i<A.length?(A[i]===m.ph?'ok':'no'):i===A.length?'cur':''}"></i>`).join("")}</div>`;
+  if(S.done.q3||A.length>=MSGS.length){if(!S.done.q3)finishStation("q3",A.filter((a,i)=>a===MSGS[i].ph).length);
+    $("sheet").innerHTML=top+`<div class="card">${dots}<p class="task-text">Распознано верно: ${S.score.q3} из ${MSGS.length}.</p></div>`+doneCard("q3");return;}
+  const i=A.length,m=MSGS[i];
+  $("sheet").innerHTML=top+`<div class="card"><div class="row" style="justify-content:space-between"><span class="counter">сообщение <b>${i+1}</b> из ${MSGS.length}</span>${dots}</div>
+    <div class="msg"><div class="from">${m.type} · от: <b>${esc(m.from)}</b></div><div class="body">${esc(m.body)}</div>${m.link?`<div class="link">${esc(m.link)}</div>`:""}</div>
+    <div class="choices" id="mch"><button class="choice" type="button" data-k="0">✅ Безопасно</button><button class="choice" type="button" data-k="1">🎣 Фишинг</button></div><div id="mfb"></div></div>`;
+  document.querySelectorAll("#mch .choice").forEach(b=>b.onclick=()=>{
+    const v=b.dataset.k==="1",ok=v===m.ph;A.push(v);save();
+    document.querySelectorAll("#mch .choice").forEach(x=>{x.disabled=true;if((x.dataset.k==="1")===m.ph)x.classList.add("right");});if(!ok)b.classList.add("wrong");
+    $("mfb").innerHTML=`<div class="fb ${ok?'ok':'no'}"><span class="m">${ok?'✓ +1':'✗ 0'}</span><span>${m.ph?'Фишинг! ':'Безопасно. '}${m.why}</span></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="mnext">${A.length>=MSGS.length?'Завершить задание':'Следующее сообщение →'}</button></div>`;
+    $("mnext").onclick=showQ3;$("mnext").focus();});
+}
+
+/* ================= ЗАДАНИЕ 4: ЦИФРОВОЙ СЛЕД ================= */
+const FP=[["Фото своего рисунка или поделки",true],["Фото паспорта или свидетельства о рождении",false],["Домашний адрес и номер телефона",false],
+  ["Отзыв о прочитанной книге",true],["Геолокация «Я сейчас дома один»",false],["Поздравление другу с днём рождения (без адреса и телефона)",true]];
+function showQ4(){
+  const P=S.part.q4||(S.part.q4={ans:{},checked:false});
+  const top=head(6,"👣 ЗАДАНИЕ 4","Цифровой след",'Что можно публиковать в соцсетях, а что — нельзя? Распредели все карточки и нажми «Проверить» (1 проверка, 1 балл за каждую верную карточку).');
+  if(S.done.q4){$("sheet").innerHTML=top+doneCard("q4");return;}
+  const order=shuffle(FP.map((f,i)=>i),7);
+  const card=i=>`<div class="item" id="fp${i}"><span>${FP[i][0]}</span><span class="btns"><button type="button" data-i="${i}" data-v="1">✅ Можно</button><button type="button" data-i="${i}" data-v="0">⛔ Нельзя</button></span></div>`;
+  $("sheet").innerHTML=top+`<div class="card"><div class="bin" id="pool"><h4>📥 Карточки</h4></div>
+    <div class="cards2"><div class="bin" id="yes"><h4>✅ Можно публиковать</h4></div><div class="bin" id="no"><h4>⛔ Нельзя публиковать</h4></div></div>
+    <div class="row"><button class="btn" type="button" id="fpChk">Проверить</button></div><div id="fpFb"></div></div>`;
+  function place(){order.forEach(i=>{const el=$("fp"+i)||(()=>{const d=document.createElement("div");d.innerHTML=card(i);return d.firstChild;})();
+    const v=P.ans[i];(v===undefined?$("pool"):v?$("yes"):$("no")).appendChild(el);});
+    document.querySelectorAll(".item .btns button").forEach(b=>b.onclick=()=>{P.ans[b.dataset.i]=b.dataset.v==="1";save();place();});}
+  place();
+  $("fpChk").onclick=()=>{
+    if(Object.keys(P.ans).length<FP.length){$("fpFb").innerHTML=`<div class="fb info"><span class="m">!</span><span>Распредели все ${FP.length} карточек.</span></div>`;return;}
+    let ok=0;FP.forEach((f,i)=>{const r=P.ans[i]===f[1];if(r)ok++;$("fp"+i).classList.add(r?"ok":"no");});
+    document.querySelectorAll(".item .btns button").forEach(b=>b.disabled=true);
+    finishStation("q4",ok);
+    $("fpFb").innerHTML=`<div class="fb ${ok===6?'ok':'info'}"><span class="m">${ok}/6</span><span>Нельзя публиковать документы, адрес, телефон и геолокацию «я один дома» — этим могут воспользоваться злоумышленники.</span></div>`+doneCard("q4");
+  };
+}
+
+/* ================= ЗАДАНИЕ 5: СИТУАЦИИ (ИИ) ================= */
+const CASES=[
+  {k:"o1",max:3,t:"Ситуация 1 · Кибербуллинг",q:"В группе класса однокласснику начали писать обидные сообщения и выкладывать его фото с насмешками. Что ему нужно сделать? Назови три действия и объясни, зачем каждое."},
+  {k:"o2",max:3,t:"Ситуация 2 · Пароль",q:"Пароль Миши от игры — misha2012. Объясни, почему он ненадёжный (две причины), и предложи, как сделать защиту аккаунта надёжной."},
+  {k:"o3",max:3,t:"Ситуация 3 · Эргономика",q:"Ты делаешь проект за компьютером 2 часа подряд. Составь для себя три правила эргономики и объясни, что будет, если их нарушать."}
+];
+function showQ5(){
+  const top=head(7,"💬 ЗАДАНИЕ 5","Ситуации",'Ответь на три ситуации <b>полными предложениями</b>, своими словами. Ответы проверит <b>ИИ</b>, а учитель посмотрит и утвердит оценку. До 3 баллов за каждую ситуацию.');
+  const ro=!!S.done.q5;
+  $("sheet").innerHTML=top+CASES.map(c=>`<div class="card"><div class="step-tag">${c.t} · до ${c.max} б.</div><p class="task-text">${c.q}</p>
+    <textarea class="ans" data-k="${c.k}" maxlength="1500" ${ro?"readonly":""} placeholder="Напиши ответ…">${esc(S.open[c.k]||"")}</textarea>
+    <div class="chars" id="ch_${c.k}"></div></div>`).join("")+
+    (ro?doneCardOpen():`<div class="card finish-theory"><h3>Всё написал(а)?</h3><p style="margin:0;color:#BFD6FF">После сохранения изменить ответы будет нельзя.</p>
+      <div class="row"><button class="btn" type="button" id="q5save">💾 Сохранить ответы и перейти к финишу</button></div><div id="q5fb"></div></div>`);
+  const cnt=t=>{const n=t.value.trim().length;$("ch_"+t.dataset.k).textContent=n+" символов"+(n<60?" · напиши подробнее":"");};
+  document.querySelectorAll("textarea.ans").forEach(t=>{cnt(t);t.oninput=()=>{S.open[t.dataset.k]=t.value;save();cnt(t);clearTimeout(t._s);t._s=setTimeout(syncProgress,1500);};});
+  if(ro)return;
+  $("q5save").onclick=()=>{
+    const short=CASES.filter(c=>(S.open[c.k]||"").trim().length<30);
+    if(short.length&&!confirm("Некоторые ответы очень короткие ("+short.map(c=>c.t.split(" · ")[0]).join(", ")+"). За них могут поставить мало баллов. Всё равно сохранить?"))return;
+    S.done.q5=true;save();renderTools();syncProgress();show("fin");};
+}
+function doneCardOpen(){return `<div class="card finish-theory"><div class="step-tag" style="color:var(--cyan)">✓ ОТВЕТЫ СОХРАНЕНЫ</div><h3>Их проверит ИИ и учитель</h3>
+  <div class="row"><button class="btn" type="button" onclick="show('fin')">К финишу →</button></div></div>`;}
+
+/* ================= ФИНИШ ================= */
+function autoTotal(){return AUTO.reduce((s,k)=>s+(S.score[k]||0),0);}
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+function showFin(){
+  const pts=autoTotal();
+  $("sheet").innerHTML=head(8,"🏁 ФИНИШ","Миссия завершена!",'Проверь свои баллы, отметь, как прошёл урок, и отправь отчёт учителю. Итоговую отметку (по 10-балльной шкале) учитель увидит после проверки ситуаций.')+`
+  <div class="card"><div class="result"><div class="grade"><small>БАЛЛЫ</small><b style="font-size:48px">${pts}</b><small>ИЗ ${MAXAUTO}</small></div>
+    <div style="display:grid;gap:8px;min-width:0"><div class="pts">${pts}<span> / ${MAXAUTO} + ситуации до 9</span></div>
+    <div class="counter">время ≈ <b>${minutes()} мин</b> · ${esc(S.fio)}, ${esc(S.cls)} · всего можно ${MAXALL} баллов</div></div></div>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>ЗАДАНИЕ</th><th>⭐</th><th>БАЛЛЫ</th></tr></thead><tbody>
+      ${AUTO.map(k=>`<tr><td>${NAMES[k]}</td><td>${stars(k)}</td><td>${S.score[k]??"—"} / ${MAXP[k]}</td></tr>`).join("")}
+      <tr><td>${NAMES.q5}</td><td>🤖</td><td>проверяется / ${MAXP.q5}</td></tr></tbody></table></div></div>
+  <div class="card"><h3>Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(m=>`<button type="button" aria-pressed="${S.mood===m[1]}" data-m="${m[1]}">${m[0]} ${m[1]}</button>`).join("")}</div>
+    <div class="row"><button class="btn" type="button" id="send" ${S.mood&&!S.sent?"":"disabled"}>${S.sent?"✓ Отправлено":"↑ Отправить учителю"}</button>
+      <span class="counter" id="sendHint">${S.mood||S.sent?"":"сначала выбери ответ выше"}</span></div>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div></div>`;
+  document.querySelectorAll("#mood button").forEach(b=>b.onclick=()=>{if(S.sent)return;S.mood=b.dataset.m;save();
+    document.querySelectorAll("#mood button").forEach(x=>x.setAttribute("aria-pressed",x===b));$("send").disabled=false;$("sendHint").textContent="";});
+  $("send").onclick=sendResult;
+}
+function sentHTML(ok,msg){return ok?`<div class="sent"><span class="p">&gt;</span> cyber_shield.report()<br><span class="g">✓ отчёт передан учителю</span><br><span class="p">&gt;</span> Щит активирован, агент! Можешь закрыть вкладку.</div>`
+  :`<div class="sent"><span class="p">&gt;</span> cyber_shield.report()<br><span class="r">✗ ${msg}</span></div>`;}
+function sendResult(){
+  const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+  const data={score:S.score,open:S.open,minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:STEPS.length};
+  const ok=()=>{S.sent=1;S.done.fin=true;save();renderTools();$("sendOut").innerHTML=sentHTML(true);btn.textContent="✓ Отправлено";toast("✓ Отправлено учителю");};
+  const fail=()=>{$("sendOut").innerHTML=sentHTML(false,"Не получилось отправить. Проверь интернет и нажми ещё раз или позови учителя.");btn.disabled=false;btn.textContent="↑ Отправить учителю";};
+  if(!S.rec){fail();return;}
+  TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+}
+
+/* ---------- запуск ---------- */
+load();
+if(S.fio){openApp();}
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2E4BFF">
+  <title>TechLab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="style.css?v=e3">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div>
+        <span class="onair mono"><i></i>ON AIR · TechLab</span>
+        <div class="subs mono">Информатика · География · Технологическое воспитание</div>
+        <a class="logo" href="#">TechLab</a>
+        <p class="lead">Выбери предмет и класс. Тест или миссию открывает учитель — она появится в блоке «Сейчас на уроке».</p>
+      </div>
+      <div class="clock" id="clock"></div>
+    </header>
+    <nav class="tabs" id="tabs"></nav>
+    <main>
+      <div id="now"></div>
+      <div id="view"></div>
+    </main>
+    <footer><a href="teacher/">вход для учителя</a> · <a href="#" id="liteToggle">⚡ лёгкий режим</a></footer>
+  </div>
+  <script type="module" src="start.js?v=e3"></script>
+</body>
+</html>
