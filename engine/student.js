@@ -271,12 +271,12 @@ function bindTask(t) {
 }
 
 // ---------- диаграммы ----------
-const PALETTE = ["#1f6f5c", "#d98a2b", "#3d7cc9", "#b8455a", "#7a5cc0", "#6b8e23", "#999"];
+const PALETTE = ["#2E4BFF", "#F2994A", "#27AE9B", "#E5484D", "#8B5CF6", "#6B8E23", "#999"];
 const valuesPlugin = {
   id: "values",
   afterDatasetsDraw(chart) {
     const { ctx } = chart; const pie = chart.config.type === "pie";
-    ctx.save(); ctx.font = "600 12px Segoe UI, Arial"; ctx.fillStyle = "#1d2733";
+    ctx.save(); ctx.font = "600 12px Segoe UI, Arial"; ctx.fillStyle = "#0B1A3B";
     chart.data.datasets.forEach((ds, di) => {
       chart.getDatasetMeta(di).data.forEach((el, i) => {
         const val = ds.data[i]; const label = String(val).replace(".", ",") + (pie ? "%" : "");
@@ -321,7 +321,7 @@ function changed() {
   updateProgress();
   $("#savedState").textContent = "сохранение…";
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNow, 1200);
+  saveTimer = setTimeout(saveNow, 2500);
 }
 async function saveNow() {
   if (!S || finishing) return;

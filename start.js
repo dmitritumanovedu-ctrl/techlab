@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { SUBJECTS, TESTS, EXPEDITIONS } from "./tests.js";
 
@@ -10,26 +10,10 @@ const plural = (n, a, b, c) => n % 10 === 1 && n % 100 !== 11 ? a : n % 10 >= 2 
 
 let CURRENT = null, LINKS = {}, OPEN = {};
 
-// ---------- звёздное небо ----------
-(function stars() {
-  const cv = $("#stars"), ctx = cv.getContext("2d");
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let S = [];
-  function size() {
-    cv.width = innerWidth; cv.height = innerHeight;
-    S = Array.from({ length: Math.round(innerWidth * innerHeight / 6000) }, () => ({
-      x: Math.random() * cv.width, y: Math.random() * cv.height, r: Math.random() * 1.4 + .2, p: Math.random() * 6.28 }));
-  }
-  function draw(t) {
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    for (const s of S) {
-      ctx.globalAlpha = .35 + .65 * Math.abs(Math.sin(s.p + t / 1400));
-      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.28); ctx.fill();
-    }
-    if (!reduce) requestAnimationFrame(draw);
-  }
-  size(); addEventListener("resize", size); requestAnimationFrame(draw);
-})();
+// ---------- лёгкий режим для слабых компьютеров ----------
+const LITE = (() => { try { const v = localStorage.getItem("techlab_lite"); if (v) return v === "1"; } catch (e) {}
+  return (navigator.hardwareConcurrency || 8) <= 2; })();
+if (LITE) document.documentElement.classList.add("lite");
 
 function tick() {
   const d = new Date();
@@ -39,15 +23,24 @@ function tick() {
 tick(); setInterval(tick, 15000);
 
 // ---------- данные из базы ----------
-try {
-  const db = getDatabase(initializeApp(firebaseConfig));
-  onValue(ref(db, "settings"), (snap) => {
-    const s = snap.val() || {};
+// Стартовая страница не держит постоянное подключение к базе: читает настройки,
+// сразу отключается и обновляет их раз в 20 секунд. Так подключения остаются для тестов и миссий.
+let db = null;
+try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { console.warn(e); }
+async function refresh() {
+  if (!db || document.hidden) return;
+  try {
+    goOnline(db);
+    const s = (await get(ref(db, "settings"))).val() || {};
     CURRENT = s.current || null; LINKS = s.links || {}; OPEN = {};
     for (const t of TESTS) OPEN[t.id] = !!(s[t.id] && s[t.id].open);
     renderNow(); render();
-  }, () => renderNow());
-} catch (e) { console.warn(e); }
+  } catch (e) { renderNow(); }
+  finally { try { goOffline(db); } catch (e) {} }
+}
+refresh();
+setInterval(refresh, 20000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 
 // ---------- «Сейчас на уроке» ----------
 function renderNow() {
@@ -61,7 +54,7 @@ function renderNow() {
         <div class="sub">${s ? esc(s.icon + " " + s.name) : ""}${CURRENT.grade ? " · " + esc(CURRENT.grade) + " класс" : ""}</div></div>
       <span class="go">${mission ? "Начать миссию →" : "Начать →"}</span></a>`;
   } else {
-    box.innerHTML = `<div class="now empty"><div><div class="lbl">Сейчас на уроке</div>
+    box.innerHTML = `<div class="now empty"><div><div class="lbl">● Сейчас на уроке</div>
       <div class="sub" style="margin-top:4px">Учитель ещё не открыл задание. Выбери предмет ниже или подожди.</div></div></div>`;
   }
 }
@@ -70,9 +63,16 @@ function renderNow() {
 addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 render();
 
+function renderTabs(active) {
+  const SHORT = { tech: "Техн. воспитание" };
+  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>ГЛАВНАЯ</small><b>Все предметы</b></a>` +
+    SUBJECTS.map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}"><small>ПРЕДМЕТ ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(SHORT[s.id] || s.name)}</b></a>`).join("");
+}
+
 function render() {
   const [sid, grade] = decodeURIComponent(location.hash.slice(1)).split("-");
   const s = subj(sid);
+  renderTabs(s ? s.id : "");
   if (!s) return renderHome();
   if (!grade || !s.grades.includes(grade)) return renderSubject(s);
   renderGrade(s, grade);
@@ -98,19 +98,20 @@ function renderHome() {
   $("#view").innerHTML = `<h2>Выбери предмет</h2><div class="tiles">${SUBJECTS.map((s) => {
     const st = stats(s.id);
     const pr = st.total ? Math.round(st.ready / st.total * 100) : 0;
-    return `<a class="tile" style="--c:${s.color}" href="#${s.id}">
+    const on = Math.max(1, Math.round(pr / 25));
+    return `<a class="tile" href="#${s.id}">
       <div class="ic">${s.icon}</div><div class="nm">${esc(s.name)}</div>
-      <div class="ds">${s.grades.join(" · ")} класс</div>
-      <div class="ds" style="margin-top:4px">${statLine(st)}</div>
-      <div class="lv"><i style="width:${Math.max(6, pr)}%"></i></div></a>`;
+      <div class="ds">${statLine(st)}</div>
+      <div class="cls">${s.grades.map((g) => `<b>${esc(g)} класс</b>`).join("")}</div>
+      <div class="seg">${[0, 1, 2, 3].map((i) => `<span${i < on ? ' class="on"' : ""}></span>`).join("")}</div></a>`;
   }).join("")}</div>`;
 }
 
 function renderSubject(s) {
   $("#view").innerHTML = `<div class="crumbs"><a href="#">Главная</a> › ${esc(s.name)}</div>
     <h2>${s.icon} ${esc(s.name)} — выбери класс</h2>
-    <div class="tiles">${s.grades.map((g) => `<a class="tile" style="--c:${s.color};min-height:160px" href="#${s.id}-${g}">
-        <div class="big grad">${esc(g)}</div><div class="nm" style="margin-top:6px">класс</div>
+    <div class="tiles">${s.grades.map((g) => `<a class="tile" href="#${s.id}-${g}">
+        <div class="big">${esc(g)}</div><div class="nm" style="margin-top:6px">класс</div>
         <div class="ds">${statLine(stats(s.id, g))}</div></a>`).join("")}</div>`;
 }
 
@@ -158,4 +159,11 @@ function icon(u) {
   if (/youtube|youtu\.be|vimeo/.test(h)) return "▶️";
   if (/forms\.gle|docs\.google\.com\/forms/.test(u)) return "📝";
   return "🔗";
+}
+
+// ---------- переключатель «лёгкий режим» ----------
+const lt = document.getElementById("liteToggle");
+if (lt) {
+  lt.textContent = LITE ? "✨ обычный режим" : "⚡ лёгкий режим (для слабых компьютеров)";
+  lt.onclick = (e) => { e.preventDefault(); try { localStorage.setItem("techlab_lite", LITE ? "0" : "1"); } catch (x) {} location.reload(); };
 }
