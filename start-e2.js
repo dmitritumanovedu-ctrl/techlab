@@ -1,14 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { SUBJECTS, TESTS, EXPEDITIONS } from "./tests.js";
+import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=3";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const subj = (id) => SUBJECTS.find((s) => s.id === id);
 const plural = (n, a, b, c) => n % 10 === 1 && n % 100 !== 11 ? a : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? b : c;
 
-let CURRENT = null, LINKS = {}, OPEN = {};
+let CURRENT = null, LINKS = {}, OPEN = {}, SET = {}, PLAN = {}, FILTER = "all", LASTGRADE = "";
+const ktag = (k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`;
+const rtag = `<span class="ktag k-retake">🔁 Пересдача</span>`;
 
 // ---------- лёгкий режим для слабых компьютеров ----------
 const LITE = (() => { try { const v = localStorage.getItem("techlab_lite"); if (v) return v === "1"; } catch (e) {}
@@ -32,7 +34,7 @@ async function refresh() {
   try {
     goOnline(db);
     const s = (await get(ref(db, "settings"))).val() || {};
-    CURRENT = s.current || null; LINKS = s.links || {}; OPEN = {};
+    SET = s; CURRENT = s.current || null; LINKS = s.links || {}; PLAN = s.plan || {}; OPEN = {};
     for (const t of TESTS) OPEN[t.id] = !!(s[t.id] && s[t.id].open);
     renderNow(); render();
   } catch (e) { renderNow(); }
@@ -47,9 +49,11 @@ function renderNow() {
   const box = $("#now");
   if (CURRENT && CURRENT.path) {
     const s = subj(CURRENT.subject);
-    const mission = TESTS.find((t) => t.id === CURRENT.id)?.type === "mission";
+    const T = TESTS.find((t) => t.id === CURRENT.id);
+    const mission = T?.type === "mission";
+    const K = T ? kindOf(T, SET) : null;
     box.innerHTML = `<a class="now" href="${esc(CURRENT.path)}">
-      <div><div class="lbl"><span class="pulse"></span>Сейчас на уроке</div>
+      <div><div class="lbl"><span class="pulse"></span>Сейчас на уроке${K ? ` <span class="now-k">${K.icon} ${esc(K.name)}</span>` : ""}</div>
         <div class="ttl">${esc(CURRENT.title)}</div>
         <div class="sub">${s ? esc(s.icon + " " + s.name) : ""}${CURRENT.grade ? " · " + esc(CURRENT.grade) + " класс" : ""}</div></div>
       <span class="go">${mission ? "Начать миссию →" : "Начать →"}</span></a>`;
@@ -115,39 +119,81 @@ function renderSubject(s) {
         <div class="ds">${statLine(stats(s.id, g))}</div></a>`).join("")}</div>`;
 }
 
+// ---------- план недели ----------
+const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт"];
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+function weekHtml(sid, g) {
+  const list = Object.values(PLAN[sid + "-" + g] || {});
+  if (!list.length) return "";
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const mon = new Date(now); const wd = (now.getDay() + 6) % 7;            // 0 = понедельник
+  mon.setDate(now.getDate() - wd + (wd >= 5 ? 7 : 0));                       // в выходные — следующая неделя
+  const days = DAYS.map((name, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return { name, d, key: iso(d) }; });
+  if (!list.some((e) => days.some((x) => x.key === e.d))) return "";
+  const today = iso(now);
+  return `<h3>📅 План недели</h3><div class="week">${days.map((x) => {
+    const es = list.filter((e) => e.d === x.key).sort((a, b) => (a.at || 0) - (b.at || 0));
+    return `<div class="day${x.key === today ? " today" : ""}"><b>${x.name} ${pad(x.d.getDate())}.${pad(x.d.getMonth() + 1)}</b>
+      ${es.length ? es.map((e) => { const k = KINDS.find((k) => k.id === e.k); return `<div class="ev">${esc(e.t)}${k ? `<br>${ktag(k)}` : ""}</div>`; }).join("") : '<span class="none">—</span>'}</div>`;
+  }).join("")}</div>`;
+}
+
 function renderGrade(s, g) {
+  if (LASTGRADE !== s.id + g) { FILTER = "all"; LASTGRADE = s.id + g; }
   const exps = EXPEDITIONS.filter((x) => x.subject === s.id && x.grade === g);
   const tests = TESTS.filter((x) => x.subject === s.id && x.grade === g && x.type !== "mission");
+  const missions = TESTS.filter((x) => x.subject === s.id && x.grade === g && x.type === "mission");
   const links = Object.values(LINKS).filter((x) => x.subject === s.id && x.grade === g).sort((a, b) => (b.at || 0) - (a.at || 0));
-  let html = `<div class="crumbs"><a href="#">Главная</a> › <a href="#${s.id}">${esc(s.name)}</a> › ${esc(g)} класс</div>
-    <h2>${s.icon} ${esc(s.name)} · ${esc(g)} класс</h2>`;
 
-  if (exps.length) {
-    html += `<h3>🚀 Экспедиции</h3>` + exps.map((e) => {
-      const ms = TESTS.filter((t) => t.expedition === e.id).sort((a, b) => a.n - b.n);
-      return `<div class="exp"><div class="exp-head"><span class="ic">${e.icon}</span>
+  // фильтры по типам работ
+  const all = tests.concat(missions);
+  const cnt = {}; all.forEach((t) => { const k = kindOf(t, SET).id; cnt[k] = (cnt[k] || 0) + 1; });
+  const nRetake = all.filter((t) => t.retake).length;
+  const chips = [["all", "Все", all.length + links.length]]
+    .concat(KINDS.filter((k) => cnt[k.id]).map((k) => [k.id, k.icon + " " + k.short, cnt[k.id]]))
+    .concat(nRetake ? [["retake", "🔁 Пересдачи", nRetake]] : [])
+    .concat(links.length ? [["links", "📎 Материалы", links.length]] : []);
+  if (!chips.some(([id]) => id === FILTER)) FILTER = "all";
+  const show = (t) => FILTER === "all" || (FILTER === "retake" ? !!t.retake : kindOf(t, SET).id === FILTER);
+
+  let html = `<div class="crumbs"><a href="#">Главная</a> › <a href="#${s.id}">${esc(s.name)}</a> › ${esc(g)} класс</div>
+    <h2>${s.icon} ${esc(s.name)} · ${esc(g)} класс</h2>` + weekHtml(s.id, g) +
+    `<div class="filters">${chips.map(([id, name, n]) => `<button type="button" class="flt${FILTER === id ? " on" : ""}" data-f="${id}">${esc(name)} <i>${n}</i></button>`).join("")}</div>`;
+
+  // экспедиции (квесты)
+  const expsShown = exps.map((e) => [e, TESTS.filter((t) => t.expedition === e.id).sort((a, b) => a.n - b.n).filter(show)]).filter(([, ms]) => ms.length);
+  if (expsShown.length && FILTER !== "links") {
+    html += `<h3>🚀 Экспедиции и квесты</h3>` + expsShown.map(([e, ms]) => `<div class="exp"><div class="exp-head"><span class="ic">${e.icon}</span>
         <div><div class="t">${esc(e.title)}</div><div class="s">${esc(e.note || "")}</div></div></div>
         <div class="route">${ms.map((m) => {
-          const live = OPEN[m.id];
+          const live = OPEN[m.id], K = kindOf(m, SET);
           const inner = `<div class="n">МИССИЯ ${String(m.n).padStart(2, "0")}${m.date ? " · " + esc(m.date) : ""}</div>
             <div class="mt">${esc(m.title)}</div>
-            <div class="md">${m.path ? (live ? '<span class="badge open">открыта</span>' : '<span class="badge closed">закрыта</span>') : '<span class="badge soon">🔒 скоро</span>'}</div>`;
+            <div class="md">${K.id !== "quest" ? ktag(K) + " " : ""}${m.path ? (live ? '<span class="badge open">открыта</span>' : '<span class="badge closed">закрыта</span>') : '<span class="badge soon">🔒 скоро</span>'}</div>`;
           return m.path ? `<a class="ms${live ? " live" : ""}" href="${esc(m.path)}">${inner}</a>` : `<div class="ms locked">${inner}</div>`;
-        }).join("")}</div></div>`;
-    }).join("");
+        }).join("")}</div></div>`).join("");
   }
 
-  html += `<h3>📝 Тесты</h3>` + (tests.length ? `<div class="list">${tests.map((t) => `<a class="row" href="${esc(t.path)}">
-      <span class="ri">📝</span><span><div class="rt">${esc(t.title)}</div><div class="rs">${esc(t.note || "")}</div></span>
-      <span class="rb">${OPEN[t.id] ? '<span class="badge open">открыт</span>' : '<span class="badge closed">закрыт</span>'}</span></a>`).join("")}</div>`
-    : `<div class="empty-note">Тестов пока нет.</div>`);
+  // тесты, сгруппированные по типам
+  if (FILTER !== "links") {
+    const shownTests = tests.filter(show);
+    const groups = KINDS.map((k) => [k, shownTests.filter((t) => kindOf(t, SET).id === k.id)]).filter(([, l]) => l.length);
+    if (groups.length) html += groups.map(([k, l]) => `<h3>${k.icon} ${esc(k.name)}</h3><div class="list">${l.map((t) => `<a class="row" href="${esc(t.path)}">
+        <span class="ri">${t.retake ? "🔁" : k.icon}</span><span><div class="rt">${esc(t.title)}</div><div class="rs">${esc(t.note || "")}</div></span>
+        <span class="rb">${ktag(k)}${t.retake ? " " + rtag : ""} ${OPEN[t.id] ? '<span class="badge open">открыт</span>' : '<span class="badge closed">закрыт</span>'}</span></a>`).join("")}</div>`).join("");
+    else if (!expsShown.length) html += `<div class="empty-note" style="margin-top:12px">${FILTER === "all" ? "Заданий пока нет." : "Работ этого типа пока нет."}</div>`;
+  }
 
-  html += `<h3>📎 Материалы к урокам</h3>` + (links.length ? `<div class="list">${links.map((l) => `<a class="row" href="${esc(l.url)}" target="_blank" rel="noopener">
-      <span class="ri">${icon(l.url)}</span><span><div class="rt">${esc(l.title)}</div><div class="rs">${esc(host(l.url))}</div></span>
-      <span class="rb">↗</span></a>`).join("")}</div>`
-    : `<div class="empty-note">Материалов пока нет.</div>`);
+  if (FILTER === "all" || FILTER === "links") {
+    html += `<h3>📎 Материалы к урокам</h3>` + (links.length ? `<div class="list">${links.map((l) => `<a class="row" href="${esc(l.url)}" target="_blank" rel="noopener">
+        <span class="ri">${icon(l.url)}</span><span><div class="rt">${esc(l.title)}</div><div class="rs">${esc(host(l.url))}</div></span>
+        <span class="rb">↗</span></a>`).join("")}</div>`
+      : `<div class="empty-note">Материалов пока нет.</div>`);
+  }
 
   $("#view").innerHTML = html;
+  document.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { FILTER = b.dataset.f; renderGrade(s, g); });
 }
 
 function host(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } }

@@ -123,3 +123,31 @@ footer a { color: var(--muted); }
 .lite *, .lite *::before, .lite *::after { animation: none !important; transition: none !important; }
 .lite .hero, .lite .now, .lite .tile:hover, .lite .ms.live, .lite a.row:hover { box-shadow: none; }
 .lite .tile:hover, .lite .now:hover .go { transform: none; }
+
+/* ===== типы работ, фильтры, план недели ===== */
+.ktag { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; vertical-align: middle; }
+.k-so { background: #FDECEE; color: #C2253B; border-color: #F3B5BF; }
+.k-to { background: #E8EDFF; color: #2E4BFF; border-color: #C9D3FF; }
+.k-quest { background: #E3F8EF; color: #0B7A4F; border-color: #9FE0C4; }
+.k-blitz { background: #F3E8FF; color: #7A3FD1; border-color: #D9C2FA; }
+.k-hw { background: #FFF4DC; color: #9A6B00; border-color: #F0D58F; }
+.k-train { background: #EEF2F8; color: #556A92; border-color: #DCE4F2; }
+.k-battle { background: #0B1A3B; color: #fff; border-color: #0B1A3B; }
+.k-retake { background: #FFEFE3; color: #B4540A; border-color: #F6C9A4; }
+.row .rb { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.now-k { display: inline-block; margin-left: 8px; background: rgba(255,255,255,.18); color: #fff; border-radius: 999px; padding: 1px 9px; letter-spacing: .04em; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
+.flt { font: inherit; font-weight: 700; font-size: 14px; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.flt i { font-style: normal; font-family: var(--mono); font-size: 11px; opacity: .65; margin-left: 2px; }
+.flt:hover { border-color: var(--blue); }
+.flt.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.week .day { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; min-height: 84px; font-size: 13px; color: var(--muted); }
+.week .day b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+.week .day.today { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-l); }
+.week .day.today b::after { content: " · сегодня"; color: var(--blue); font-weight: 700; }
+.week .ev { color: var(--text); font-weight: 600; margin-top: 4px; line-height: 1.35; }
+.week .ev .ktag { font-size: 9.5px; padding: 1px 7px; margin-top: 3px; }
+.week .none { color: var(--soft); }
+@media (max-width: 760px) { .week { grid-template-columns: 1fr 1fr; } .row { flex-wrap: wrap; } .row .rb { margin-left: 56px; justify-content: flex-start; } }

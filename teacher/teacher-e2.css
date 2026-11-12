@@ -54,3 +54,21 @@ dialog::backdrop { background: rgba(11,26,59,.6); }
 .review .rv-adv { background: var(--amber-2); border-left: 3px solid #E0B100; border-radius: 6px; padding: 6px 10px; font-size: 14px; color: #6B4B00; }
 .rv-sum { background: var(--green-2); border-color: #C9D3FF; }
 .rv-sum p { margin: 6px 0; }
+
+/* ===== типы работ, план недели, бланки ===== */
+.ktag { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; vertical-align: middle; }
+.k-so { background: #FDECEE; color: #C2253B; border-color: #F3B5BF; }
+.k-to { background: #E8EDFF; color: #2E4BFF; border-color: #C9D3FF; }
+.k-quest { background: #E3F8EF; color: #0B7A4F; border-color: #9FE0C4; }
+.k-blitz { background: #F3E8FF; color: #7A3FD1; border-color: #D9C2FA; }
+.k-hw { background: #FFF4DC; color: #9A6B00; border-color: #F0D58F; }
+.k-train { background: #EEF2F8; color: #556A92; border-color: #DCE4F2; }
+.k-battle { background: #0B1A3B; color: #fff; border-color: #0B1A3B; }
+.k-retake { background: #FFEFE3; color: #B4540A; border-color: #F6C9A4; }
+.kindrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-weight: 700; }
+.kindrow select { padding: 7px 10px; }
+.hub-card .kt { margin: -6px 0 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.hub-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: -8px 0 18px; }
+.hub-legend { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+@media (max-width: 760px) { .hub-legend { margin-left: 0; } }

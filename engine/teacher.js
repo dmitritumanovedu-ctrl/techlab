@@ -3,7 +3,7 @@ import { getDatabase, ref, get, set, update, remove, onValue, push } from "https
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum } from "./grading.js";
-import { SUBJECTS, TESTS } from "../tests.js";
+import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=3";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -26,6 +26,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const P = `results/${TEST.id}`;
 
 let AICFG = null, aiAuto = false, aiQueue = [], aiQueued = new Set(), aiBusy = false;
+let SETTINGS = {};
 let KEYS = null, RESULTS = {}, seen = new Set(), filterCls = "", search = "", openId = null, unsub = [];
 
 onAuthStateChanged(auth, async (user) => {
@@ -109,6 +110,7 @@ function showDashboard() {
       </div>
     </div>
     <div class="muted" id="pinInfo" style="font-size:14px;margin-top:8px"></div>
+    ${kindRowHtml()}
   </div>
   <div class="toolbar noprint" style="margin-bottom:14px">
     <label class="switch"><input type="checkbox" id="swOpen"> <span id="swText">Тест закрыт</span></label>
@@ -119,6 +121,7 @@ function showDashboard() {
       <button class="btn small ghost" id="bAiCfg" title="Настройка проверки ИИ">⚙ ИИ</button>
       <button class="btn small ghost" id="bKeys">Ключи ответов</button>
       <button class="btn small ghost" id="bPrintAll" title="Разборы всех сданных работ (с учётом фильтра)">🖨 Разборы</button>
+      <button class="btn small ghost" id="bSheets" title="Бланки всех сданных работ (с учётом фильтра класса) — каждый с новой страницы">🖨 Бланки класса</button>
       <button class="btn small ghost" id="bCsv">Скачать CSV</button>
       <button class="btn small red" id="bClear">Очистить результаты</button>
     </div>
@@ -162,6 +165,13 @@ function showDashboard() {
     if (!ids.length) return alert("Нет сданных работ.");
     printReviews(ids);
   };
+  $("#bSheets").onclick = () => {
+    const ids = rows().filter(([, r]) => r.status === "submitted").map(([id]) => id).reverse();
+    if (!ids.length) return alert("Нет сданных работ.");
+    if (ids.length > 35 && !confirm(`Бланков: ${ids.length}. Лучше выбрать один класс в фильтре «Все классы». Всё равно печатать все?`)) return;
+    printSheets(ids);
+  };
+  bindKind();
   $("#bAiCfg").onclick = showAiSettings;
   $("#bAi").onclick = () => {
     if (!AICFG?.url) return showAiSettings();
@@ -246,11 +256,13 @@ function renderTable() {
       <td>${fmtNum(g.auto)}</td>
       <td>${r.status === "submitted" ? `<b>${fmtNum(g.total)}</b> / ${g.max}` : "—"}</td>
       <td>${gradeCell}</td>
-      <td><button class="btn small" data-open="${id}">${r.status === "submitted" && !g.complete ? "Проверить" : "Открыть"}</button></td></tr>`;
+      <td style="white-space:nowrap"><button class="btn small" data-open="${id}">${r.status === "submitted" && !g.complete ? "Проверить" : "Открыть"}</button>
+        ${r.status === "submitted" ? `<button class="btn small ghost" data-sheet="${id}" title="Бланк работы для печати / PDF">🖨 Бланк</button>` : ""}</td></tr>`;
   }).join("");
   list.forEach(([id]) => seen.add(id));
   if (!seen.size) list.forEach(([id]) => seen.add(id));
   tb.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => showCheck(b.dataset.open));
+  tb.querySelectorAll("[data-sheet]").forEach((b) => b.onclick = () => printSheets([b.dataset.sheet]));
 }
 
 // ---------- проверка работы ----------
@@ -336,6 +348,7 @@ function showCheck(id, refresh = false) {
           ${r.status === "submitted" ? `<button class="btn small" id="dUnlock">Разрешить продолжить (+10 мин)</button>` : `<button class="btn small" id="dStop">Завершить работу</button>`}
           ${r.status === "submitted" ? `<button class="btn small ghost" id="dAi">🤖 ${r.aiSummary ? "Разобрать заново (ИИ)" : "Разбор ИИ"}</button>` : ""}
           ${r.status === "submitted" ? `<button class="btn small ghost" id="dPrint">🖨 Печать разбора</button>` : ""}
+          ${r.status === "submitted" ? `<button class="btn small ghost" id="dSheet">🖨 Бланк</button>` : ""}
           <button class="btn small red" id="dDel">Удалить</button>
         </div>
       </div>
@@ -352,6 +365,7 @@ function showCheck(id, refresh = false) {
   });
   $("#dAi")?.addEventListener("click", () => { if (!AICFG?.url) return showAiSettings(); enqueueAi(id, true); });
   $("#dPrint")?.addEventListener("click", () => printReviews([id]));
+  $("#dSheet")?.addEventListener("click", () => printSheets([id]));
   if (r.aiStatus === "error") dlg.querySelector(".dlg-body").insertAdjacentHTML("afterbegin", `<div class="chk-item need">🤖 Ошибка проверки ИИ: ${esc(r.aiError || "")}</div>`);
   $("#dUnlock")?.addEventListener("click", () => {
     if (!confirm("Разрешить ученику продолжить работу? Он сможет вернуться к своим ответам ещё на 10 минут.")) return;
@@ -570,6 +584,75 @@ function showAiSettings() {
 
 
 // ---------- материалы (ссылки) на стартовой странице ----------
+// ---------- тип работы (суммативное, текущее, квест…) ----------
+function kindRowHtml() {
+  return `<div class="kindrow"><span>Тип работы:</span><select id="selKind" style="width:auto">${KINDS.map((k) =>
+    `<option value="${k.id}">${k.icon} ${esc(k.name)}</option>`).join("")}</select>
+    ${ENTRY.retake ? '<span class="ktag k-retake">🔁 Пересдача</span>' : ""}
+    <span class="muted" style="font-size:13px">ярлык виден ученикам на сайте</span></div>`;
+}
+function bindKind() {
+  const sel = $("#selKind"); if (!sel) return;
+  unsub.push(onValue(ref(db, `settings/${ENTRY.id}/kind`), (s) => {
+    SETTINGS[ENTRY.id] = { ...(SETTINGS[ENTRY.id] || {}), kind: s.val() || null };
+    sel.value = kindOf(ENTRY, SETTINGS).id;
+  }));
+  sel.onchange = () => set(ref(db, `settings/${ENTRY.id}/kind`), sel.value);
+}
+
+// ---------- план недели ----------
+function showPlan() {
+  openId = null;
+  const gradeOpts = SUBJECTS.flatMap((sub) => sub.grades.map((g) =>
+    `<option value="${sub.id}-${g}">${esc(sub.icon + " " + sub.name + " · " + g + " класс")}</option>`)).join("");
+  const today = new Date(); const pad = (n) => String(n).padStart(2, "0");
+  const iso = today.getFullYear() + "-" + pad(today.getMonth() + 1) + "-" + pad(today.getDate());
+  dlg.innerHTML = `<div class="dlg-head"><b>📅 План недели на стартовой</b>
+      <button class="btn small ghost" id="pClose">Закрыть ✕</button></div>
+    <div class="dlg-body">
+      <p class="muted">Ученики увидят план на странице своего класса: Пн–Пт текущей недели (в выходные — следующей). Пустые недели не показываются.</p>
+      <div class="grid2">
+        <label>Класс<select id="pWhere">${gradeOpts}</select></label>
+        <label>Дата<input type="date" id="pDate" value="${iso}" style="width:100%;padding:9px 12px;border:1px solid #C9D4E8;border-radius:10px"></label>
+      </div>
+      <div class="grid2">
+        <label>Что будет на уроке<input type="text" id="pText" placeholder="Например: §17 Возрастная структура"></label>
+        <label>Тип<select id="pKind"><option value="">— без ярлыка —</option>${KINDS.map((k) => `<option value="${k.id}">${k.icon} ${esc(k.name)}</option>`).join("")}</select></label>
+      </div>
+      <div class="err" id="pErr"></div>
+      <button class="btn" id="pAdd">Добавить в план</button>
+      <div id="pList" style="margin-top:16px"></div>
+    </div>`;
+  if (!dlg.open) dlg.showModal();
+  $("#pClose").onclick = () => dlg.close();
+  let off = () => {};
+  const listen = () => {
+    off();
+    const where = $("#pWhere").value;
+    off = onValue(ref(db, "settings/plan/" + where), (snap) => {
+      const L = Object.entries(snap.val() || {}).sort((a, b) => (a[1].d + (a[1].at || 0)).localeCompare(b[1].d + (b[1].at || 0)));
+      const box = $("#pList"); if (!box) return off();
+      box.innerHTML = L.length ? L.map(([id, e]) => {
+        const k = KINDS.find((x) => x.id === e.k);
+        const d = new Date(e.d + "T12:00");
+        return `<div class="chk-item chk-row"><span><b>${d.toLocaleDateString("ru-RU", { weekday: "short", day: "2-digit", month: "2-digit" })}</b> · ${esc(e.t)}
+          ${k ? ` <span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>` : ""}</span>
+          <button class="btn small red" data-del="${id}">Удалить</button></div>`;
+      }).join("") : `<p class="muted">Для этого класса план пуст.</p>`;
+      box.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => remove(ref(db, "settings/plan/" + where + "/" + b.dataset.del)));
+    });
+  };
+  $("#pWhere").onchange = listen; listen();
+  $("#pAdd").onclick = async () => {
+    const d = $("#pDate").value, t = $("#pText").value.trim(), k = $("#pKind").value;
+    if (!d) return ($("#pErr").textContent = "Выберите дату.");
+    if (!t) return ($("#pErr").textContent = "Напишите, что будет на уроке.");
+    await push(ref(db, "settings/plan/" + $("#pWhere").value), { d, t, k: k || null, at: Date.now() });
+    $("#pErr").textContent = ""; $("#pText").value = "";
+  };
+  dlg.addEventListener("close", () => off(), { once: true });
+}
+
 function showLinks() {
   openId = null;
   const gradeOpts = SUBJECTS.flatMap((sub) => sub.grades.map((g) =>
@@ -663,6 +746,7 @@ async function showMissionDashboard() {
       </div>
     </div>
     <div class="muted" id="pinInfo" style="font-size:14px;margin-top:8px"></div>
+    ${kindRowHtml()}
   </div>
   <div class="toolbar noprint" style="margin-bottom:14px">
     <label class="switch"><input type="checkbox" id="swOpen"> <span id="swText">Миссия закрыта</span></label>
@@ -705,6 +789,7 @@ async function showMissionDashboard() {
       : "Блок «Сейчас на уроке» на стартовой пуст. Включите «Миссия открыта» — миссия появится там.";
   }));
   $("#selTest").onchange = (e) => { location.search = "?test=" + encodeURIComponent(e.target.value); };
+  bindKind();
   $("#bLinks").onclick = showLinks;
   $("#fCls").onchange = (e) => { filterCls = e.target.value; renderMission(); };
   $("#fSearch").oninput = (e) => { search = e.target.value.toLowerCase(); renderMission(); };
@@ -838,6 +923,10 @@ async function showOverview() {
           <button class="btn small ghost" id="unpin">Убрать со стартовой</button></div></div>`
       : `<div class="hub-now"><div><div class="l">📌 Сейчас на стартовой</div>
         <div class="muted" style="margin-top:4px">Ничего не открыто. Откройте тест или миссию — они появятся у учеников в блоке «Сейчас на уроке».</div></div></div>`;
+    $("#hubNow").insertAdjacentHTML("beforeend", `<div class="hub-tools"><button class="btn small ghost" id="hPlan">📅 План недели</button>
+      <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
+      <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`);
+    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
     const un = $("#unpin");
     if (un) un.onclick = async () => {
       if (!confirm("Убрать с стартовой и закрыть «" + c.title + "»? Уже начатые работы ученики смогут закончить.")) return;
@@ -860,6 +949,7 @@ async function showOverview() {
           <span class="live">${open ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
           <div class="k">${esc(t.grade)} класс · ${t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : "Тест"}</div>
           <div class="n">${esc(t.title)}</div>
+          <div class="kt">${(() => { const K = kindOf(t, SET); return `<span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>`; })()}${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}</div>
           <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b>${avgOf(t, list)}</b>ср. оценка</div></div>
         </a>`;
       }).join("")}</div>` + (soon ? `<p class="muted" style="font-size:14px;margin:8px 2px 0">🔒 Ещё в разработке: ${soon}</p>` : "");
@@ -1082,4 +1172,157 @@ function printReviews(ids) {
     .sum{margin-top:10px;background:#eef5ff;border:1px solid #9cc0f0;padding:8px 10px}.scale{margin-top:8px;color:#555;font-size:11px}
   </style></head><body>${pages}</body></html>`);
   w.document.close(); setTimeout(() => w.print(), 600);
+}
+
+// =====================================================================
+//  БЛАНК РАБОТЫ: как экзаменационный лист — ответы «синей ручкой», пометки «красной пастой»
+// =====================================================================
+const TEACHER_SIGN = "Т. Д.";   // подпись учителя на бланке
+function hwText(s) {                     // «почерк»: слова слегка пляшут, как у живой ручки
+  let seed = 7;
+  return esc(String(s ?? "")).split(/(\s+)/).map((w) => {
+    if (!w.trim()) return w.includes("\n") ? "<br>" : " ";
+    for (const ch of w) seed = (seed * 31 + ch.charCodeAt(0)) % 9973;
+    const rot = ((seed % 17) - 8) / 8, dy = ((seed % 5) - 2) / 2;
+    return `<span class="w" style="transform:rotate(${rot.toFixed(2)}deg) translateY(${dy}px)">${w}</span>`;
+  }).join("");
+}
+const HW = (s) => `<span class="hw">${hwText(s)}</span>`;
+const RED = (s, cls = "") => `<span class="red ${cls}">${esc(s)}</span>`;
+const OKM = (ok) => `<span class="mk">${ok ? "✓" : "✗"}</span>`;
+function lCol(max, score, filled) {
+  const isInt = score !== null && Math.abs(score - Math.round(score)) < 1e-9;
+  let h = "<span>L</span>";
+  for (let i = 0; i <= max; i++) h += `<span${filled && isInt && Math.round(score) === i ? ' class="c"' : ""}>${i}</span>`;
+  if (filled && score !== null && !isInt) h += `<span class="half">${fmtNum(score)}</span>`;
+  if (filled && score === null) h += `<span class="half">?</span>`;
+  return `<td class="L">${h}</td>`;
+}
+function sheetOf(r) {
+  const v = VARIANTS.find((x) => x.id === r.variant), k = KEYS.variants[String(r.variant)];
+  const RV = reviewOf(r), g = RV.g, A = r.answers || {};
+  const K = kindOf(ENTRY, SETTINGS);
+  const subj = SUBJECTS.find((x) => x.id === ENTRY.subject);
+  const date = r.submittedAt || r.startedAt ? new Date(r.submittedAt || r.startedAt).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+  const clean = (t) => String(t).replace(/\s*Нажмите на карточку[^.]*\.?/i, "").replace(/\s*\(или перетащите[^)]*\)\.?/i, "");
+  const notes = (n, skipGood) => { const T = RV.tasks[n]; if (!T) return "";
+    const out = [];
+    if (!skipGood) T.good.forEach((x) => out.push(`<div class="red sm">+ ${esc(x)}</div>`));
+    T.bad.forEach((x) => out.push(`<div class="red">− ${esc(x)}</div>`));
+    if (T.pending) out.push(`<div class="red sm">(ответ ещё не проверен)</div>`);
+    return out.join(""); };
+
+  const rows = v.tasks.map((t) => {
+    const its = g.items.filter((i) => i.task === t.n);
+    const sum = its.some((i) => i.score === null) && its.every((i) => i.score === null) ? null : its.reduce((s, i) => s + (i.score ?? 0), 0);
+    let body = `<div class="q">${esc(clean(t.title))}</div>`;
+    if (t.type === "tf") {
+      body += t.items.map((q) => {
+        const kk = k.t1[q.id], a = (A.t1 || {})[q.id] || {};
+        const okMark = a.v === kk.tf;
+        const fixOk = kk.tf === "F" ? (its.find((i) => i.key === `t1_${q.id}f`)?.score ?? 0) >= 1 : true;
+        return `<div class="tf"><span class="ln">${a.v === "F" && a.fix ? HW(a.fix) : ""}</span>
+          <span class="vh"><span class="${a.v === "T" ? "o" : ""}">В</span> <span class="${a.v === "F" ? "o" : ""}">Н</span></span>
+          <span>${q.id}) <u>${esc(q.concept)}</u> — ${esc(q.text)} ${OKM(okMark && fixOk)}
+          ${!okMark ? `<br>${RED(kk.tf === "T" ? "Утверждение верное." : "Утверждение неверное. Правильно: " + kk.fix)}` : !fixOk ? `<br>${RED("Исправление неточное. Нужно: " + kk.fix)}` : ""}</span></div>`;
+      }).join("");
+    } else if (t.type === "classify") {
+      const a = A.t2 || {};
+      const cell = (ci) => t.chips.filter((c) => Number(a[c.id]) === ci && a[c.id] != null).map((c) =>
+        `<div class="${Number(a[c.id]) === k.t2[c.id] ? "" : "wv"}">${HW(c.text)} ${OKM(Number(a[c.id]) === k.t2[c.id])}</div>`).join("") || "&nbsp;";
+      const lost = t.chips.filter((c) => a[c.id] == null || a[c.id] < 0);
+      body += `<table class="in"><tr>${t.columns.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>
+        <tr>${t.columns.map((_, ci) => `<td>${cell(ci)}</td>`).join("")}</tr></table>` +
+        (lost.length ? `<div class="red sm">Не распределено: ${esc(lost.map((c) => c.text).join("; "))}</div>` : "") +
+        t.chips.filter((c) => a[c.id] != null && a[c.id] >= 0 && Number(a[c.id]) !== k.t2[c.id]).map((c) => `<div class="red">«${esc(c.text)}» → ${esc(t.columns[k.t2[c.id]])}</div>`).join("");
+    } else if (t.type === "mcq") {
+      body += t.options.map((o, i) => {
+        const chosen = A.t3 === o.id, right = o.id === k.t3;
+        return `<div class="opt"><span class="${chosen ? "o" : ""}">${"абвгд"[i]})</span> ${esc(o.text)}
+          ${chosen ? OKM(right) : ""}${!chosen && right && A.t3 !== k.t3 ? ` ${RED("← верно")}` : ""}</div>`;
+      }).join("");
+    } else if (t.type === "chart" || t.type === "open") {
+      const ans = A["t" + t.n];
+      body += (t.chart ? `<div class="sm it">[диаграмма «${esc(t.chart.title)}» — в электронной версии теста]</div>` : "") +
+        `<div class="answ">${ans && String(ans).trim() ? HW(ans) : '<div class="ln"></div><div class="ln"></div>'}</div>` + notes(t.n);
+    } else if (t.type === "mapid") {
+      const a = A.t9 || {};
+      body += `<div class="sm it">[карта — в электронной версии теста]</div>` + t.markers.map((m) => {
+        const ok = a[m.letter] === k.t9[m.letter];
+        return `<div class="mp"><b>${m.letter}</b> — <span class="ln2">${a[m.letter] ? HW(a[m.letter]) : ""}</span> ${OKM(ok)} ${ok ? "" : RED(k.t9[m.letter])}</div>`;
+      }).join("");
+    } else if (t.type === "mapcalc") {
+      const a = A.t10 || {};
+      const calc = its.find((i) => i.key === "t10a"), cat = its.find((i) => i.key === "t10b");
+      body += `<div class="mp">а) D = <span class="ln2">${a.d ? HW(a.d) : ""}</span> чел./км² ${OKM(calc.auto === 2)}</div>
+        <div class="mp">б) Категория: <span class="ln2">${a.cat ? HW(a.cat) : ""}</span> ${OKM(cat.auto === 1)}</div>
+        <div class="mp">в) <span class="answ">${a.why ? HW(a.why) : '<span class="ln2" style="min-width:300px"></span>'}</span></div>` + notes(t.n, true);
+    }
+    const T = RV.tasks[t.n];
+    if (T && (T.bad.length || (sum ?? 0) < t.points) && !T.pending) body += `<div class="red adv">💡 ${esc(adviceOf(T))}</div>`;
+    return `<tr><td class="n">${t.n}.</td><td>${body}</td>${lCol(t.points, sum, true)}${lCol(t.points, null, false)}</tr>`;
+  }).join("");
+
+  const S = r.aiSummary;
+  const weak = Object.entries(RV.tasks).filter(([, t]) => t.sum < t.max * .6).map(([n, t]) => `№${n} (${t.topic})`);
+  const auto = { tab: "переключение вкладки", blur: "переход в другое окно", close: "закрытие страницы" }[r.reason];
+  return `<section>
+    <h3>${esc(K.name)} · ${esc(subj?.name || "")} · ${esc(ENTRY.grade)} класс</h3>
+    <div class="sub">${esc(TEST.title)} · Вариант ${r.variant}</div>
+    <div class="fio"><span>Фамилия, имя:</span><span class="line">${HW(r.name)}</span><span>Класс:</span><span class="line">${HW(r.cls)}</span><span>Дата:</span><span class="line">${HW(date)}</span></div>
+    ${auto ? `<div class="red" style="margin:-4px 0 8px">⚠ Работа сдана автоматически: ${auto}.</div>` : ""}
+    <table class="ex"><thead><tr><th style="width:34px">№</th><th>Задания</th><th colspan="2" style="width:64px">Баллы</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="fin"><div class="sum">
+      <div class="red big">Итого: ${fmtNum(g.total)} из ${g.max} баллов → оценка ${g.complete ? g.grade : "≈" + g.gradeNow}</div>
+      ${S ? `<div class="red sm2">Молодец: ${esc(S.strengths)}</div><div class="red sm2">Пробелы: ${esc(S.gaps)}</div><div class="red sm2">Что повторить: ${esc(S.advice)}</div>`
+        : `<div class="red sm2">${weak.length ? "Повтори: " + esc(weak.join(", ")) : "Работа выполнена хорошо!"}</div>`}
+      <div class="red sign">Проверил: ${esc(TEACHER_SIGN)}</div></div>
+      <div class="gradeC"><b>${g.complete ? g.grade : "≈" + g.gradeNow}</b></div></div>
+  </section>`;
+}
+function printSheets(ids) {
+  const pages = ids.map((id) => sheetOf(RESULTS[id])).join("");
+  const w = window.open("", "_blank");
+  if (!w) return alert("Браузер заблокировал новое окно. Разрешите всплывающие окна для этого сайта.");
+  w.document.write(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Бланки · ${esc(ENTRY.title)}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marck+Script&family=Caveat:wght@500;700&display=swap">
+  <style>
+    @page{size:A4;margin:12mm}
+    body{margin:0;font-family:"Times New Roman",Times,serif;color:#000;font-size:13.5px}
+    section{page-break-after:always;padding:4px 2px}
+    h3{text-align:center;font-size:16px;margin:0 0 2px}.sub{text-align:center;font-style:italic;margin-bottom:10px}
+    .fio{display:grid;grid-template-columns:auto 1fr auto 90px auto 110px;gap:6px 8px;align-items:end;margin-bottom:10px}
+    .line{border-bottom:1px solid #000;min-height:24px;padding-left:6px}
+    .hw{font-family:"Marck Script","Segoe Print","Comic Sans MS",cursive;color:#1638B8;font-size:18px;line-height:1.25}
+    .hw .w{display:inline-block}
+    .red{font-family:Caveat,"Segoe Print","Comic Sans MS",cursive;color:#D3172B;font-weight:700;font-size:17px;line-height:1.15}
+    .red.sm{font-weight:500;font-size:16px}.red.sm2{font-weight:500;font-size:17px;margin-top:2px}.red.big{font-size:21px}
+    .red.adv{font-weight:500;font-size:16px;margin-top:3px}
+    .sm{font-size:12px}.it{font-style:italic;color:#444;margin:2px 0}
+    table.ex{width:100%;border-collapse:collapse}table.ex td,table.ex th{border:1px solid #000;vertical-align:top;padding:5px 7px}
+    table.ex tr{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}
+    td.n{width:34px;text-align:center}
+    td.L{width:30px;text-align:center;font-size:12.5px;line-height:1.4;padding:4px 2px}td.L span{display:block;position:relative}
+    td.L span.c::before{content:"";position:absolute;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%) rotate(-8deg);border:2px solid #D3172B;border-radius:50% 45% 52% 48%}
+    td.L span.half{font-family:Caveat,cursive;color:#D3172B;font-weight:700;font-size:17px;margin-top:4px}
+    .q{margin-bottom:4px}
+    .tf{display:grid;grid-template-columns:140px 46px 1fr;gap:6px;align-items:start;margin:5px 0}
+    .ln{border-bottom:1px solid #000;min-height:22px}.ln2{display:inline-block;border-bottom:1px solid #000;min-width:120px;min-height:20px;padding:0 4px}
+    .vh{font-weight:700;letter-spacing:4px;white-space:nowrap}
+    .o{position:relative;display:inline-block}.o::before{content:"";position:absolute;left:-4px;top:-3px;width:calc(100% + 6px);min-width:18px;height:20px;border:2px solid #1638B8;border-radius:50%;transform:rotate(-6deg)}
+    .mk{font-family:Caveat,cursive;color:#D3172B;font-weight:700;font-size:22px;margin-left:4px;line-height:1}
+    table.in{width:100%;border-collapse:collapse;margin:4px 0}table.in td,table.in th{border:1px solid #000;padding:3px 5px;text-align:center;font-size:13px;vertical-align:top}
+    .wv .hw .w{text-decoration:underline wavy #D3172B;text-underline-offset:4px}
+    .opt{margin:3px 0}.mp{margin:4px 0}.answ{margin:4px 0}
+    .fin{display:flex;gap:14px;align-items:center;margin-top:12px;break-inside:avoid;page-break-inside:avoid}
+    .sum{flex:1;border:2px solid #D3172B;border-radius:6px;padding:8px 12px;transform:rotate(-.3deg)}
+    .sign{margin-top:6px;font-weight:500}
+    .gradeC{width:88px;height:88px;flex:none;border:3px solid #D3172B;border-radius:52% 48% 50% 46%;display:grid;place-items:center;transform:rotate(-10deg)}
+    .gradeC b{font-family:Caveat,cursive;color:#D3172B;font-size:52px;line-height:1}
+    .hint{font-family:Arial,sans-serif;background:#E8EDFF;color:#1B3F9E;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
+    @media print{.hint{display:none}}
+  </style></head><body><div class="hint">Чтобы сохранить PDF: в окне печати выберите «Сохранить как PDF». Если почерк выглядит как обычный шрифт — подождите 2–3 секунды, пока загрузятся шрифты, и откройте печать ещё раз (Ctrl+P).</div>${pages}</body></html>`);
+  w.document.close();
+  const go = () => setTimeout(() => w.print(), 300);
+  (w.document.fonts?.ready || Promise.resolve()).then(() => setTimeout(go, 400), go);
 }

@@ -12,6 +12,22 @@ export const SUBJECTS = [
   { id: "tech", name: "Технологическое воспитание", icon: "🛠", color: "#B26BFF", grades: ["5", "6", "7"] },
 ];
 
+// Типы работ: ярлык на сайте и в панели учителя. Тип можно поменять в панели учителя (поле «Тип работы»).
+export const KINDS = [
+  { id: "so",     icon: "🏁", short: "Суммативное", name: "Суммативное оценивание", note: "итог по единице обучения" },
+  { id: "to",     icon: "📝", short: "Текущее",     name: "Текущее оценивание",     note: "проверка по темам уроков" },
+  { id: "quest",  icon: "🚀", short: "Квест",       name: "Квесты и миссии",        note: "уроки-игры" },
+  { id: "blitz",  icon: "⚡", short: "Блиц",        name: "Блиц-разминка",          note: "5 минут в начале урока, без оценки" },
+  { id: "hw",     icon: "🏠", short: "Домашнее",    name: "Домашнее задание",       note: "сдать до указанной даты" },
+  { id: "train",  icon: "🎯", short: "Тренажёр",    name: "Тренажёр",               note: "подготовка, без оценки" },
+  { id: "battle", icon: "🏆", short: "Битва классов", name: "Битва классов",        note: "соревнование классов" },
+];
+// Тип работы: из настроек учителя (settings) → из этого файла → по умолчанию
+export function kindOf(t, settings) {
+  const id = settings?.[t.id]?.kind || t.kind || (t.type === "mission" ? "quest" : "to");
+  return KINDS.find((k) => k.id === id) || KINDS[1];
+}
+
 // Экспедиции — большие темы из нескольких миссий (уроков)
 export const EXPEDITIONS = [
   { id: "inf7-safe", subject: "inf", grade: "7", icon: "🛡",
@@ -26,12 +42,13 @@ export const EXPEDITIONS = [
 ];
 
 // type: "test" — тест с вариантами; type: "mission" — миссия экспедиции.
+// kind — тип работы (см. KINDS); retake — id основной работы, если это пересдача.
 // Миссия без path — ещё в разработке (показывается закрытой 🔒).
 export const TESTS = [
-  { id: "geo11-pop", type: "test", subject: "geo", grade: "11", title: "Население и населённые пункты",
+  { id: "geo11-pop", type: "test", kind: "to", subject: "geo", grade: "11", title: "Население и населённые пункты",
     note: "Ед. обучения III · §12–16 · 40 минут", path: "geo11/test-naselenie/",
     aiSubject: "география, 11 класс" },
-  { id: "geo11-pop-r", type: "test", subject: "geo", grade: "11", title: "Население и населённые пункты · Пересдача",
+  { id: "geo11-pop-r", type: "test", kind: "to", retake: "geo11-pop", subject: "geo", grade: "11", title: "Население и населённые пункты · Пересдача",
     note: "Ед. обучения III · §12–17 · 25 вариантов · 45 минут", path: "geo11/test-peresdacha/",
     aiSubject: "география, 11 класс" },
 
