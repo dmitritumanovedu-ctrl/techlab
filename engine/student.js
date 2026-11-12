@@ -79,7 +79,7 @@ function showRules(name, cls) {
   app.innerHTML = `
   <div class="card center" style="max-width:680px">
     <h2>⚠️ Внимательно прочитайте правила</h2>
-    <p><b>${esc(name)}</b>, ${esc(cls)}. На работу даётся <b>${TEST.minutes} минут</b>. В тесте 10 заданий, максимум — ${TEST.max} баллов.</p>
+    <p><b>${esc(name)}</b>, ${esc(cls)}. На работу даётся <b>${TEST.minutes} минут</b>. В тесте ${VARIANTS[0].tasks.length} заданий, максимум — ${TEST.max} баллов.</p>
     <ul class="rules">
       <li>Тест откроется во <b>весь экран</b>. Не выходите из полноэкранного режима.</li>
       <li>Если вы <b>перейдёте на другую вкладку, в другое окно или программу, свернёте браузер</b> — работа будет <b>сдана автоматически</b> с тем, что вы успели ответить. Вернуться к ней будет нельзя.</li>
@@ -149,6 +149,15 @@ function head(t) {
           <p class="task-title">${esc(t.title)}</p>`;
 }
 
+// таблица с данными к заданию (необязательно)
+function tableHtml(tb) {
+  if (!tb) return "";
+  return `<div class="table-wrap"><table class="data-tb">${tb.caption ? `<caption>${esc(tb.caption)}</caption>` : ""}
+    <tr>${tb.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>
+    ${tb.rows.map((r) => `<tr>${r.map((c, i) => `<td${i ? ' class="num"' : ""}>${esc(c)}</td>`).join("")}</tr>`).join("")}</table>
+    ${tb.source ? `<div class="muted" style="font-size:13px;text-align:right">Источник: ${esc(tb.source)}</div>` : ""}</div>`;
+}
+
 function renderTask(t) {
   const A = S.answers;
   let body = "";
@@ -175,10 +184,10 @@ function renderTask(t) {
   } else if (t.type === "mcq") {
     body = t.options.map((o) => `<label class="opt ${A.t3 === o.id ? "on" : ""}"><input type="radio" name="t3" value="${o.id}" ${A.t3 === o.id ? "checked" : ""}> <span>${esc(o.text)}</span></label>`).join("");
   } else if (t.type === "chart") {
-    body = `<div class="chart-box ${t.chart.kind === "pie" ? "pie" : ""}"><canvas id="ch${t.n}"></canvas></div>
-      <textarea data-open="t${t.n}" maxlength="3000" placeholder="Ваш ответ: опишите диаграмму, используя данные, и объясните причины">${esc(A["t" + t.n] || "")}</textarea>`;
+    body = `<div class="chart-box ${t.chart.kind === "pie" ? "pie" : ""}"><canvas id="ch${t.n}"></canvas></div>${tableHtml(t.table)}
+      <textarea data-open="t${t.n}" maxlength="3000" placeholder="${t.chart.kind === "climate" ? "Ваш ответ по пунктам: а) … б) … в) …" : "Ваш ответ: опишите диаграмму, используя данные, и объясните причины"}">${esc(A["t" + t.n] || "")}</textarea>`;
   } else if (t.type === "open") {
-    body = `<textarea data-open="t${t.n}" maxlength="3000" placeholder="Ваш развёрнутый ответ">${esc(A["t" + t.n] || "")}</textarea>`;
+    body = `${tableHtml(t.table)}<textarea data-open="t${t.n}" maxlength="3000" placeholder="${/\n/.test(t.title) ? "Ваш ответ по пунктам: 1) … 2) … (или а) б) в))" : "Ваш развёрнутый ответ"}">${esc(A["t" + t.n] || "")}</textarea>`;
   } else if (t.type === "mapid") {
     const a = A.t9 || {};
     body = `<div class="map-box" id="mapBox"></div><div class="grid2" style="margin-top:12px">
@@ -271,12 +280,12 @@ function bindTask(t) {
 }
 
 // ---------- диаграммы ----------
-const PALETTE = ["#1f6f5c", "#d98a2b", "#3d7cc9", "#b8455a", "#7a5cc0", "#6b8e23", "#999"];
+const PALETTE = ["#2E4BFF", "#F2994A", "#27AE9B", "#E5484D", "#8B5CF6", "#6B8E23", "#999"];
 const valuesPlugin = {
   id: "values",
   afterDatasetsDraw(chart) {
     const { ctx } = chart; const pie = chart.config.type === "pie";
-    ctx.save(); ctx.font = "600 12px Segoe UI, Arial"; ctx.fillStyle = "#1d2733";
+    ctx.save(); ctx.font = "600 12px Segoe UI, Arial"; ctx.fillStyle = "#0B1A3B";
     chart.data.datasets.forEach((ds, di) => {
       chart.getDatasetMeta(di).data.forEach((el, i) => {
         const val = ds.data[i]; const label = String(val).replace(".", ",") + (pie ? "%" : "");
@@ -295,6 +304,7 @@ const valuesPlugin = {
 function drawChart(id, c) {
   const Chart = window.Chart;
   if (!Chart) { document.getElementById(id).parentElement.innerHTML = '<p class="muted">Не удалось загрузить диаграмму. Обновите страницу.</p>'; return; }
+  if (c.kind === "climate") return drawClimate(id, c);
   const type = c.kind === "barh" ? "bar" : c.kind;
   const pie = type === "pie";
   const datasets = c.series.map((s, i) => ({
@@ -316,6 +326,25 @@ function drawChart(id, c) {
   charts.push(ch);
 }
 
+// климатограмма: столбцы — осадки (левая ось), линия — температура (правая ось)
+function drawClimate(id, c) {
+  const ch = new window.Chart(document.getElementById(id), {
+    type: "bar",
+    data: { labels: c.labels, datasets: [
+      { type: "line", label: "Температура, °C", data: c.temp, yAxisID: "yT", borderColor: "#E5484D", backgroundColor: "#E5484D", borderWidth: 3, pointRadius: 3, tension: 0.2, order: 1 },
+      { type: "bar", label: "Осадки, мм", data: c.prec, yAxisID: "yP", backgroundColor: "#2E9BE6", borderColor: "#1C6FB0", borderWidth: 1, order: 2 } ] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { title: { display: true, text: c.title, font: { size: 15 } }, legend: { display: true, position: "bottom" } },
+      scales: {
+        yP: { position: "left", min: 0, max: c.pMax || undefined, title: { display: true, text: "Осадки, мм" } },
+        yT: { position: "right", min: c.tMin ?? undefined, max: c.tMax ?? undefined, title: { display: true, text: "Температура, °C" }, grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+  charts.push(ch);
+}
+
 // ---------- сохранение ----------
 function changed() {
   updateProgress();
@@ -332,13 +361,17 @@ async function saveNow() {
 }
 function updateProgress() {
   const A = S.answers; let n = 0;
-  if (A.t1 && Object.values(A.t1).filter((x) => x.v).length === 3) n++;
-  if (A.t2 && Object.values(A.t2).filter((x) => x >= 0).length >= 6) n++;
-  if (A.t3) n++;
-  for (const k of ["t4", "t5", "t6", "t7", "t8"]) if ((A[k] || "").trim()) n++;
-  if (A.t9 && Object.values(A.t9).filter(Boolean).length === 4) n++;
-  if (A.t10 && A.t10.d && A.t10.cat && (A.t10.why || "").trim()) n++;
-  $("#progress").textContent = `Выполнено заданий: ${n} из 10`;
+  const v = VARIANTS.find((x) => x.id === S.variant);
+  const tasks = v ? v.tasks : [];
+  for (const t of tasks) {
+    if (t.type === "tf") { if (A.t1 && Object.values(A.t1).filter((x) => x.v).length === t.items.length) n++; }
+    else if (t.type === "classify") { if (A.t2 && Object.values(A.t2).filter((x) => x >= 0).length >= t.chips.length) n++; }
+    else if (t.type === "mcq") { if (A.t3) n++; }
+    else if (t.type === "chart" || t.type === "open") { if ((A["t" + t.n] || "").trim()) n++; }
+    else if (t.type === "mapid") { if (A.t9 && Object.values(A.t9).filter(Boolean).length === t.markers.length) n++; }
+    else if (t.type === "mapcalc") { if (A.t10 && A.t10.d && A.t10.cat && (A.t10.why || "").trim()) n++; }
+  }
+  $("#progress").textContent = `Выполнено заданий: ${n} из ${tasks.length}`;
   return n;
 }
 
@@ -355,7 +388,7 @@ function tick() {
 // ---------- сдача ----------
 function askSubmit() {
   const n = updateProgress();
-  modal(`<h2>Сдать работу?</h2><p>Выполнено заданий: <b>${n} из 10</b>.${n < 10 ? " Некоторые задания не заполнены." : ""}</p>
+  modal(`<h2>Сдать работу?</h2><p>Выполнено заданий: <b>${n} из ${VARIANTS[0].tasks.length}</b>.${n < VARIANTS[0].tasks.length ? " Некоторые задания не заполнены." : ""}</p>
     <p class="muted">После сдачи изменить ответы будет нельзя.</p>
     <button class="btn" id="mYes">Да, сдать</button> <button class="btn ghost" id="mNo">Вернуться к тесту</button>`);
   $("#mYes").onclick = () => finish("manual");

@@ -62,20 +62,24 @@ export function grade(key, answers = {}, manual = {}, ai = {}) {
   const a2 = answers.t2 || {};
   let s2 = 0;
   for (const [chip, col] of Object.entries(key.t2)) if (Number(a2[chip]) === col && a2[chip] !== undefined && a2[chip] !== null) s2++;
-  add({ key: "t2", task: 2, label: "2) таблица", max: 6, auto: Math.min(6, s2) });
+  const m2 = key.points?.t2 ?? 6;
+  add({ key: "t2", task: 2, label: "2) таблица", max: m2, auto: Math.min(m2, s2) });
 
   // 3. Выбор
-  add({ key: "t3", task: 3, label: "3) выбор", max: 2, auto: answers.t3 === key.t3 ? 2 : 0 });
+  const m3 = key.points?.t3 ?? 2;
+  add({ key: "t3", task: 3, label: "3) выбор", max: m3, auto: answers.t3 === key.t3 ? m3 : 0 });
 
   // 4–8. Развёрнутые ответы — только учитель
   for (const n of [4, 5, 6, 7, 8]) {
+    if (!key[`t${n}`]) continue;
     const max = key.points?.[`t${n}`] ?? (n <= 5 || n === 8 ? 4 : 3);
     add({ key: `t${n}`, task: n, label: `${n}) развёрнутый ответ`, max, auto: null, check: true,
           answer: answers[`t${n}`] || "", model: key[`t${n}`]?.model, criteria: key[`t${n}`]?.criteria,
           empty: !norm(answers[`t${n}`]) });
   }
 
-  // 9. Карта: страны
+  // 9–10. Карта (есть не во всех тестах)
+  if (key.t9) {
   const a9 = answers.t9 || {};
   let s9 = 0;
   for (const [L, name] of Object.entries(key.t9)) if (a9[L] === name) s9++;
@@ -95,6 +99,7 @@ export function grade(key, answers = {}, manual = {}, ai = {}) {
   add({ key: "t10b", task: 10, label: "10б) категория", max: 1, auto: catOk ? 1 : 0 });
   add({ key: "t10c", task: 10, label: "10в) объяснение", max: 1, auto: null, check: true,
         answer: a10.why || "", model: key.t10.model, empty: !norm(a10.why) });
+  }
 
   // Пустые развёрнутые ответы — сразу 0, проверять нечего
   for (const it of items) if (it.auto === null && it.empty && it.teacher === null && it.ai === null) { it.auto = 0; it.score = 0; it.autoEmpty = true; }

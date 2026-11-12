@@ -119,3 +119,9 @@ dialog::backdrop { background: rgba(20,30,40,.6); }
 .score-in { width: 70px !important; text-align: center; padding: 6px !important; }
 .events { font-size: 13px; color: var(--muted); }
 @media print { .noprint { display: none !important; } body { background: #fff; } .card { box-shadow: none; border: 1px solid #ccc; } }
+.task-title { white-space: pre-line; }
+table.data-tb { border-collapse: collapse; margin: 0 0 12px; min-width: 60%; font-size: 15px; }
+table.data-tb caption { font-weight: 700; text-align: left; padding-bottom: 6px; }
+table.data-tb th, table.data-tb td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+table.data-tb th { background: #F5F8FD; font-size: 13px; }
+table.data-tb td.num { text-align: center; font-variant-numeric: tabular-nums; }

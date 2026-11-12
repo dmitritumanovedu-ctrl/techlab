@@ -52,6 +52,10 @@ export const TESTS = [
     note: "Ед. обучения III · §12–17 · 25 вариантов · 45 минут", path: "geo11/test-peresdacha/",
     aiSubject: "география, 11 класс" },
 
+  { id: "geo12-bac", type: "test", kind: "so", subject: "geo", grade: "12", title: "Симуляция БАК · География",
+    note: "Формат БАК · 8 заданий · 4 варианта · 45 минут · проверка ИИ", path: "geo12/bac-sim/",
+    aiSubject: "география, 12 класс (подготовка к экзамену БАК, Республика Молдова)" },
+
   { id: "inf7-safe-m1", type: "mission", expedition: "inf7-safe", n: 1, date: "12.11",
     subject: "inf", grade: "7", title: "Эргономика и личная безопасность в цифровых средах",
     note: "Журнал · Разогрев · 4 задания · Ситуации (ИИ) · Финиш", path: "inf7/safe/m1/",

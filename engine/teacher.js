@@ -2,8 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { grade, SCALE, parseNum } from "./grading.js";
-import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=3";
+import { grade, SCALE, parseNum } from "./grading.js?v=4";
+import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=4";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -393,10 +393,9 @@ function showKeys() {
       <p><b>1.</b> ${t(1).items.map((q) => `${q.id}) ${esc(q.concept)} — <b>${k.t1[q.id].tf === "T" ? "Верно" : "Неверно"}</b>${k.t1[q.id].fix ? ` (${esc(k.t1[q.id].fix)})` : ""}`).join("; ")}</p>
       <p><b>2.</b> ${t2.columns.map((c, i) => `<u>${esc(c)}</u>: ${t2.chips.filter((x) => k.t2[x.id] === i).map((x) => esc(x.text)).join(", ")}`).join("; ")}</p>
       <p><b>3.</b> ${esc(t3.options.find((o) => o.id === k.t3).text)}</p>
-      <p><b>4.</b> ${esc(k.t4.model)}</p><p><b>5.</b> ${esc(k.t5.model)}</p>
-      <p><b>6.</b> ${esc(k.t6.model)}</p><p><b>7.</b> ${esc(k.t7.model)}</p><p><b>8.</b> ${esc(k.t8.model)}</p>
-      <p><b>9.</b> ${Object.entries(k.t9).map(([L, n]) => `${L} — ${esc(n)}`).join(", ")}</p>
-      <p><b>10.</b> ${esc(k.t10.calc)}; категория ${k.t10.cat}. ${esc(k.t10.model)}</p></div>`;
+      ${[4, 5, 6, 7, 8].filter((n) => k["t" + n]).map((n) => `<p><b>${n}.</b> ${esc(k["t" + n].model)}${k["t" + n].criteria ? `<br><span class="muted">Барем: ${esc(k["t" + n].criteria)}</span>` : ""}</p>`).join("")}
+      ${k.t9 ? `<p><b>9.</b> ${Object.entries(k.t9).map(([L, n]) => `${L} — ${esc(n)}`).join(", ")}</p>` : ""}
+      ${k.t10 ? `<p><b>10.</b> ${esc(k.t10.calc)}; категория ${k.t10.cat}. ${esc(k.t10.model)}</p>` : ""}</div>`;
   }).join("");
   dlg.innerHTML = `<div class="dlg-head noprint"><b>Ключи ответов — 10 вариантов</b>
     <span><button class="btn small ghost" style="background:#fff" id="kPrint">Печать</button>
@@ -462,11 +461,16 @@ function aiTargets(r, all = false) {
     } else {
       const t = v.tasks.find((x) => x.n === n);
       question = t.title;
-      if (t.chart) {
+      if (t.chart && t.chart.kind === "climate") {
+        const c = t.chart;
+        question += `\nКлиматограмма «${c.title}». Температура, °C по месяцам: ` + c.labels.map((l, i) => `${l} — ${c.temp[i]}`).join("; ") +
+          `. Осадки, мм: ` + c.labels.map((l, i) => `${l} — ${c.prec[i]}`).join("; ") + (c.total ? `. Годовое количество осадков: ${c.total} мм.` : ".");
+      } else if (t.chart) {
         const c = t.chart;
         question += `\nДиаграмма «${c.title}» (${c.unit}): ` + c.series.map((sr) =>
           (c.series.length > 1 ? sr.name + ": " : "") + c.labels.map((l, i) => `${l} — ${sr.data[i]}`).join("; ")).join(" | ");
       }
+      if (t.table) question += `\nТаблица «${t.table.caption || ""}»: ${t.table.head.join(" | ")}; ` + t.table.rows.map((r) => r.join(" | ")).join("; ");
     }
     out.push({ key: it.key, max: it.max, question, answer: String(it.answer).slice(0, 3000),
                model: it.model || "", criteria: it.criteria || "" });
@@ -1061,7 +1065,7 @@ function reviewOf(r) {
   const g = evaluate(r), A = r.answers || {}, tasks = {};
   for (const t of v.tasks) {
     const its = g.items.filter((i) => i.task === t.n);
-    const T = { topic: T_TOPIC[t.n], sum: its.reduce((s, i) => s + (i.score ?? 0), 0), max: t.points, good: [], bad: [], advice: T_ADVICE[t.n], ai: [] };
+    const T = { topic: TEST.topics?.[t.n] ?? T_TOPIC[t.n], sum: its.reduce((s, i) => s + (i.score ?? 0), 0), max: t.points, good: [], bad: [], advice: TEST.advice?.[t.n] ?? T_ADVICE[t.n], ai: [] };
     if (t.type === "tf") {
       for (const q of t.items) {
         const kk = k.t1[q.id], a = (A.t1 || {})[q.id] || {};
@@ -1243,7 +1247,9 @@ function sheetOf(r) {
       }).join("");
     } else if (t.type === "chart" || t.type === "open") {
       const ans = A["t" + t.n];
-      body += (t.chart ? `<div class="sm it">[диаграмма «${esc(t.chart.title)}» — в электронной версии теста]</div>` : "") +
+      const tb = t.table;
+      body += (t.chart ? `<div class="sm it">[${t.chart.kind === "climate" ? "климатограмма" : "диаграмма"} «${esc(t.chart.title)}» — в электронной версии теста]</div>` : "") +
+        (tb ? `<table class="in dt">${tb.caption ? `<caption>${esc(tb.caption)}</caption>` : ""}<tr>${tb.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>${tb.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table>` : "") +
         `<div class="answ">${ans && String(ans).trim() ? HW(ans) : '<div class="ln"></div><div class="ln"></div>'}</div>` + notes(t.n);
     } else if (t.type === "mapid") {
       const a = A.t9 || {};
@@ -1305,7 +1311,8 @@ function printSheets(ids) {
     td.L{width:30px;text-align:center;font-size:12.5px;line-height:1.4;padding:4px 2px}td.L span{display:block;position:relative}
     td.L span.c::before{content:"";position:absolute;left:50%;top:50%;width:20px;height:20px;transform:translate(-50%,-50%) rotate(-8deg);border:2px solid #D3172B;border-radius:50% 45% 52% 48%}
     td.L span.half{font-family:Caveat,cursive;color:#D3172B;font-weight:700;font-size:17px;margin-top:4px}
-    .q{margin-bottom:4px}
+    .q{margin-bottom:4px;white-space:pre-line}
+    table.dt{width:auto;min-width:60%}table.dt caption{font-weight:bold;font-size:13px;padding-bottom:3px}table.dt td:first-child{text-align:left}
     .tf{display:grid;grid-template-columns:140px 46px 1fr;gap:6px;align-items:start;margin:5px 0}
     .ln{border-bottom:1px solid #000;min-height:22px}.ln2{display:inline-block;border-bottom:1px solid #000;min-width:120px;min-height:20px;padding:0 4px}
     .vh{font-weight:700;letter-spacing:4px;white-space:nowrap}

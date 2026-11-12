@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Симуляция БАК · География 12</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js">
+  <link rel="stylesheet" href="../../engine/test-e2.css?v=4">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="no-select">
+  <header class="top">
+    <div>
+      <h1 id="hTitle">🎓 Симуляция БАК · География</h1>
+      <div class="who" id="hWho">География · 12 класс</div>
+    </div>
+    <div class="timer" id="timer" hidden>45:00</div>
+  </header>
+  <main id="app"><div class="card center"><p class="muted">Загрузка…</p></div></main>
+  <div class="bar-bottom" id="bottomBar" hidden>
+    <span class="saved" id="progress"></span>
+    <button class="btn" id="btnSubmit">Сдать работу</button>
+    <span class="saved" id="savedState"></span>
+  </div>
+  <script type="module" src="../../engine/student.js?v=4"></script>
+</body>
+</html>
