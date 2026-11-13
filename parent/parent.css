@@ -1,0 +1,38 @@
+/* Кабинет родителя (поверх style-e2.css) */
+body { background: linear-gradient(180deg, var(--blue) 0, var(--blue) 190px, var(--bg) 190px); }
+.p-hero .logo { font-size: 38px; }
+.p-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #B4540A; background: #FFF1E2; padding: 5px 11px; border-radius: 999px; margin-top: 4px; }
+.p-who { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.p-who select { font: inherit; font-weight: 700; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text); }
+.p-out { font: inherit; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }
+main { margin-top: 22px; }
+.pc { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px; }
+.pc h2 { font-family: var(--display); font-size: 18px; margin: 0 0 12px; }
+.p-login { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.p-login h1 { font-family: var(--display); font-size: 26px; margin: 0; }
+.p-login p { margin: 0; color: var(--muted); }
+.p-login form { display: flex; flex-direction: column; gap: 8px; }
+.p-login input { font-family: var(--mono); font-size: 24px; letter-spacing: .1em; text-transform: uppercase; text-align: center; padding: 12px; border: 2px solid var(--line); border-radius: 14px; }
+.p-login input:focus { outline: none; border-color: var(--blue); }
+.p-login .err { color: var(--red); min-height: 1.3em; font-size: 14px; }
+.p-h1 { font-family: var(--display); font-size: 28px; margin: 6px 0 16px; }
+.p-h1 small { font-family: var(--body); font-size: 16px; color: var(--muted); font-weight: 700; }
+.p-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.ps span { display: block; color: var(--muted); font-size: 14px; font-weight: 600; }
+.ps b { display: block; font-family: var(--display); font-size: 34px; margin: 4px 0; }
+.ps small { font-size: 13px; color: var(--muted); }
+.blue { color: var(--blue); } .red { color: #C2253B; } .green { color: #0B8A5A; }
+.p-grid { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.p-grid > .pc { flex: 3 1 520px; }
+.p-side { flex: 2 1 320px; display: flex; flex-direction: column; gap: 18px; }
+.pw { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #EEF2F8; }
+.pw:last-child { border-bottom: 0; }
+.pw-t { flex: 1; min-width: 0; } .pw-t b { display: block; font-size: 15px; line-height: 1.3; } .pw-t small { color: var(--muted); font-size: 13px; }
+.pw-p { font-size: 13px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.wg { width: 44px; height: 44px; flex: none; border-radius: 13px; display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 18px; }
+.p-ai { background: var(--blue-l); border-color: #C9D3FF; } .p-ai p { margin: 8px 0; font-size: 15px; }
+.sb { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-weight: 700; font-size: 14.5px; }
+.sb > span:first-child { flex: 1 1 120px; }
+.sb-b { flex: 2 1 100px; height: 10px; background: #EEF2F8; border-radius: 999px; overflow: hidden; }
+.sb-b i { display: block; height: 100%; background: var(--blue); border-radius: 999px; }
+.p-note p { margin: 0; color: var(--muted); }
