@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { SUBJECTS } from "./tests.js?v=5";
+import { SUBJECTS } from "./tests.js?v=6";
 import { getSession, setSession, clearSession, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP } from "./engine/people.js?v=1";
 
 const box = document.getElementById("home");

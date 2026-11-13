@@ -3,7 +3,7 @@ import { getDatabase, ref, get, set, update, remove, onValue, push } from "https
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum } from "./grading.js?v=4";
-import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=5";
+import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=6";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);

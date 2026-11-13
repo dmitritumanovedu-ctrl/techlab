@@ -1,0 +1,46 @@
+/* Суммативное оценивание · дополнение к engine/test-e2.css */
+main { max-width: 1000px; }
+header.top h1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.so-badge { background: #fff; color: #C2253B; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; }
+.so-ribbon { display: inline-block; background: #FDECEE; color: #C2253B; border: 1px solid #F3B5BF; font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
+.so-intro h2 { font-size: 20px; line-height: 1.3; }
+.plan { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px; }
+.plan span { background: var(--green-2); border-radius: 10px; padding: 6px 12px; font-size: 14px; }
+.plan b { margin-right: 6px; }
+.sub { border-top: 1px dashed var(--line); padding: 12px 0 4px; }
+.sub:first-of-type { border-top: 0; padding-top: 0; }
+.sub-q { margin-bottom: 8px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 10px; }
+.opts.row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.opts .opt { margin-bottom: 0; }
+.hint { background: var(--amber-2); color: #6B4B00; border-radius: 10px; padding: 8px 12px; font-size: 14px; margin-bottom: 12px; }
+.conv { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.cv { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 18px; }
+.cv-l { font-weight: 700; color: var(--muted); }
+.num { font-family: var(--mono); font-weight: 700; }
+.cv input, .un input { width: 130px; font-family: var(--mono); font-weight: 700; font-size: 17px; text-align: center; }
+.eq { font-weight: 800; }
+.un { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.un-q { flex: 1 1 340px; } .un-a { white-space: nowrap; font-weight: 700; }
+.code-wrap { overflow-x: auto; }
+table.ctab { border-collapse: collapse; margin-bottom: 10px; font-family: var(--mono); }
+table.ctab caption { text-align: left; font-family: inherit; font-weight: 700; padding-bottom: 6px; font-size: 14px; color: var(--muted); }
+table.ctab th, table.ctab td { border: 1px solid var(--line); padding: 6px 10px; text-align: center; }
+table.ctab th { background: #F5F8FD; font-size: 13px; }
+.example { background: var(--green-2); border-radius: 10px; padding: 8px 12px; font-size: 14px; margin-bottom: 8px; }
+.bytes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.byte { font-family: var(--mono); font-weight: 700; font-size: 18px; background: #0B1A3B; color: #7CF0C8; padding: 6px 10px; border-radius: 8px; letter-spacing: .08em; }
+.inl { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.inl input { width: 200px; font-family: var(--mono); font-weight: 700; font-size: 17px; }
+.enc { display: flex; flex-direction: column; gap: 8px; }
+.big { font-family: var(--mono); font-size: 22px; width: 24px; display: inline-block; }
+.bin8 { letter-spacing: .12em; }
+.order { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; background: #FAFCFF; }
+.order-h { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--green); letter-spacing: .06em; text-transform: uppercase; }
+.net-wrap { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; margin-bottom: 10px; }
+.net-svg { width: 100%; height: auto; display: block; font-family: Manrope, Arial, sans-serif; }
+.net-it { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; }
+.net-it span { flex: 1 1 380px; } .net-it select { width: auto; min-width: 250px; }
+.situation { background: #F5F8FD; border-left: 4px solid var(--green); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+.task textarea { min-height: 110px; }

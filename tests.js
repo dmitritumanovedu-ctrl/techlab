@@ -62,6 +62,11 @@ export const TESTS = [
     note: "Формат БАК · 8 заданий · 4 варианта · 45 минут · проверка ИИ", path: "geo12/bac-sim/",
     aiSubject: "география, 12 класс (подготовка к экзамену БАК, Республика Молдова)" },
 
+  { id: "inf7-so1", type: "test", kind: "so", subject: "inf", grade: "7",
+    title: "Суммативное оценивание · Модуль 1. Информация в нашей жизни. Цифровые устройства",
+    note: "19.11 · 9 заданий · 20 вариантов · 45 минут · проверка ИИ", path: "inf7/so1/",
+    teacher: "inf7/so1/teacher.html", aiSubject: "информатика, 7 класс" },
+
   { id: "inf7-safe-m1", type: "mission", expedition: "inf7-safe", n: 1, date: "12.11",
     subject: "inf", grade: "7", title: "Эргономика и личная безопасность в цифровых средах",
     note: "Журнал · Разогрев · 4 задания · Ситуации (ИИ) · Финиш", path: "inf7/safe/m1/",
