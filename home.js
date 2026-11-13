@@ -35,6 +35,7 @@ function portal() {
       <span class="p-tag mono">ЦИФРОВОЙ КАБИНЕТ УРОКА</span>
       <h1>Задания, оценки и прогресс — в одном месте</h1>
       <p>Выполняй тесты, квесты и практические работы на уроке, получай опыт и награды. Родители видят оценки и советы, что повторить.</p>
+      <p style="margin-top:12px"><a href="demo/" style="color:var(--blue);font-weight:800">▶ Попробовать демо без входа</a></p>
     </div>
     <div class="roles">
       <button type="button" class="role main" id="rStudent">
