@@ -2,8 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { grade, SCALE, parseNum } from "./grading.js?v=4";
-import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=7";
+import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
+import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -727,7 +727,8 @@ function mEval(r, entry = ENTRY) {
   const pts = parts.reduce((a, p) => a + (Number(partScore(p)) || 0), 0);
   const pct = max ? Math.min(100, Math.round(pts / max * 100)) : 0;
   const complete = r.status === "submitted" && pending === 0;
-  return { pts, max, pct, grade: mGrade(pct), pending, complete, items, partScore };
+  const q = qualOf(pct), tq = usesQual(entry.subject);
+  return { pts, max, pct, grade: mGrade(pct), qual: q[1], qualName: q[2], mark: tq ? q[1] : mGrade(pct), pending, complete, items, partScore };
 }
 const moodIcon = (m) => !m ? "—" : m.startsWith("Мне всё") ? "🟢" : m.startsWith("Понятно") ? "🟡" : "🔴";
 
@@ -772,10 +773,10 @@ async function showMissionDashboard() {
   <div class="table-wrap"><table class="res"><thead><tr>
     <th>№</th><th>Ученик</th><th>Класс</th><th>Этап</th>
     ${parts.map((p) => `<th title="${esc(p.name)}">${esc(p.name)}<br><span style="font-weight:400">${p.bonus ? "+" : "/"}${p.max}</span></th>`).join("")}
-    <th>Итог</th><th>Оценка</th><th>Время</th><th>Как урок</th><th></th></tr></thead>
+    <th>Итог</th><th>${usesQual(ENTRY.subject) ? "Квалификатив" : "Оценка"}</th><th>Время</th><th>Как урок</th><th></th></tr></thead>
     <tbody id="tb"><tr><td colspan="${parts.length + 9}" class="muted">Ожидание учеников…</td></tr></tbody></table></div>
   <p class="muted" style="font-size:14px">${parts.some((p) => p.bonus) ? "⭐ Бонусные задания добавляют баллы сверх максимума (итог не выше 100 %). " : ""}Баллы появляются сразу после каждого задания. Оценка окончательная, когда статус «🏁 сдано».
-    Шкала: ${MSCALE.map(([p, g]) => `<b>${g}</b> — от ${p}%`).join(" · ")}.</p>`;
+    ${usesQual(ENTRY.subject) ? "Оценивание по технологическому воспитанию — квалификативами: " + qualScaleText() : "Шкала: " + MSCALE.map(([p, g]) => `<b>${g}</b> — от ${p}%`).join(" · ")}.</p>`;
 
   const sw = $("#swOpen");
   unsub.push(onValue(ref(db, `settings/${ENTRY.id}/open`), (s) => {
@@ -836,12 +837,13 @@ function renderMission() {
   const done = all.filter((r) => r.status === "submitted");
   const graded = done.map((r) => mEval(r)).filter((e) => e.complete);
   const avg = graded.length ? graded.reduce((a, e) => a + e.grade, 0) / graded.length : null;
+  const qd = usesQual(ENTRY.subject) ? ["ОХ", "Х", "У", "Н"].map((c) => `${c} ${graded.filter((e) => e.qual === c).length}`).join(" · ") : null;
   const moods = done.reduce((a, r) => { const m = moodIcon(r.mood); a[m] = (a[m] || 0) + 1; return a; }, {});
   $("#stats").innerHTML = `
     <div class="stat"><b>${all.length}</b>всего учеников</div>
     <div class="stat"><b>${all.length - done.length}</b>в пути 🚀</div>
     <div class="stat"><b>${done.length}</b>финишировали 🏁</div>
-    <div class="stat"><b>${avg ? fmtNum(avg) : "—"}</b>средняя оценка</div>
+    ${qd ? `<div class="stat"><b style="font-size:18px">${qd}</b>квалификативы</div>` : `<div class="stat"><b>${avg ? fmtNum(avg) : "—"}</b>средняя оценка</div>`}
     <div class="stat"><b style="font-size:18px">🟢${moods["🟢"] || 0} 🟡${moods["🟡"] || 0} 🔴${moods["🔴"] || 0}</b>как прошёл урок</div>`;
   const tb = $("#tb");
   if (!list.length) { tb.innerHTML = `<tr><td colspan="${parts.length + 9}" class="muted">Учеников пока нет. Откройте миссию переключателем выше.</td></tr>`; return; }
@@ -860,7 +862,7 @@ function renderMission() {
         return `<td><b>${e.partScore(p) ?? 0}</b>${e.pending ? ` <span class="tag warn">✍ ${e.pending}</span>` : e.items.some((i) => i.teacher === null && i.ai !== null) ? " 🤖" : ""}${q}</td>`;
       }).join("")}
       <td><b>${e.pts}</b> / ${e.max}</td>
-      <td>${e.complete ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}${fin && e.pending ? " · проверить " + e.pending : ""}</span>`}</td>
+      <td>${e.complete ? `<span class="grade" title="${esc(e.qualName)}">${e.mark}</span>` : `<span class="grade pending">≈${e.mark}${fin && e.pending ? " · проверить " + e.pending : ""}</span>`}</td>
       <td>${mins} мин</td>
       <td title="${esc(r.mood || "")}" style="font-size:18px">${moodIcon(r.mood)}</td>
       <td style="white-space:nowrap">${(ENTRY.openQs || []).length && fin ? `<button class="btn small" data-mopen="${id}">${e.pending ? "Проверить" : "Открыть"}</button> ` : ""}<button class="btn small red" data-del="${id}" title="Удалить">✕</button></td></tr>`;
@@ -880,7 +882,7 @@ function missionCsv() {
   for (const [, r] of rows()) {
     const e = mEval(r), sc = r.score || {};
     lines.push([r.name, r.cls, r.status === "submitted" ? "сдано" : "в процессе: " + (r.stage || ""),
-      ...parts.map((p) => e.partScore(p) ?? ""), e.pts, e.max, e.pct, e.complete ? e.grade : "", r.minutes || "", r.mood || "",
+      ...parts.map((p) => e.partScore(p) ?? ""), e.pts, e.max, e.pct, e.complete ? (usesQual(ENTRY.subject) ? `${e.qual} (${e.qualName})` : e.grade) : "", r.minutes || "", r.mood || "",
       r.startedAt ? new Date(r.startedAt).toLocaleString("ru-RU") : ""]);
   }
   const csv = "﻿" + lines.map((l) => l.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\r\n");
@@ -907,6 +909,11 @@ async function showOverview() {
   let SET = {}, RES = {};
 
   const avgOf = (t, list) => {
+    if (usesQual(t.subject) && t.type === "mission") {
+      const qs = list.filter((r) => r.status === "submitted").map((r) => mEval(r, t)).filter((e) => e.complete).map((e) => e.qual);
+      if (!qs.length) return "—";
+      return ["ОХ", "Х", "У", "Н"].filter((c) => qs.includes(c)).map((c) => `${c}·${qs.filter((x) => x === c).length}`).join(" ");
+    }
     const g = [];
     for (const r of list) {
       if (r.status !== "submitted") continue;
@@ -957,7 +964,7 @@ async function showOverview() {
           <div class="k">${esc(t.grade)} класс · ${t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : t.type === "practical" ? "Практическая работа" : "Тест"}</div>
           <div class="n">${esc(t.title)}</div>
           <div class="kt">${(() => { const K = kindOf(t, SET); return `<span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>`; })()}${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}</div>
-          <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b>${avgOf(t, list)}</b>ср. оценка</div></div>
+          <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${usesQual(t.subject) && t.type === "mission" ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${usesQual(t.subject) && t.type === "mission" ? "квалификативы" : "ср. оценка"}</div></div>
         </a>`;
       }).join("")}</div>` + (soon ? `<p class="muted" style="font-size:14px;margin:8px 2px 0">🔒 Ещё в разработке: ${soon}</p>` : "");
     }).join("");
@@ -1013,7 +1020,7 @@ function mShowOpen(id, refresh = false) {
   const r = RESULTS[id]; if (!r) return;
   openId = id;
   const e = mEval(r), scrollPos = refresh ? dlg.scrollTop : 0;
-  dlg.innerHTML = `<div class="dlg-head"><div><b>${esc(r.name)}</b> · ${esc(r.cls)} · ${e.pts} / ${e.max} б. · оценка ${e.complete ? `<b>${e.grade}</b>` : "≈" + e.grade}</div>
+  dlg.innerHTML = `<div class="dlg-head"><div><b>${esc(r.name)}</b> · ${esc(r.cls)} · ${e.pts} / ${e.max} б. · ${usesQual(ENTRY.subject) ? "квалификатив" : "оценка"} ${e.complete ? `<b>${e.mark}</b>` : "≈" + e.mark}</div>
       <button class="btn small ghost" id="mClose">Закрыть ✕</button></div>
     <div class="dlg-body">
       <div class="chk-row" style="margin-bottom:12px"><span class="muted">Автоматические задания: ${(ENTRY.parts || []).filter((p) => !p.open).map((p) => `${esc(p.name)} <b>${r.score?.[p.k] ?? "—"}</b>/${p.max}`).join(" · ")}</span>

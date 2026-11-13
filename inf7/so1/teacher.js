@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../../firebase-config.js";
-import { SCALE, toGrade } from "../../engine/grading.js?v=4";
+import { SCALE, toGrade } from "../../engine/grading.js?v=5";
 import { TEST, VARIANTS } from "./questions.js?v=1";
 
 const WORK = TEST;

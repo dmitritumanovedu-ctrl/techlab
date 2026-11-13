@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1B1446">
+<title>Миссия 2 · Эффект-квест · 5 класс</title>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800;900&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#140F3A; --bg2:#1F1760; --panel:#FFFFFF; --ink:#1A1440; --muted:#6A6496;
+  --pink:#FF4FB8; --cyan:#29E3FF; --lime:#B6FF3B; --gold:#FFC93C; --orange:#FF8A3D; --violet:#8B5CFF; --red:#FF4D6D; --ok:#12B76A;
+  --display:"Unbounded",system-ui,sans-serif; --body:"Manrope",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--body);color:#fff;background:radial-gradient(1200px 600px at 20% -10%,#3B2BB0 0,transparent 60%),radial-gradient(900px 500px at 110% 10%,#B0237F 0,transparent 55%),var(--bg);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.stars-bg{position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20% 30%,#fff8,transparent),radial-gradient(1.5px 1.5px at 70% 20%,#fff9,transparent),
+  radial-gradient(2px 2px at 40% 80%,#fff6,transparent),radial-gradient(1.5px 1.5px at 85% 65%,#fff8,transparent),radial-gradient(1px 1px at 10% 70%,#fff8,transparent);opacity:.8}
+
+/* ---------- старт ---------- */
+#start{min-height:100vh;display:grid;place-items:center;padding:24px 16px;position:relative}
+.start-card{width:min(560px,100%);background:linear-gradient(160deg,#2A2080,#1A1352);border:2px solid #4B3CD0;border-radius:28px;padding:30px;box-shadow:0 0 0 6px #ffffff10,0 30px 80px #0008,0 0 80px #8B5CFF55;position:relative;z-index:1}
+.logo{font-family:var(--display);font-weight:900;font-size:44px;line-height:1;letter-spacing:-.02em;margin:6px 0 4px;
+  background:linear-gradient(90deg,var(--cyan),var(--pink),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #0006)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--lime);text-transform:uppercase}
+.lead{color:#D8D2FF;margin:10px 0 18px}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-weight:700;font-size:14px;color:#D8D2FF}
+.field input,.field select{font:inherit;font-size:17px;padding:13px 14px;border-radius:14px;border:2px solid #5A4BE0;background:#0F0B33;color:#fff}
+.field input:focus,.field select:focus{outline:none;border-color:var(--cyan)}
+.err{color:#FF9FB3;min-height:1.3em;font-weight:700;font-size:14px}
+.btn{border:0;border-radius:16px;padding:14px 22px;font-weight:800;font-size:17px;color:#1A1440;background:linear-gradient(180deg,#FFE27A,var(--gold));box-shadow:0 6px 0 #B9861A;transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #B9861A}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.cyan{background:linear-gradient(180deg,#8FF3FF,var(--cyan));box-shadow:0 6px 0 #0F9BB3}
+.btn.pink{background:linear-gradient(180deg,#FF9AD8,var(--pink));box-shadow:0 6px 0 #B02579;color:#fff}
+.btn.ghost{background:#ffffff18;color:#fff;box-shadow:none;border:2px solid #ffffff40}
+.big{width:100%;font-size:20px;padding:16px}
+
+/* ---------- HUD ---------- */
+#game{max-width:1080px;margin:0 auto;padding:12px 14px 40px;position:relative;z-index:1}
+.hud{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#0E0A2Cdd;border:2px solid #3B2EA8;border-radius:20px;padding:10px 14px;position:sticky;top:8px;z-index:20;backdrop-filter:blur(6px)}
+.hud .who{font-weight:800}.hud .who small{display:block;font-family:var(--mono);font-size:11px;color:var(--lime);letter-spacing:.1em}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#ffffff14;border-radius:999px;padding:6px 12px;font-weight:800;font-family:var(--mono)}
+.chip.gold{color:var(--gold)}.chip.cyan{color:var(--cyan)}.chip.pink{color:var(--pink)}
+.xp{flex:1 1 180px;max-width:260px}.xp .bar{height:10px;background:#ffffff22;border-radius:999px;overflow:hidden}.xp .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));transition:width .6s}
+.xp small{font-family:var(--mono);font-size:11px;color:#CFC8FF}
+
+/* ---------- карта уровней ---------- */
+.map{position:relative;margin-top:18px;background:linear-gradient(180deg,#2A1F86,#1B1460);border:2px solid #4B3CD0;border-radius:28px;padding:26px 18px 30px;overflow:hidden}
+.map h1{font-family:var(--display);font-size:28px;margin:0 0 4px}.map p{color:#D8D2FF;margin:0 0 18px}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;position:relative}
+.node{position:relative;text-align:left;border:0;border-radius:22px;padding:16px;min-height:170px;color:#1A1440;background:#fff;box-shadow:0 8px 0 #0004;display:flex;flex-direction:column;gap:6px;transition:transform .15s}
+.node:hover:not(:disabled){transform:translateY(-4px) rotate(-.5deg)}
+.node .n{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--violet)}
+.node .t{font-family:var(--display);font-weight:800;font-size:17px;line-height:1.2;padding-right:46px}
+.node .d{font-size:13px;color:var(--muted)}
+.node .st{margin-top:auto;font-size:20px;letter-spacing:2px}
+.node .ic{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:24px}
+.node.lock{background:#ffffff1a;color:#ffffff99;box-shadow:none;border:2px dashed #ffffff40}
+.node.lock .n,.node.lock .d{color:#ffffff88}
+.node.done{outline:4px solid var(--lime)}
+.node.boss{background:linear-gradient(160deg,#FFE27A,#FF8A3D)}
+.node.fin{background:linear-gradient(160deg,#8FF3FF,#8B5CFF);color:#fff}.node.fin .n,.node.fin .d{color:#fff}
+
+/* ---------- сцена уровня ---------- */
+.stage{margin-top:18px;background:var(--panel);color:var(--ink);border-radius:28px;padding:22px;box-shadow:0 20px 60px #0006}
+.lv-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.lv-badge{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.1em;background:var(--ink);color:var(--lime);padding:6px 12px;border-radius:999px}
+.lv-head h2{font-family:var(--display);font-size:24px;margin:0;flex:1 1 300px}
+.lv-help{background:#F3F0FF;border-radius:16px;padding:12px 14px;color:#3B2F86;margin-bottom:14px}
+.back{background:#EEEAFE;color:#3B2F86;border:0;border-radius:12px;padding:9px 14px;font-weight:800}
+.prog{font-family:var(--mono);font-weight:700;color:var(--violet)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.imgbox{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.imgbox canvas{width:100%;height:100%;display:block}
+.imgbox .lbl{position:absolute;top:10px;left:10px;background:#000a;color:#fff;font-family:var(--mono);font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;z-index:2}
+.vig::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,#000d 100%);pointer-events:none}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.choice{border:3px solid #E3DEFF;background:#fff;border-radius:16px;padding:14px;font-weight:800;color:var(--ink);text-align:left;transition:transform .1s,border-color .1s}
+.choice:hover:not(:disabled){transform:translateY(-2px);border-color:var(--violet)}
+.choice.right{border-color:var(--ok);background:#E5F9EF}.choice.wrong{border-color:var(--red);background:#FFE7EC}
+.choice small{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:2px}
+.feedback{min-height:1.6em;font-weight:800;margin-top:10px}
+.feedback.ok{color:var(--ok)}.feedback.bad{color:var(--red)}
+
+/* аркада */
+.arcade{position:relative;border-radius:22px;overflow:hidden;background:#0B0830;border:4px solid var(--ink)}
+.arcade canvas{display:block;width:100%;height:auto;max-height:52vh;object-fit:contain;touch-action:none}
+.arc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ink);color:#fff;padding:10px 14px}
+.arc-top .target{font-weight:800}.arc-top .target b{color:var(--gold)}
+.hearts{font-size:20px;letter-spacing:2px}
+.pad{display:flex;justify-content:center;gap:18px;margin-top:14px;flex-wrap:wrap}
+.joy{width:96px;height:96px;border-radius:50%;border:0;font-size:38px;color:#fff;background:radial-gradient(circle at 35% 30%,#A99BFF,var(--violet));box-shadow:0 8px 0 #4B2FB8,0 0 0 6px #8B5CFF33;user-select:none;-webkit-user-select:none;touch-action:none}
+.joy:active,.joy.on{transform:translateY(5px);box-shadow:0 3px 0 #4B2FB8}
+.keys{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+.overlay-msg{position:absolute;inset:0;display:grid;place-items:center;background:#0B0830d9;text-align:center;padding:20px}
+.overlay-msg h3{font-family:var(--display);font-size:26px;margin:0 0 8px;color:var(--gold)}
+.overlay-msg p{color:#E4DFFF;margin:0 0 14px}
+
+/* слайдеры */
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;margin-top:14px}
+.sl{display:grid;gap:4px}.sl label{display:flex;justify-content:space-between;font-weight:800;font-size:14px}
+.sl input{width:100%;accent-color:var(--violet)}
+.meter{height:14px;background:#EEEAFE;border-radius:999px;overflow:hidden;margin-top:12px}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--ok));transition:width .3s}
+
+/* клиенты */
+.client{display:flex;gap:14px;align-items:flex-start;background:#F7F5FF;border-radius:18px;padding:14px;margin-bottom:6px}
+.avatar{width:62px;height:62px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:22px;color:#fff}
+.bubble{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:12px 14px;font-weight:600}
+.bubble b{color:var(--violet)}
+
+/* босс */
+.fx-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.fx{border:3px solid #E3DEFF;background:#fff;border-radius:999px;padding:9px 14px;font-weight:800;color:var(--ink)}
+.fx[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.cover-title{position:absolute;left:0;right:0;bottom:8%;text-align:center;font-family:var(--display);font-weight:900;font-size:clamp(20px,4vw,40px);color:#fff;text-shadow:0 3px 0 #000a,0 0 20px #000a;padding:0 10px;z-index:2;pointer-events:none}
+textarea,.tin{width:100%;font:inherit;font-size:16px;border:2px solid #DCD5FF;border-radius:14px;padding:12px;color:var(--ink)}
+textarea{min-height:110px;resize:vertical}
+textarea:focus,.tin:focus{outline:none;border-color:var(--violet)}
+
+/* результат уровня */
+.win-pop{position:fixed;inset:0;background:#0B0830cc;display:grid;place-items:center;z-index:100;padding:16px}
+.win-box{background:linear-gradient(160deg,#2A2080,#1A1352);border:3px solid var(--gold);border-radius:28px;padding:28px;text-align:center;width:min(420px,100%);animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.win-box h3{font-family:var(--display);font-size:28px;margin:0 0 6px}
+.win-stars{font-size:52px;letter-spacing:6px;margin:8px 0}
+.win-stars .off{filter:grayscale(1);opacity:.3}
+.win-box p{color:#D8D2FF}
+
+/* финиш */
+.qual{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.qual-badge{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;align-content:center;color:#fff;background:conic-gradient(var(--lime),var(--cyan),var(--violet),var(--pink),var(--lime));padding:8px}
+.qual-badge div{width:100%;height:100%;border-radius:50%;background:var(--ink);display:grid;place-items:center;align-content:center}
+.qual-badge b{font-family:var(--display);font-size:52px;line-height:1}.qual-badge small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--lime)}
+.scale{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.scale div{border:2px solid #E3DEFF;border-radius:14px;padding:10px;text-align:center;font-size:13px;color:var(--muted)}
+.scale div b{display:block;font-family:var(--display);font-size:22px;color:var(--ink)}
+.scale div.on{border-color:var(--violet);background:#F3F0FF}
+table.tbl{width:100%;border-collapse:collapse;margin-top:10px}table.tbl td,table.tbl th{padding:8px 10px;border-bottom:1px solid #EEEAFE;text-align:left}
+table.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mood{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.mood button{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink)}
+.mood button[aria-pressed="true"]{border-color:var(--violet);background:#F3F0FF}
+.sent{background:var(--ink);color:#CFE6FF;font-family:var(--mono);border-radius:14px;padding:14px;margin-top:12px}
+.sent .g{color:var(--lime)}.sent .r{color:#FF9FB3}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border:2px solid var(--lime);padding:10px 18px;border-radius:999px;font-weight:800;opacity:0;transition:opacity .2s;z-index:200;pointer-events:none}
+#toast.on{opacity:1}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:150}
+@media (max-width:600px){.logo{font-size:34px}.lv-head h2{font-size:20px}.scale{grid-template-columns:repeat(2,1fr)}.joy{width:84px;height:84px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stars-bg"></div>
+
+<section id="start">
+  <div class="start-card">
+    <div class="eyebrow">Технологическое воспитание · 5 класс · миссия 2</div>
+    <div class="logo">ЭФФЕКТ-КВЕСТ</div>
+    <div style="font-family:var(--display);font-weight:700;font-size:18px">Применение художественных эффектов</div>
+    <p class="lead">Пройди 5 уровней фото-игры: угадывай эффекты, лови их джойстиком, повторяй образцы, выполняй заказы клиентов и победи босса! За каждый уровень — до ⭐⭐⭐ и монеты 🪙.</p>
+    <div class="field"><label for="fio">Фамилия и имя</label><input id="fio" autocomplete="off" maxlength="60" placeholder="Например: Руссу Анна"></div>
+    <div class="field"><label for="cls">Класс</label>
+      <select id="cls"><option value="">выбери…</option><option>5 «А»</option><option>5 «Б»</option><option>5 «В»</option><option>5 «Г»</option></select></div>
+    <div class="err" id="err"></div>
+    <button class="btn big" id="go" type="button">▶ ИГРАТЬ</button>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="hud">
+    <div class="who" id="who"></div>
+    <div class="xp"><small id="xpTxt">УРОВЕНЬ ИГРОКА 1</small><div class="bar"><i id="xpBar" style="width:0"></i></div></div>
+    <div class="chips"><span class="chip gold" title="Монеты">🪙 <span id="coins">0</span></span><span class="chip cyan" title="Звёзды">⭐ <span id="stars">0</span>/15</span><span class="chip pink" title="Время урока">⏱ <span id="clock">00:00</span></span></div>
+  </div>
+  <div id="view"></div>
+</section>
+<div id="toast" role="status"></div>
+<canvas class="confetti" id="confetti"></canvas>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script type="module">
+/* Связь с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech5-media-m2";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Карта", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+"use strict";
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const TL=()=>window.TL_READY;
+const rnd=(n)=>Math.floor(Math.random()*n);
+const shuffle=(a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+/* ===================== ЭФФЕКТЫ ===================== */
+const FX={
+  gray:{n:"Чёрно-белый",d:"убирает цвета, остаются оттенки серого",css:"grayscale(1)"},
+  sepia:{n:"Сепия",d:"коричневые тона, как у старинной фотографии",css:"sepia(1)"},
+  invert:{n:"Негатив",d:"цвета меняются на противоположные",css:"invert(1)"},
+  blur:{n:"Размытие",d:"изображение становится нечётким, мягким",css:"blur(5px)"},
+  bright:{n:"Яркость",d:"изображение становится светлее",css:"brightness(1.7)"},
+  contrast:{n:"Контраст",d:"сильнее разница между светлым и тёмным",css:"contrast(2)"},
+  satur:{n:"Насыщенность",d:"цвета становятся ярче и сочнее",css:"saturate(3)"},
+  hue:{n:"Смена оттенка",d:"все цвета заменяются другими",css:"hue-rotate(150deg)"},
+  pixel:{n:"Пикселизация",d:"картинка из крупных квадратиков",css:"none",px:true},
+  vignette:{n:"Виньетка",d:"затемнение по краям, внимание к центру",css:"none",vig:true},
+};
+const FXK=Object.keys(FX);
+
+/* ===================== КАРТИНКИ (рисуются кодом) ===================== */
+function sceneCity(c,w,h){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,"#FF7AB6");g.addColorStop(.55,"#FFC36B");g.addColorStop(1,"#6B3FD8");c.fillStyle=g;c.fillRect(0,0,w,h);
+  c.fillStyle="#FFF1A8";c.beginPath();c.arc(w*.7,h*.38,h*.14,0,7);c.fill();
+  const cols=["#2B1D6B","#3A2A8F","#1E1550","#4A2FA8"];for(let i=0;i<9;i++){const bw=w*.1,bh=h*(.25+((i*37)%5)*.08);c.fillStyle=cols[i%4];c.fillRect(i*w*.11,h*.78-bh,bw,bh+h*.22);
+    c.fillStyle="#FFE27A";for(let y=h*.8-bh;y<h*.75;y+=h*.06)for(let x=i*w*.11+bw*.15;x<i*w*.11+bw*.85;x+=bw*.3)if((x*y)%7>2)c.fillRect(x,y,bw*.12,h*.025);}
+  c.fillStyle="#120B3A";c.fillRect(0,h*.86,w,h*.14);c.fillStyle="#29E3FF";c.fillRect(w*.05,h*.9,w*.9,h*.008);}
+function sceneNature(c,w,h){const g=c.createLinearGradient(0,0,0,h*.6);g.addColorStop(0,"#2E7BFF");g.addColorStop(1,"#BFE6FF");c.fillStyle=g;c.fillRect(0,0,w,h);
+  c.fillStyle="#FFD447";c.beginPath();c.arc(w*.8,h*.2,h*.1,0,7);c.fill();
+  c.fillStyle="#4C8C3A";c.beginPath();c.moveTo(0,h*.6);c.quadraticCurveTo(w*.3,h*.35,w*.6,h*.6);c.lineTo(0,h);c.fill();
+  c.fillStyle="#2F6E2A";c.beginPath();c.moveTo(w*.3,h*.65);c.quadraticCurveTo(w*.7,h*.3,w,h*.55);c.lineTo(w,h);c.lineTo(w*.3,h);c.fill();
+  c.fillStyle="#3BA7E8";c.beginPath();c.ellipse(w*.35,h*.85,w*.22,h*.07,0,0,7);c.fill();
+  c.fillStyle="#E5484D";c.fillRect(w*.08,h*.62,w*.1,h*.12);c.fillStyle="#8E2430";c.beginPath();c.moveTo(w*.065,h*.63);c.lineTo(w*.13,h*.54);c.lineTo(w*.195,h*.63);c.fill();
+  for(const [x,y,col] of [[.6,.8,"#FF4FB8"],[.66,.84,"#FFC93C"],[.72,.79,"#fff"],[.78,.85,"#8B5CFF"]]){c.fillStyle=col;c.beginPath();c.arc(w*x,h*y,h*.025,0,7);c.fill();}}
+function scenePet(c,w,h){c.fillStyle="#7EE0C3";c.fillRect(0,0,w,h);c.fillStyle="#5BC9AA";for(let i=0;i<12;i++){c.beginPath();c.arc((i*97)%w,(i*53)%h,h*.06,0,7);c.fill();}
+  c.fillStyle="#FF9F43";c.beginPath();c.ellipse(w*.5,h*.62,w*.2,h*.22,0,0,7);c.fill();c.beginPath();c.arc(w*.5,h*.38,h*.18,0,7);c.fill();
+  c.beginPath();c.moveTo(w*.38,h*.3);c.lineTo(w*.4,h*.12);c.lineTo(w*.47,h*.25);c.fill();c.beginPath();c.moveTo(w*.62,h*.3);c.lineTo(w*.6,h*.12);c.lineTo(w*.53,h*.25);c.fill();
+  c.fillStyle="#1A1440";c.beginPath();c.arc(w*.45,h*.37,h*.025,0,7);c.arc(w*.55,h*.37,h*.025,0,7);c.fill();c.fillStyle="#FF4FB8";c.beginPath();c.arc(w*.5,h*.44,h*.018,0,7);c.fill();
+  c.strokeStyle="#1A1440";c.lineWidth=3;c.beginPath();c.moveTo(w*.5,h*.46);c.lineTo(w*.5,h*.49);c.stroke();}
+const SCENES=[sceneCity,sceneNature,scenePet].map(f=>{const cv=document.createElement("canvas");cv.width=480;cv.height=360;f(cv.getContext("2d"),480,360);return cv;});
+
+function paint(canvas,scene,opt={}){ // opt: {css, px, vig}
+  const W=480,H=360;canvas.width=W;canvas.height=H;const c=canvas.getContext("2d");
+  const src=SCENES[scene];
+  if(opt.px){const t=document.createElement("canvas");t.width=32;t.height=24;t.getContext("2d").drawImage(src,0,0,32,24);c.imageSmoothingEnabled=false;c.drawImage(t,0,0,W,H);}
+  else c.drawImage(src,0,0);
+  canvas.style.filter=opt.css&&opt.css!=="none"?opt.css:"none";
+  canvas.parentElement?.classList.toggle("vig",!!opt.vig);
+}
+function fxOpt(k){const f=FX[k];return {css:f.css,px:!!f.px,vig:!!f.vig};}
+
+/* ===================== СОСТОЯНИЕ ===================== */
+const KEY="techlab_tech5_m2";
+const LEVELS=[
+  {k:"q1",ic:"🔍",bg:"#FFE3F3",t:"Угадай эффект",d:"Сравни «до» и «после» и назови эффект",max:6},
+  {k:"q2",ic:"🕹",bg:"#E0F9FF",t:"Джойстик-ловец",d:"Лови нужные эффекты, уворачивайся от лишних",max:6},
+  {k:"q3",ic:"🎚",bg:"#EFE9FF",t:"Повтори образец",d:"Подбери настройки так, чтобы фото совпало",max:6},
+  {k:"q4",ic:"💬",bg:"#FFF3D6",t:"Фотостудия",d:"Выполни заказы клиентов",max:6},
+  {k:"q5",ic:"👑",bg:"",t:"Босс: обложка",d:"Создай обложку и объясни выбор эффектов",max:3,boss:true},
+];
+const MAXALL=LEVELS.reduce((s,l)=>s+l.max,0)+3; // + объяснение (ИИ) 3 б.
+let S=fresh("","");
+function fresh(fio,cls){return {fio,cls,start:Date.now(),score:{},stars:{},coins:0,open:{o1:""},boss:{fx:[],title:""},mood:"",sent:0,rec:""};}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+  if(S.rec)TL().then(t=>t.progress(S.rec,{score:S.score,open:S.open,stage:stageLabel(),doneCount:Object.keys(S.score).length})).catch(()=>{});}
+function stageLabel(){const n=LEVELS.filter(l=>S.score[l.k]!=null).length;return n>=LEVELS.length?"Финиш":"Уровень "+(n+1);}
+const starsOf=(pts,max)=>pts<=0?0:pts/max>=.9?3:pts/max>=.6?2:1;
+function totalStars(){return Object.values(S.stars).reduce((a,b)=>a+b,0);}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+
+/* ===================== ЗВУК ===================== */
+let AC=null;
+function beep(f=660,d=.08,type="square",v=.05){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
+const sGood=()=>{beep(660,.07);setTimeout(()=>beep(990,.09),70);};
+const sBad=()=>beep(160,.18,"sawtooth",.05);
+const sWin=()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,"triangle",.06),i*110));
+
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1600);}
+function confetti(){const cv=$("confetti"),c=cv.getContext("2d");cv.width=innerWidth;cv.height=innerHeight;
+  const P=Array.from({length:120},()=>({x:innerWidth/2,y:innerHeight/3,vx:(Math.random()-.5)*14,vy:-Math.random()*12-4,c:["#FF4FB8","#29E3FF","#B6FF3B","#FFC93C","#8B5CFF"][rnd(5)],s:6+rnd(6)}));
+  let n=0;(function f(){c.clearRect(0,0,cv.width,cv.height);for(const p of P){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;c.fillStyle=p.c;c.fillRect(p.x,p.y,p.s,p.s*.6);}if(++n<90)requestAnimationFrame(f);else c.clearRect(0,0,cv.width,cv.height);})();}
+
+/* ===================== HUD ===================== */
+function hud(){
+  $("who").innerHTML=`<small>ИГРОК</small>${esc(S.fio)} · ${esc(S.cls)}`;
+  $("coins").textContent=S.coins;$("stars").textContent=totalStars();
+  const xp=S.coins,lvl=1+Math.floor(xp/100);$("xpTxt").textContent=`УРОВЕНЬ ИГРОКА ${lvl} · ${xp} XP`;$("xpBar").style.width=(xp%100)+"%";
+}
+setInterval(()=>{if(!S.fio)return;const s=Math.floor((Date.now()-S.start)/1000);$("clock").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");},1000);
+
+function finishLevel(k,pts){
+  const L=LEVELS.find(l=>l.k===k);pts=Math.max(0,Math.min(L.max,Math.round(pts*2)/2));
+  const st=starsOf(pts,L.max),gain=pts*10+st*10;
+  const better=S.score[k]==null||pts>S.score[k];
+  if(better){S.coins+=gain-(S.score[k]!=null?S.score[k]*10+(S.stars[k]||0)*10:0);S.score[k]=pts;S.stars[k]=st;}
+  save();hud();if(st>=2)confetti();sWin();
+  const o=document.createElement("div");o.className="win-pop";
+  o.innerHTML=`<div class="win-box"><div class="eyebrow">УРОВЕНЬ ПРОЙДЕН</div><h3>${esc(L.t)}</h3>
+    <div class="win-stars">${[1,2,3].map(i=>`<span class="${i<=st?"":"off"}">⭐</span>`).join("")}</div>
+    <p>Баллы: <b>${pts} / ${L.max}</b> · монеты: <b>+${gain} 🪙</b>${better?"":" (твой прошлый результат был лучше — он сохранён)"}</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+      <button class="btn" type="button" id="wMap">🗺 На карту</button>${st<3&&!L.boss?`<button class="btn ghost" type="button" id="wAgain">↻ Ещё раз</button>`:""}</div></div>`;
+  document.body.appendChild(o);
+  $("wMap").onclick=()=>{o.remove();showMap();};
+  $("wAgain")?.addEventListener("click",()=>{o.remove();openLevel(k);});
+}
+
+/* ===================== КАРТА ===================== */
+function unlocked(i){return i===0||S.score[LEVELS[i-1].k]!=null;}
+function showMap(){
+  stopArcade();hud();
+  const allDone=LEVELS.every(l=>S.score[l.k]!=null);
+  $("view").innerHTML=`<section class="map">
+    <h1>🗺 Карта уровней</h1><p>Проходи уровни по порядку. Можно переиграть уровень, чтобы получить больше звёзд — засчитывается лучший результат.</p>
+    <div class="road">${LEVELS.map((L,i)=>{const lock=!unlocked(i),done=S.score[L.k]!=null;
+      return `<button type="button" class="node ${lock?"lock":""} ${done?"done":""} ${L.boss?"boss":""}" data-l="${L.k}" ${lock?"disabled":""}>
+        <span class="ic" style="background:${L.bg||"#fff6"}">${lock?"🔒":L.ic}</span>
+        <span class="n">УРОВЕНЬ ${i+1}</span><span class="t">${esc(L.t)}</span><span class="d">${esc(L.d)}</span>
+        <span class="st">${done?[1,2,3].map(s=>s<=S.stars[L.k]?"⭐":"☆").join(""):lock?"":"▶ играть"}</span></button>`;}).join("")}
+      <button type="button" class="node fin" id="toFin" ${allDone?"":"disabled"}><span class="ic" style="background:#fff3">🏁</span><span class="n">ФИНИШ</span>
+        <span class="t">Итог и отправка</span><span class="d">${allDone?"Отправь результат учителю":"Пройди все уровни"}</span></button>
+    </div></section>`;
+  document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>openLevel(b.dataset.l));
+  $("toFin").onclick=showFin;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function lvHead(i,L,help){return `<div class="lv-head"><span class="lv-badge">УРОВЕНЬ ${i+1}</span><h2>${L.ic} ${esc(L.t)}</h2><button class="back" type="button" id="back">🗺 Карта</button></div>
+  <div class="lv-help">${help}</div>`;}
+function openLevel(k){const i=LEVELS.findIndex(l=>l.k===k);({q1:lv1,q2:lv2,q3:lv3,q4:lv4,q5:lv5})[k](i,LEVELS[i]);const b=$("back");if(b)b.onclick=showMap;
+  if(S.rec)TL().then(t=>t.progress(S.rec,{stage:"Уровень "+(i+1)})).catch(()=>{});window.scrollTo({top:0,behavior:"smooth"});}
+
+/* ===================== УРОВЕНЬ 1: Угадай эффект ===================== */
+function lv1(i,L){
+  const rounds=shuffle(FXK).slice(0,6);let r=0,ok=0;
+  function round(){
+    const k=rounds[r],sc=r%3,opts=shuffle([k,...shuffle(FXK.filter(x=>x!==k)).slice(0,3)]);
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Слева — исходное фото, справа — фото после редактирования. <b>Какой художественный эффект применили?</b>")}
+      <div class="prog">Вопрос ${r+1} из ${rounds.length} · верно: ${ok}</div>
+      <div class="two" style="margin-top:10px"><div class="imgbox"><span class="lbl">ДО</span><canvas id="a"></canvas></div><div class="imgbox"><span class="lbl">ПОСЛЕ</span><canvas id="b"></canvas></div></div>
+      <div class="choices">${opts.map(o=>`<button class="choice" type="button" data-o="${o}">${esc(FX[o].n)}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    paint($("a"),sc);paint($("b"),sc,fxOpt(k));
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(x.dataset.o===k)x.classList.add("right");});
+      const good=b.dataset.o===k;if(good){ok++;sGood();}else{b.classList.add("wrong");sBad();}
+      $("fb").className="feedback "+(good?"ok":"bad");$("fb").textContent=(good?"Верно! ":"Это «"+FX[k].n+"». ")+FX[k].n+" — "+FX[k].d+".";
+      setTimeout(()=>{r++;if(r<rounds.length)round();else finishLevel("q1",ok);},good?1100:2000);
+    });
+  }
+  round();
+}
+
+/* ===================== УРОВЕНЬ 2: Джойстик-ловец ===================== */
+let ARC=null;
+function stopArcade(){if(ARC){cancelAnimationFrame(ARC.raf);removeEventListener("keydown",ARC.kd);removeEventListener("keyup",ARC.ku);ARC=null;}}
+function lv2(i,L){
+  $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Управляй камерой-роботом: <b>← →</b> на клавиатуре (или <b>A</b> / <b>D</b>) либо большие кнопки-джойстик. Лови только тот эффект, который описан вверху! Неверный эффект отнимает ❤️. Цель — поймать <b>6 верных</b>.")}
+    <div class="arcade"><div class="arc-top"><span class="target" id="tg">Готов?</span><span><span class="hearts" id="hp">❤️❤️❤️</span> · <b id="cnt">0</b>/6</span></div>
+      <canvas id="arc" width="800" height="360"></canvas>
+      <div class="overlay-msg" id="ov"><div><h3>🕹 Джойстик-ловец</h3><p>Лови эффект, который подходит под описание.<br>У тебя 3 жизни и 75 секунд.</p><button class="btn cyan" type="button" id="play">▶ СТАРТ</button></div></div></div>
+    <div class="pad"><button class="joy" type="button" id="jl" aria-label="Влево">◀</button><button class="joy" type="button" id="jr" aria-label="Вправо">▶</button></div>
+    <div class="keys">Подсказка: на компьютере удобнее стрелками ← → на клавиатуре.</div></section>`;
+  $("back").onclick=showMap;
+  $("play").onclick=()=>{$("ov").hidden=true;startArcade();};
+}
+function startArcade(){
+  stopArcade();
+  const cv=$("arc"),c=cv.getContext("2d"),W=800,H=360;
+  const st={x:W/2,v:0,left:false,right:false,items:[],t0:performance.now(),last:0,spawn:0,ok:0,hp:3,target:null,over:false,flash:0,msg:""};
+  ARC={raf:0,kd:null,ku:null};
+  const pick=()=>{st.target=FXK[rnd(FXK.length)];$("tg").innerHTML=`Лови: <b>${esc(FX[st.target].d)}</b>`;};
+  pick();
+  ARC.kd=(e)=>{if(["ArrowLeft","a","A","ф","Ф"].includes(e.key)){st.left=true;e.preventDefault();}if(["ArrowRight","d","D","в","В"].includes(e.key)){st.right=true;e.preventDefault();}};
+  ARC.ku=(e)=>{if(["ArrowLeft","a","A","ф","Ф"].includes(e.key))st.left=false;if(["ArrowRight","d","D","в","В"].includes(e.key))st.right=false;};
+  addEventListener("keydown",ARC.kd);addEventListener("keyup",ARC.ku);
+  const hold=(id,side)=>{const b=$(id);const on=(e)=>{e.preventDefault();st[side]=true;b.classList.add("on");},off=()=>{st[side]=false;b.classList.remove("on");};
+    b.onpointerdown=on;b.onpointerup=off;b.onpointerleave=off;b.onpointercancel=off;};
+  hold("jl","left");hold("jr","right");
+  const COL={gray:"#9AA0B8",sepia:"#B5835A",invert:"#29E3FF",blur:"#A8B8FF",bright:"#FFE27A",contrast:"#FF8A3D",satur:"#FF4FB8",hue:"#8B5CFF",pixel:"#B6FF3B",vignette:"#5A4BE0"};
+  function spawn(){const want=Math.random()<.4||!st.items.some(it=>it.k===st.target);const k=want?st.target:FXK[rnd(FXK.length)];
+    st.items.push({k,x:60+Math.random()*(W-120),y:-30,vy:1.4+Math.random()*1.2+st.ok*.12});}
+  function draw(now){
+    const dt=Math.min(32,now-(st.last||now));st.last=now;
+    const left=Math.max(0,75-(now-st.t0)/1000);
+    if(!st.over){
+      const acc=(st.right?1:0)-(st.left?1:0);st.v=st.v*.8+acc*2.4;st.x=Math.max(50,Math.min(W-50,st.x+st.v*dt/16));
+      st.spawn-=dt;if(st.spawn<=0){spawn();st.spawn=900-st.ok*40;}
+      for(const it of st.items)it.y+=it.vy*dt/16*2;
+      for(const it of st.items){if(!it.dead&&it.y>H-95&&it.y<H-45&&Math.abs(it.x-st.x)<70){it.dead=true;
+        if(it.k===st.target){st.ok++;S.coins+=5;hud();sGood();st.flash=12;st.msg="+1 ✓ "+FX[it.k].n;$("cnt").textContent=st.ok;pick();}
+        else{st.hp--;sBad();st.flash=-12;st.msg="✗ это "+FX[it.k].n;$("hp").textContent="❤️".repeat(st.hp)+"🖤".repeat(3-st.hp);}}}
+      st.items=st.items.filter(it=>!it.dead&&it.y<H+40);
+      if(st.ok>=6||st.hp<=0||left<=0){st.over=true;setTimeout(()=>{stopArcade();finishLevel("q2",Math.min(6,st.ok));},700);}
+    }
+    // фон
+    const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,"#1B1460");g.addColorStop(1,"#0B0830");c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.strokeStyle="#29E3FF22";for(let x=0;x<W;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke();}
+    c.fillStyle="#29E3FF55";c.fillRect(0,H-30,W,2);
+    // предметы
+    c.textAlign="center";c.font="800 15px Manrope, sans-serif";
+    for(const it of st.items){const w=c.measureText(FX[it.k].n).width+28;c.fillStyle=COL[it.k];c.beginPath();c.roundRect(it.x-w/2,it.y-18,w,36,18);c.fill();
+      c.fillStyle=it.k==="invert"||it.k==="bright"||it.k==="pixel"?"#1A1440":"#fff";c.fillText(FX[it.k].n,it.x,it.y+5);}
+    // игрок: камера-робот
+    const px=st.x,py=H-70;c.fillStyle=st.flash>0?"#B6FF3B":st.flash<0?"#FF4D6D":"#FFC93C";c.beginPath();c.roundRect(px-55,py-22,110,48,14);c.fill();
+    c.fillStyle="#1A1440";c.beginPath();c.arc(px,py+2,17,0,7);c.fill();c.fillStyle="#29E3FF";c.beginPath();c.arc(px,py+2,10,0,7);c.fill();
+    c.fillStyle="#fff";c.beginPath();c.arc(px-4,py-2,3,0,7);c.fill();c.fillStyle="#FF4FB8";c.fillRect(px+30,py-30,16,10);
+    if(st.flash){st.flash+=st.flash>0?-1:1;c.fillStyle=st.flash>=0?"#B6FF3B":"#FF9FB3";c.font="800 20px Manrope";c.fillText(st.msg,px,py-40);}
+    // время
+    c.fillStyle="#fff";c.font="700 16px JetBrains Mono, monospace";c.textAlign="left";c.fillText("⏱ "+Math.ceil(left)+" c",14,26);
+    if(st.over){c.fillStyle="#0008";c.fillRect(0,0,W,H);c.fillStyle="#FFC93C";c.textAlign="center";c.font="900 40px Unbounded, sans-serif";c.fillText(st.ok>=6?"ПОБЕДА!":"ИГРА ОКОНЧЕНА",W/2,H/2);}
+    if(ARC)ARC.raf=requestAnimationFrame(draw);
+  }
+  ARC.raf=requestAnimationFrame(draw);
+}
+
+/* ===================== УРОВЕНЬ 3: Повтори образец ===================== */
+const SL=[["bright","Яркость",50,200,100,"%"],["contrast","Контраст",50,200,100,"%"],["satur","Насыщенность",0,300,100,"%"],["sepia","Сепия",0,100,0,"%"],["gray","Чёрно-белый",0,100,0,"%"],["blur","Размытие",0,8,0,"px"]];
+const TARGETS=[
+  {bright:100,contrast:100,satur:100,sepia:100,gray:0,blur:0,name:"старинное фото"},
+  {bright:140,contrast:100,satur:100,sepia:0,gray:100,blur:0,name:"светлое чёрно-белое"},
+  {bright:100,contrast:160,satur:250,sepia:0,gray:0,blur:0,name:"яркий постер"},
+  {bright:100,contrast:100,satur:100,sepia:0,gray:0,blur:5,name:"мягкий фон"},
+  {bright:70,contrast:150,satur:100,sepia:0,gray:0,blur:0,name:"тёмное и контрастное"},
+  {bright:120,contrast:100,satur:40,sepia:50,gray:0,blur:0,name:"тёплый винтаж"},
+];
+const cssOf=(v)=>`brightness(${v.bright/100}) contrast(${v.contrast/100}) saturate(${v.satur/100}) sepia(${v.sepia/100}) grayscale(${v.gray/100}) blur(${v.blur}px)`;
+function lv3(i,L){
+  const tg=shuffle(TARGETS).slice(0,3);let r=0,pts=0,tries=0;
+  function round(){
+    const T=tg[r],sc=(r+1)%3,v={bright:100,contrast:100,satur:100,sepia:0,gray:0,blur:0};tries=0;
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Двигай ползунки, чтобы твоё фото (справа) стало <b>как образец</b> (слева). Нажми «Проверить». Совпадение от 90 % — 2 балла, от 75 % — 1 балл. Есть 2 попытки.")}
+      <div class="prog">Образец ${r+1} из 3 · «${esc(T.name)}» · баллы: ${pts}</div>
+      <div class="two" style="margin-top:10px"><div class="imgbox"><span class="lbl">ОБРАЗЕЦ</span><canvas id="a"></canvas></div><div class="imgbox"><span class="lbl">ТВОЁ ФОТО</span><canvas id="b"></canvas></div></div>
+      <div class="sliders">${SL.map(s=>`<div class="sl"><label for="s_${s[0]}"><span>${s[1]}</span><span id="v_${s[0]}">${s[4]}${s[5]}</span></label><input type="range" id="s_${s[0]}" min="${s[2]}" max="${s[3]}" value="${s[4]}" step="${s[0]==="blur"?1:5}"></div>`).join("")}</div>
+      <div class="meter"><i id="mt" style="width:0"></i></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="btn" type="button" id="chk">✓ Проверить</button><button class="btn ghost" style="color:var(--ink);border-color:#DCD5FF" type="button" id="rs">↺ Сбросить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    paint($("a"),sc,{css:cssOf(T)});paint($("b"),sc,{css:cssOf(v)});
+    SL.forEach(s=>{const el=$("s_"+s[0]);el.oninput=()=>{v[s[0]]=Number(el.value);$("v_"+s[0]).textContent=el.value+s[5];$("b").style.filter=cssOf(v);};});
+    $("rs").onclick=()=>{SL.forEach(s=>{v[s[0]]=s[4];$("s_"+s[0]).value=s[4];$("v_"+s[0]).textContent=s[4]+s[5];});$("b").style.filter=cssOf(v);};
+    $("chk").onclick=()=>{
+      tries++;
+      const d=SL.reduce((a,s)=>a+Math.abs(v[s[0]]-T[s[0]])/(s[3]-s[2]),0)/2.2;
+      const match=Math.max(0,Math.round((1-d)*100));$("mt").style.width=match+"%";
+      const p=match>=90?2:match>=75?1:0;
+      if(p===2||tries>=2){pts+=p;(p?sGood:sBad)();$("fb").className="feedback "+(p?"ok":"bad");
+        $("fb").textContent=`Совпадение ${match}% → +${p} б. ${p<2?"Подсказка: в образце были такие настройки — "+SL.filter(s=>T[s[0]]!==s[4]).map(s=>s[1]+" "+T[s[0]]+s[5]).join(", ")+".":"Отлично!"}`;
+        $("chk").disabled=true;setTimeout(()=>{r++;if(r<3)round();else finishLevel("q3",pts);},p===2?1300:3200);}
+      else{sBad();$("fb").className="feedback bad";$("fb").textContent=`Совпадение ${match}%. Попробуй ещё раз — осталась 1 попытка.`;}
+    };
+  }
+  round();
+}
+
+/* ===================== УРОВЕНЬ 4: Фотостудия ===================== */
+const ORDERS=[
+  ["Бабушка Мария","#FF8A3D","Хочу, чтобы фото выглядело как <b>старинная фотография</b> из семейного альбома.","sepia"],
+  ["Блогер Макс","#FF4FB8","Мне нужна обложка, где <b>цвета очень яркие и сочные</b>, чтобы все заметили!","satur"],
+  ["Журналист Ион","#2E4BFF","На фото видно <b>номер машины</b>. Его нужно скрыть, чтобы не было видно цифр.","pixel"],
+  ["Газета «Школьные новости»","#555E7A","Газета печатается <b>без цветов</b>. Подготовь фото для печати.","gray"],
+  ["Фотограф Лена","#12B76A","Фото получилось <b>слишком тёмным</b> — ничего не видно. Исправь!","bright"],
+  ["Художник Дан","#8B5CFF","Хочу необычный эффект: <b>светлое стало тёмным</b>, цвета — наоборот.","invert"],
+  ["Дизайнер Ана","#29C3E0","Нужен <b>мягкий нечёткий фон</b> для текста приглашения.","blur"],
+  ["Свадебный фотограф","#B02579","Хочу <b>затемнить края</b> снимка, чтобы внимание было в центре на молодожёнах.","vignette"],
+  ["Ученик Петя","#FFC93C","Картинка какая-то «бледная», хочу <b>сильнее разницу между светлым и тёмным</b>.","contrast"],
+];
+function lv4(i,L){
+  const ord=shuffle(ORDERS).slice(0,6);let r=0,ok=0;
+  function round(){
+    const [nm,col,txt,k]=ord[r],opts=shuffle([k,...shuffle(FXK.filter(x=>x!==k)).slice(0,3)]),sc=r%3;
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Ты работаешь в фотостудии. Прочитай заказ клиента и <b>выбери эффект</b>, который нужно применить.")}
+      <div class="prog">Заказ ${r+1} из 6 · выполнено верно: ${ok}</div>
+      <div class="client" style="margin-top:10px"><div class="avatar" style="background:${col}">${esc(nm.split(" ").map(x=>x[0]).join("").slice(0,2))}</div>
+        <div><b>${esc(nm)}</b><div class="bubble">${txt}</div></div></div>
+      <div class="two"><div class="imgbox"><span class="lbl">ФОТО КЛИЕНТА</span><canvas id="b"></canvas></div>
+        <div class="choices" style="margin-top:0;align-content:start">${opts.map(o=>`<button class="choice" type="button" data-o="${o}">${esc(FX[o].n)}<small>${esc(FX[o].d)}</small></button>`).join("")}</div></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;paint($("b"),sc,k==="bright"?{css:"brightness(.45)"}:{});
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(x.dataset.o===k)x.classList.add("right");});
+      const good=b.dataset.o===k;if(good){ok++;sGood();}else{b.classList.add("wrong");sBad();}
+      paint($("b"),sc,fxOpt(k));
+      $("fb").className="feedback "+(good?"ok":"bad");$("fb").textContent=good?"Клиент доволен! 😊":"Клиенту нужен эффект «"+FX[k].n+"» — "+FX[k].d+".";
+      setTimeout(()=>{r++;if(r<ord.length)round();else finishLevel("q4",ok);},good?1300:2400);
+    });
+  }
+  round();
+}
+
+/* ===================== УРОВЕНЬ 5: Босс — обложка ===================== */
+function lv5(i,L){
+  const B=S.boss;B.fx=B.fx||[];
+  $("view").innerHTML=`<section class="stage">${lvHead(i,L,"👑 <b>Финальный босс!</b> Школьный журнал заказал обложку. Выбери картинку, примени <b>минимум 2 эффекта</b>, придумай название журнала и объясни, какие эффекты ты выбрал и зачем.")}
+    <div class="fx-tools" id="sc">${["Город","Природа","Котик"].map((n,j)=>`<button class="fx" type="button" data-sc="${j}" aria-pressed="${(B.sc??0)===j}">🖼 ${n}</button>`).join("")}</div>
+    <div class="two"><div class="imgbox" id="cbox"><span class="lbl">ОБЛОЖКА</span><canvas id="b"></canvas><div class="cover-title" id="ct"></div></div>
+      <div><div style="font-weight:800;margin-bottom:6px">Эффекты (нажми, чтобы включить):</div>
+        <div class="fx-tools" id="fxs">${FXK.map(k=>`<button class="fx" type="button" data-fx="${k}" aria-pressed="${B.fx.includes(k)}">${esc(FX[k].n)}</button>`).join("")}</div>
+        <label for="ttl" style="font-weight:800">Название журнала:</label><input class="tin" id="ttl" maxlength="30" placeholder="Например: Школьный вайб" value="${esc(B.title||"")}"></div></div>
+    <label for="o1" style="display:block;font-weight:800;margin:16px 0 6px">✍ Какие эффекты ты применил(а) и зачем? Как они изменили обложку? (2–4 предложения, это проверит ИИ)</label>
+    <textarea id="o1" maxlength="1200" placeholder="Я применил(а) эффект … , потому что …">${esc(S.open.o1||"")}</textarea>
+    <div class="feedback" id="fb"></div>
+    <button class="btn pink big" type="button" id="done" style="margin-top:10px">👑 Сдать обложку боссу</button></section>`;
+  $("back").onclick=showMap;
+  const draw=()=>{const sc=B.sc??0,px=B.fx.includes("pixel"),vig=B.fx.includes("vignette");
+    const css=B.fx.filter(k=>!FX[k].px&&!FX[k].vig).map(k=>FX[k].css).join(" ")||"none";paint($("b"),sc,{css,px,vig});$("ct").textContent=B.title||"";};
+  draw();
+  document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{B.sc=Number(b.dataset.sc);document.querySelectorAll("[data-sc]").forEach(x=>x.setAttribute("aria-pressed",x===b));draw();save();});
+  document.querySelectorAll("[data-fx]").forEach(b=>b.onclick=()=>{const k=b.dataset.fx;B.fx=B.fx.includes(k)?B.fx.filter(x=>x!==k):[...B.fx,k];b.setAttribute("aria-pressed",B.fx.includes(k));beep(520,.05);draw();save();});
+  $("ttl").oninput=(e)=>{B.title=e.target.value;draw();};$("ttl").onchange=save;
+  $("o1").oninput=(e)=>{S.open.o1=e.target.value;};$("o1").onchange=save;
+  $("done").onclick=()=>{
+    const txt=(S.open.o1||"").trim();
+    if(B.fx.length<2){$("fb").className="feedback bad";$("fb").textContent="Примени хотя бы 2 эффекта!";sBad();return;}
+    if(txt.split(/\s+/).length<6){$("fb").className="feedback bad";$("fb").textContent="Напиши объяснение подробнее (хотя бы 1–2 предложения).";sBad();return;}
+    const pts=2+((B.title||"").trim()?1:0);save();finishLevel("q5",pts);
+  };
+}
+
+/* ===================== ФИНИШ ===================== */
+// Оценивание по технологическому воспитанию (Республика Молдова): квалификативы вместо отметок
+const QUAL=[[75,"ОХ","очень хорошо"],[50,"Х","хорошо"],[25,"У","удовлетворительно"],[0,"Н","неудовлетворительно"]];
+const qualOf=(p)=>QUAL.find(q=>p>=q[0]);
+const NAMES={q1:"Угадай эффект",q2:"Джойстик-ловец",q3:"Повтори образец",q4:"Фотостудия",q5:"Босс: обложка"};
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+function showFin(){
+  stopArcade();
+  const auto=LEVELS.reduce((s,l)=>s+(S.score[l.k]||0),0),maxAuto=MAXALL-3,pct=Math.round(auto/maxAuto*100),q=qualOf(pct);
+  $("view").innerHTML=`<section class="stage">
+    <div class="lv-head"><span class="lv-badge">ФИНИШ</span><h2>🏁 Квест пройден!</h2><button class="back" type="button" id="back">🗺 Карта</button></div>
+    <div class="qual"><div class="qual-badge"><div><small>ПРЕДВАРИТЕЛЬНО</small><b>${q[1]}</b><small>${q[2].toUpperCase()}</small></div></div>
+      <div><div style="font-family:var(--display);font-size:34px;font-weight:800">${auto}<span style="font-size:18px;color:var(--muted)"> / ${maxAuto} баллов за игру</span></div>
+        <div style="color:var(--muted)">${pct}% · ⭐ ${totalStars()} / 15 · 🪙 ${S.coins} · время ≈ ${minutes()} мин</div>
+        <div style="color:var(--muted);font-size:14px;margin-top:4px">+ до 3 баллов за объяснение обложки — их проверит ИИ, итог утвердит учитель.</div></div></div>
+    <div class="scale">${QUAL.map((x,j)=>`<div class="${x===q?"on":""}"><b>${x[1]}</b>${x[2]}<br>${j===0?"от 75 %":j===1?"50–74 %":j===2?"25–49 %":"менее 25 %"}</div>`).join("")}</div>
+    <table class="tbl"><thead><tr><th>УРОВЕНЬ</th><th>ЗВЁЗДЫ</th><th>БАЛЛЫ</th></tr></thead><tbody>
+      ${LEVELS.map(l=>`<tr><td>${esc(NAMES[l.k])}</td><td>${[1,2,3].map(s=>s<=(S.stars[l.k]||0)?"⭐":"☆").join("")}</td><td>${S.score[l.k]??"—"} / ${l.max}</td></tr>`).join("")}</tbody></table>
+    <h3 style="font-family:var(--display);margin:20px 0 4px">Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(m=>`<button type="button" aria-pressed="${S.mood===m[1]}" data-m="${m[1]}">${m[0]} ${m[1]}</button>`).join("")}</div>
+    <button class="btn cyan big" type="button" id="send" ${S.mood&&!S.sent?"":"disabled"}>${S.sent?"✓ Отправлено учителю":"↑ Отправить учителю"}</button>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div></section>`;
+  $("back").onclick=showMap;
+  document.querySelectorAll("#mood button").forEach(b=>b.onclick=()=>{S.mood=b.dataset.m;save();document.querySelectorAll("#mood button").forEach(x=>x.setAttribute("aria-pressed",x===b));if(!S.sent)$("send").disabled=false;});
+  $("send").onclick=()=>{
+    const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+    const data={score:S.score,open:S.open,points:auto,max:MAXALL,percent:pct,qual:q[1],stars:totalStars(),coins:S.coins,boss:{fx:S.boss.fx,title:S.boss.title||""},minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:LEVELS.length};
+    const ok=()=>{S.sent=1;save();$("sendOut").innerHTML=sentHTML(true);btn.textContent="✓ Отправлено учителю";confetti();toast("✓ Отправлено учителю");};
+    const fail=()=>{$("sendOut").innerHTML=sentHTML(false);btn.disabled=false;btn.textContent="↑ Отправить учителю";};
+    if(!S.rec){fail();return;}
+    TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+  };
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function sentHTML(ok){return ok?`<div class="sent"><span class="g">✓ результат передан учителю</span><br>Отличная игра! Можешь закрыть вкладку.</div>`
+  :`<div class="sent"><span class="r">✗ Не получилось отправить.</span> Проверь интернет и нажми ещё раз или позови учителя.</div>`;}
+
+/* ===================== СТАРТ ===================== */
+$("go").onclick=async()=>{
+  const fio=$("fio").value.trim().replace(/\s+/g," "),cls=$("cls").value,err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";return;}
+  err.textContent="Подключаюсь…";$("go").disabled=true;
+  try{
+    const t=await Promise.race([TL(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),8000))]);
+    if(!(await t.isOpen())){err.textContent="Учитель ещё не открыл миссию. Подожди и нажми ещё раз.";$("go").disabled=false;return;}
+    S=fresh(fio,cls);S.rec=await t.start({name:fio,cls});err.textContent="";save();openApp();
+  }catch(e){err.textContent="Нет связи с сервером. Проверь интернет или позови учителя.";$("go").disabled=false;}
+};
+function openApp(){$("start").hidden=true;$("game").hidden=false;hud();showMap();}
+load();
+if(S.fio)openApp();
+</script>
+<script type="module" src="../../../engine/autofill.js?v=1"></script>
+</body>
+</html>

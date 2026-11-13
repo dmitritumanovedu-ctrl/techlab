@@ -112,3 +112,11 @@ export function grade(key, answers = {}, manual = {}, ai = {}) {
   return { items, max, auto, total, complete, pending: pending.length,
            grade: complete ? toGrade(total, max) : null, gradeNow: toGrade(total, max) };
 }
+
+// ---------- Технологическое воспитание (Республика Молдова): квалификативы вместо отметок ----------
+// ОХ — очень хорошо, Х — хорошо, У — удовлетворительно, Н — неудовлетворительно. Пороги в % от максимума.
+export const QUAL = [[75, "ОХ", "очень хорошо"], [50, "Х", "хорошо"], [25, "У", "удовлетворительно"], [0, "Н", "неудовлетворительно"]];
+export const QUAL_SUBJECTS = ["tech"];
+export const usesQual = (subject) => QUAL_SUBJECTS.includes(subject);
+export function qualOf(pct) { return QUAL.find(([p]) => pct >= p - 1e-9) || QUAL[QUAL.length - 1]; }
+export const qualScaleText = () => QUAL.map(([p, c, n], i) => `<b>${c}</b> (${n}) — ${i === 0 ? "от " + p + " %" : i === QUAL.length - 1 ? "менее " + QUAL[i - 1][0] + " %" : p + "–" + (QUAL[i - 1][0] - 1) + " %"}`).join(" · ");

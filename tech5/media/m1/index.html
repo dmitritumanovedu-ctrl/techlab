@@ -1078,21 +1078,23 @@ function runBlitz(){
 /* ================= ФИНИШ ================= */
 function total(){return PARTS.reduce((s,k)=>s+(S.score[k]||0),0);}
 function gradeOf(p){return 1+[15,25,35,45,55,65,75,85,95].filter(t=>p>=t).length;}
-const SCALE=[[1,"0–14"],[2,"15–24"],[3,"25–34"],[4,"35–44"],[5,"45–54"],[6,"55–64"],[7,"65–74"],[8,"75–84"],[9,"85–94"],[10,"95–100"]];
+// Технологическое воспитание оценивается квалификативами (Республика Молдова)
+const QUAL=[[75,"ОХ","очень хорошо","от 75 %"],[50,"Х","хорошо","50–74 %"],[25,"У","удовлетворительно","25–49 %"],[0,"Н","неудовлетворительно","менее 25 %"]];
+const qualOf=(p)=>QUAL.find(q=>p>=q[0]);
 const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
 function showFin(){
-  const pts=total(),pct=Math.round(pts/MAXALL*100),g=gradeOf(pct);
+  const pts=total(),pct=Math.round(pts/MAXALL*100),g=gradeOf(pct),q=qualOf(pct);
   $("sheet").innerHTML=head(STEPS.length,"🏁 ФИНИШ","Миссия завершена!",'Проверь свои баллы, отметь, как прошёл урок, и отправь результат учителю.')+`
   <div class="card">
     <div class="result">
-      <div class="grade"><small>ОТМЕТКА</small><b>${g}</b><small>ИЗ 10</small></div>
+      <div class="grade"><small>КВАЛИФИКАТИВ</small><b style="font-size:54px">${q[1]}</b><small>${q[2].toUpperCase()}</small></div>
       <div style="display:grid;gap:8px;min-width:0">
         <div class="pts">${pts}<span> / ${MAXALL} баллов</span></div>
         <div class="counter">${pct}% · время ≈ <b>${minutes()} мин</b> · ${S.fio}, ${S.cls}</div>
       </div>
     </div>
-    <div class="step-tag">ШКАЛА ПЕРЕВОДА В ОТМЕТКУ, %</div>
-    <div class="scale">${SCALE.map(s=>`<div class="${s[0]===g?'on':''}"><b>${s[0]}</b>${s[1]}</div>`).join("")}</div>
+    <div class="step-tag">КВАЛИФИКАТИВЫ · ТЕХНОЛОГИЧЕСКОЕ ВОСПИТАНИЕ</div>
+    <div class="scale" style="grid-template-columns:repeat(4,minmax(0,1fr))">${QUAL.map(s=>`<div class="${s===q?'on':''}"><b>${s[1]}</b>${s[2]}<br>${s[3]}</div>`).join("")}</div>
     <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>ЗАДАНИЕ</th><th>⭐</th><th>БАЛЛЫ</th></tr></thead><tbody>
       ${PARTS.map(k=>`<tr><td>${NAMES[k]}</td><td>${stars(k)}</td><td>${S.score[k]??"—"} / ${MAXP[k]}</td></tr>`).join("")}
       <tr><td><b>Итого</b></td><td></td><td>${pts} / ${MAXALL}</td></tr></tbody></table></div>
@@ -1118,7 +1120,7 @@ function sentHTML(ok,msg){
 }
 function sendResult(pts,pct,g){
   const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
-  const data={score:S.score,points:pts,max:MAXALL,percent:pct,grade:g,minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:STEPS.length};
+  const data={score:S.score,points:pts,max:MAXALL,percent:pct,grade:g,qual:qualOf(pct)[1],minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:STEPS.length};
   const ok=()=>{S.sent=1;S.done.fin=true;save();renderTools();$("sendOut").innerHTML=sentHTML(true);btn.textContent="✓ Отправлено";toast("✓ Отправлено учителю");};
   const fail=()=>{$("sendOut").innerHTML=sentHTML(false,"Не получилось отправить. Проверь интернет и нажми ещё раз или позови учителя.");btn.disabled=false;btn.textContent="↑ Отправить учителю";};
   if(!S.rec){fail();return;}

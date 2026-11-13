@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { SUBJECTS } from "./tests.js?v=7";
+import { SUBJECTS } from "./tests.js?v=8";
 import { getSession, setSession, clearSession, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP } from "./engine/people.js?v=1";
 
 const box = document.getElementById("home");
@@ -85,7 +85,7 @@ function askCode() {
 // ---------------- игровой центр ----------------
 function center(S, P, B) {
   const works = Object.values(P.works || {}).sort((a, b) => (b.date || 0) - (a.date || 0));
-  const done = works.filter((w) => w.complete);
+  const done = works.filter((w) => w.complete && !w.qual);
   const avg = done.length ? done.reduce((a, w) => a + w.grade, 0) / done.length : null;
   const xp = P.xp || 0, L = levelOf(xp);
   const aw = awardsOf(P.works);
@@ -116,7 +116,7 @@ function center(S, P, B) {
       <div class="gc-card">
         <h2>Мои работы</h2>
         ${works.length ? works.slice(0, 5).map((w) => `<div class="wk">
-            <span class="wg ${w.complete ? gColor(w.grade) : "g-wait"}">${w.complete ? w.grade : "…"}</span>
+            <span class="wg ${w.complete ? gColor(w.qual ? ({ "ОХ": 10, "Х": 8, "У": 6, "Н": 4 })[w.qual] : w.grade) : "g-wait"}" title="${esc(w.qualName || "")}">${w.complete ? (w.qual || w.grade) : "…"}</span>
             <div><div class="wt">${esc(w.title)}</div><div class="ws">${esc(subjName(w.subject))} · ${esc(w.kindName || "")}${w.complete ? ` · +${20 + w.grade * 10 + (w.viol ? 0 : 10)} XP` : " · ждёт проверки"}</div></div></div>`).join("")
           : `<p class="muted">Пока нет проверенных работ. Выполни задание на уроке — оно появится здесь после проверки учителем.</p>`}
         ${works.find((w) => w.summary) ? `<div class="tip"><b>Совет из последнего разбора:</b> ${esc(works.find((w) => w.summary).summary.advice)}</div>` : ""}

@@ -3,8 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { grade, toGrade } from "../engine/grading.js?v=4";
-import { SUBJECTS, TESTS, kindOf } from "../tests.js?v=7";
+import { grade, toGrade, usesQual, qualOf } from "../engine/grading.js?v=5";
+import { SUBJECTS, TESTS, kindOf } from "../tests.js?v=8";
 import { CLASSES, PLAN, makeCode, prettyCode, nameKey, clsKey, xpOf, levelOf, fmt1, esc } from "../engine/people.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -90,7 +90,7 @@ function render() {
     ${inCls.length ? `<div class="table-wrap"><table class="res"><thead><tr><th>№</th><th>Ученик</th><th>Код ученика</th><th>Код родителя</th>
       <th>Уровень</th><th>XP</th><th>Работ</th><th>Ср. оценка</th><th></th></tr></thead><tbody>
       ${inCls.map(([code, s], i) => {
-        const p = PROGRESS[code] || {}; const ws = Object.values(p.works || {}); const done = ws.filter((w) => w.complete);
+        const p = PROGRESS[code] || {}; const ws = Object.values(p.works || {}); const done = ws.filter((w) => w.complete && !w.qual);
         const L = levelOf(p.xp || 0);
         return `<tr><td>${i + 1}</td><td><b>${esc(s.name)}</b></td><td class="code">${prettyCode(code)}</td><td class="code">${prettyCode(s.pcode)}</td>
           <td><span class="lvl">${L.n}</span> ${esc(L.name)}</td><td>${p.xp || 0}</td><td>${ws.length}</td>
@@ -235,6 +235,7 @@ async function syncAll() {
         const w = { title: t.title, subject: t.subject, kind: K.id, kindName: K.short, retake: !!t.retake,
           grade: e.grade || 0, total: Math.round((e.total || 0) * 10) / 10, max: e.max || 0, pct: e.pct || 0, complete: !!e.complete,
           viol: r.violations || 0, date };
+        if (usesQual(t.subject)) { const q = qualOf(w.pct); w.qual = q[1]; w.qualName = q[2]; }
         if (r.aiSummary) w.summary = { strengths: r.aiSummary.strengths || "", gaps: r.aiSummary.gaps || "", advice: r.aiSummary.advice || "" };
         (works[code] = works[code] || {})[t.id] = w;
         matched++;

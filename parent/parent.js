@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { SUBJECTS } from "../tests.js?v=7";
+import { SUBJECTS } from "../tests.js?v=8";
 import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc } from "../engine/people.js?v=1";
 
 const $ = (s) => document.querySelector(s);
@@ -74,7 +74,8 @@ async function show(pcode) {
   $("#out").onclick = () => { if (confirm("Выйти и забыть коды на этом устройстве?")) { saveCodes([]); login(); } };
 
   const works = Object.values(P.works || {}).sort((a, b) => (b.date || 0) - (a.date || 0));
-  const done = works.filter((w) => w.complete);
+  const done = works.filter((w) => w.complete && !w.qual);
+  const quals = works.filter((w) => w.complete && w.qual);
   const avg = done.length ? done.reduce((a, w) => a + w.grade, 0) / done.length : null;
   const pending = works.length - done.length;
   const viol = works.reduce((a, w) => a + (w.viol || 0), 0);
@@ -82,6 +83,7 @@ async function show(pcode) {
   const aw = awardsOf(P.works).filter((a) => a.ok);
   const bySubj = {};
   for (const w of done) (bySubj[w.subject] = bySubj[w.subject] || []).push(w.grade);
+  const qualSubj = {}; for (const w of quals) (qualSubj[w.subject] = qualSubj[w.subject] || []).push(w.qual);
   const sumW = works.find((w) => w.summary);
   const fmtD = (t) => t ? new Date(t).toLocaleDateString("ru-RU", { day: "numeric", month: "long" }) : "";
   const gc = (g) => g >= 9 ? "g-hi" : g >= 7 ? "g-mid" : g >= 5 ? "g-lo" : "g-bad";
@@ -90,7 +92,7 @@ async function show(pcode) {
   app.innerHTML = `
   <h1 class="p-h1">Успехи: ${esc(R.name)} <small>${esc(R.cls)}</small></h1>
   <div class="p-stats">
-    <div class="pc ps"><span>Средняя оценка</span><b class="blue">${avg === null ? "—" : fmt1(avg)}</b><small>по ${done.length} ${done.length === 1 ? "проверенной работе" : "проверенным работам"}</small></div>
+    <div class="pc ps"><span>Средняя оценка</span><b class="blue">${avg === null ? "—" : fmt1(avg)}</b><small>по ${done.length} ${done.length === 1 ? "проверенной работе" : "проверенным работам"}${quals.length ? " · техн. воспитание оценивается квалификативами (ОХ, Х, У, Н)" : ""}</small></div>
     <div class="pc ps"><span>Выполнено работ</span><b>${works.length}</b><small>${pending ? `${pending} ждёт проверки учителем` : "все проверены"}</small></div>
     <div class="pc ps"><span>Уровень на платформе</span><b>${L.n}</b><small>${esc(L.name)} · ${P.xp || 0} XP · наград: ${aw.length}</small></div>
     <div class="pc ps"><span>Нарушения в тестах</span><b class="${viol ? "red" : "green"}">${viol}</b><small>${viol ? "уход со вкладки, попытки копирования" : "честная работа"}</small></div>
@@ -100,7 +102,7 @@ async function show(pcode) {
     <div class="pc">
       <h2>Работы</h2>
       ${works.length ? works.map((w) => `<div class="pw">
-          <span class="wg ${w.complete ? gc(w.grade) : "g-wait"}">${w.complete ? w.grade : "…"}</span>
+          <span class="wg ${w.complete ? gc(w.qual ? ({ "ОХ": 10, "Х": 8, "У": 6, "Н": 4 })[w.qual] : w.grade) : "g-wait"}" title="${esc(w.qualName || "")}">${w.complete ? (w.qual || w.grade) : "…"}</span>
           <div class="pw-t"><b>${esc(w.title)}</b><small>${esc(subj(w.subject).name)} · ${esc(w.kindName || "")}${w.retake ? " · пересдача" : ""} · ${fmtD(w.date)}</small></div>
           <span class="pw-p">${w.complete ? `${fmt1(w.total)} / ${w.max} б.` : "проверяется"}</span></div>`).join("")
         : `<p class="muted">Пока нет работ. Они появятся здесь после того, как учитель проверит первую работу.</p>`}
@@ -114,10 +116,12 @@ async function show(pcode) {
         ${Object.keys(bySubj).length ? Object.entries(bySubj).map(([s, g]) => {
           const a = g.reduce((x, y) => x + y, 0) / g.length;
           return `<div class="sb"><span>${esc(subj(s).name)}</span><span class="sb-b"><i style="width:${a * 10}%"></i></span><b>${fmt1(a)}</b></div>`; }).join("")
-          : `<p class="muted">Нет проверенных работ.</p>`}
+          : ""}
+        ${Object.entries(qualSubj).map(([s, q]) => `<div class="sb"><span>${esc(subj(s).name)}</span><b style="font-size:13px">${["ОХ", "Х", "У", "Н"].filter((c) => q.includes(c)).map((c) => `${c} × ${q.filter((x) => x === c).length}`).join(" · ")}</b></div>`).join("")}
+        ${!Object.keys(bySubj).length && !Object.keys(qualSubj).length ? `<p class="muted">Нет проверенных работ.</p>` : ""}
       </div>
       <div class="pc p-note"><h2>Как читать оценки</h2>
-        <p class="small">Оценки по 10-балльной шкале. Развёрнутые ответы проверяются с помощью ИИ, окончательную оценку утверждает учитель.
+        <p class="small">Оценки по 10-балльной шкале; технологическое воспитание — квалификативами: ОХ — очень хорошо, Х — хорошо, У — удовлетворительно, Н — неудовлетворительно. Развёрнутые ответы проверяются с помощью ИИ, окончательную оценку утверждает учитель.
           «…» — работа сдана и ждёт проверки.${upd ? ` Данные обновлены ${esc(upd)}.` : ""}</p></div>
     </div>
   </div>`;
