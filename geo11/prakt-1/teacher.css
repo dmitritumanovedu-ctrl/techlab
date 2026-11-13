@@ -1,0 +1,14 @@
+/* Практическая работа · панель учителя */
+.pr-head h2 { font-size: 20px; }
+.h3 { font-family: var(--display); font-size: 15px; margin: 18px 0 8px; color: var(--green); }
+.sum-line { margin-bottom: 8px; line-height: 1.8; }
+.calc-t td { font-size: 14px; }
+.calc-t td.ans-c { font-weight: 800; font-family: var(--mono); }
+.calc-t td.ok, .calc-t td.bad { font-size: 18px; text-align: center; }
+.sc { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; font-size: 14px; }
+.ai-box { background: #F3F0FF; border: 1px solid #DCD3FF; border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
+.ai-box .ok, .ai-box .bad { font-weight: 600; margin-top: 3px; }
+.ai-box .adv { background: var(--amber-2); border-radius: 6px; padding: 4px 8px; margin-top: 4px; color: #6B4B00; }
+details.model { font-size: 14px; }
+details.model summary { cursor: pointer; color: var(--green); font-weight: 700; }
+details.model p { margin: 6px 0; }

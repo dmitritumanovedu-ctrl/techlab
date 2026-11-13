@@ -16,6 +16,7 @@ export const SUBJECTS = [
 export const KINDS = [
   { id: "so",     icon: "🏁", short: "Суммативное", name: "Суммативное оценивание", note: "итог по единице обучения" },
   { id: "to",     icon: "📝", short: "Текущее",     name: "Текущее оценивание",     note: "проверка по темам уроков" },
+  { id: "pr",     icon: "🧪", short: "Практическая", name: "Практические работы",   note: "работа с данными: таблицы, расчёты, выводы" },
   { id: "quest",  icon: "🚀", short: "Квест",       name: "Квесты и миссии",        note: "уроки-игры" },
   { id: "blitz",  icon: "⚡", short: "Блиц",        name: "Блиц-разминка",          note: "5 минут в начале урока, без оценки" },
   { id: "hw",     icon: "🏠", short: "Домашнее",    name: "Домашнее задание",       note: "сдать до указанной даты" },
@@ -51,6 +52,11 @@ export const TESTS = [
   { id: "geo11-pop-r", type: "test", kind: "to", retake: "geo11-pop", subject: "geo", grade: "11", title: "Население и населённые пункты · Пересдача",
     note: "Ед. обучения III · §12–17 · 25 вариантов · 45 минут", path: "geo11/test-peresdacha/",
     aiSubject: "география, 11 класс" },
+
+  { id: "geo11-pr1", type: "practical", kind: "pr", subject: "geo", grade: "11",
+    title: "Практическая работа № 1 · Динамика и структура населения в Европе и Африке",
+    note: "§19 · сравнительный анализ · 30 вариантов · 45 минут · проверка ИИ", path: "geo11/prakt-1/",
+    teacher: "geo11/prakt-1/teacher.html", aiSubject: "география, 11 класс" },
 
   { id: "geo12-bac", type: "test", kind: "so", subject: "geo", grade: "12", title: "Симуляция БАК · География",
     note: "Формат БАК · 8 заданий · 4 варианта · 45 минут · проверка ИИ", path: "geo12/bac-sim/",

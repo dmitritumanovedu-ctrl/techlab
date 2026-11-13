@@ -3,13 +3,15 @@ import { getDatabase, ref, get, set, update, remove, onValue, push } from "https
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum } from "./grading.js?v=4";
-import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=4";
+import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=5";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
 const TEST_ID = new URLSearchParams(location.search).get("test");
 const OVERVIEW = !TEST_ID || !READY.some((x) => x.id === TEST_ID);   // без ?test= — «Центр управления»
 const ENTRY = READY.find((x) => x.id === TEST_ID) || READY[0];
+// Практические работы имеют свою панель учителя
+if (!OVERVIEW && ENTRY.teacher) { location.replace("../" + ENTRY.teacher); await new Promise(() => {}); }
 const IS_MISSION = ENTRY.type === "mission";
 const { TEST, VARIANTS } = (IS_MISSION || OVERVIEW)
   ? { TEST: { id: ENTRY.id, classes: ENTRY.classes || [], max: 0 }, VARIANTS: [] }
@@ -897,7 +899,7 @@ async function showOverview() {
   $("#hSub").textContent = "Все предметы · тесты и миссии · результаты в реальном времени";
   app.innerHTML = `<div class="card center"><p class="muted">Загружаю результаты…</p></div>`;
   const KEYSALL = {};
-  for (const t of READY.filter((x) => x.type !== "mission")) {
+  for (const t of READY.filter((x) => x.type !== "mission" && !x.teacher)) {
     try { KEYSALL[t.id] = (await get(ref(db, `keys/${t.id}`))).val(); } catch (e) { /* нет прав или ключей */ }
   }
   app.innerHTML = `<div id="hubNow"></div><div id="hub"></div>
@@ -909,6 +911,7 @@ async function showOverview() {
     for (const r of list) {
       if (r.status !== "submitted") continue;
       if (t.type === "mission") { const e = mEval(r, t); if (e.complete) g.push(e.grade); }
+      else if (t.teacher) { if (r.result?.complete) g.push(r.result.grade); }
       else if (KEYSALL[t.id]) {
         const k = KEYSALL[t.id].variants?.[String(r.variant)];
         if (!k) continue;
@@ -951,7 +954,7 @@ async function showOverview() {
         const open = !!SET[t.id]?.open;
         return `<a class="hub-card" href="?test=${encodeURIComponent(t.id)}">
           <span class="live">${open ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
-          <div class="k">${esc(t.grade)} класс · ${t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : "Тест"}</div>
+          <div class="k">${esc(t.grade)} класс · ${t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : t.type === "practical" ? "Практическая работа" : "Тест"}</div>
           <div class="n">${esc(t.title)}</div>
           <div class="kt">${(() => { const K = kindOf(t, SET); return `<span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>`; })()}${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}</div>
           <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b>${avgOf(t, list)}</b>ср. оценка</div></div>

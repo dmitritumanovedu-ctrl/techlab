@@ -60,6 +60,7 @@ dialog::backdrop { background: rgba(11,26,59,.6); }
   text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; vertical-align: middle; }
 .k-so { background: #FDECEE; color: #C2253B; border-color: #F3B5BF; }
 .k-to { background: #E8EDFF; color: #2E4BFF; border-color: #C9D3FF; }
+.k-pr { background: #E2F6F2; color: #0E7F72; border-color: #A6E3D8; }
 .k-quest { background: #E3F8EF; color: #0B7A4F; border-color: #9FE0C4; }
 .k-blitz { background: #F3E8FF; color: #7A3FD1; border-color: #D9C2FA; }
 .k-hw { background: #FFF4DC; color: #9A6B00; border-color: #F0D58F; }
