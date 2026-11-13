@@ -937,7 +937,7 @@ async function showOverview() {
           <button class="btn small ghost" id="unpin">Убрать со стартовой</button></div></div>`
       : `<div class="hub-now"><div><div class="l">📌 Сейчас на стартовой</div>
         <div class="muted" style="margin-top:4px">Ничего не открыто. Откройте тест или миссию — они появятся у учеников в блоке «Сейчас на уроке».</div></div></div>`;
-    $("#hubNow").insertAdjacentHTML("beforeend", `<div class="hub-tools"><a class="btn small" href="students.html">👥 Ученики и родители</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
+    $("#hubNow").insertAdjacentHTML("beforeend", `<div class="hub-tools"><a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
       <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
       <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`);
     $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;

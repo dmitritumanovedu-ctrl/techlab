@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2E4BFF">
+  <title>QR-код · TechLab</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Manrope:wght@500;600;700;800&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <style>
+    :root { --blue: #2E4BFF; --ink: #0B1A3B; --muted: #556A92; --line: #DCE4F2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Manrope, "Segoe UI", Arial, sans-serif; color: var(--ink); background: #EEF2F8; }
+    .tools { max-width: 1000px; margin: 20px auto; padding: 0 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+    .tools label { display: grid; gap: 4px; font-weight: 700; font-size: 14px; flex: 1 1 260px; }
+    .tools input, .tools select { font: inherit; padding: 10px 12px; border: 1px solid #C9D4E8; border-radius: 10px; }
+    button, .a { font: inherit; font-weight: 800; border: 0; border-radius: 12px; padding: 11px 18px; background: var(--blue); color: #fff; cursor: pointer; text-decoration: none; }
+    .a.ghost { background: #fff; color: var(--blue); border: 1px solid #C9D3FF; }
+    .poster { max-width: 1000px; margin: 0 auto 30px; background: #fff; border-radius: 28px; padding: 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 40px; align-items: center; box-shadow: 0 20px 40px rgba(11,26,59,.12); }
+    .qr { background: #fff; border: 6px solid var(--blue); border-radius: 28px; padding: 18px; }
+    .qr svg { width: 100%; height: auto; display: block; }
+    h1 { font-family: Unbounded, sans-serif; font-size: 52px; margin: 0; color: var(--blue); line-height: 1; }
+    .sub { font-family: Unbounded, sans-serif; font-size: 22px; margin: 10px 0 20px; }
+    .url { font-family: ui-monospace, Consolas, monospace; font-size: 18px; background: #E8EDFF; color: var(--blue); padding: 10px 14px; border-radius: 12px; word-break: break-all; }
+    ol { padding-left: 22px; font-size: 18px; line-height: 1.5; } ol li { margin: 8px 0; }
+    .note { color: var(--muted); font-size: 15px; }
+    @media (max-width: 760px) { .poster { grid-template-columns: 1fr; padding: 22px; } h1 { font-size: 38px; } }
+    @media print { body { background: #fff; } .tools { display: none; } .poster { box-shadow: none; margin: 0; padding: 10mm; } @page { size: A4 landscape; margin: 8mm; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="tools">
+    <label>Куда ведёт QR-код
+      <select id="target">
+        <option value="">Стартовая страница TechLab</option>
+        <option value="parent/">Кабинет родителя</option>
+        <option value="custom">Своя ссылка…</option>
+      </select></label>
+    <label id="customWrap" hidden>Ссылка<input id="custom" placeholder="https://…"></label>
+    <button type="button" onclick="print()">🖨 Печать / PDF</button>
+    <a class="a ghost" href="teacher/">← Центр управления</a>
+  </div>
+  <section class="poster">
+    <div class="qr" id="qr" role="img" aria-label="QR-код со ссылкой на сайт"></div>
+    <div>
+      <h1>TechLab</h1>
+      <div class="sub" id="sub">Тесты, квесты и миссии</div>
+      <ol id="steps">
+        <li>Наведи камеру телефона на QR-код</li>
+        <li>Открой сайт и нажми <b>«📲 Установить приложение»</b></li>
+        <li>Войди: <b>«Я ученик»</b> → свой личный код</li>
+      </ol>
+      <div class="url" id="url"></div>
+      <p class="note">Бесплатно · без регистрации · работает на телефоне и компьютере</p>
+    </div>
+  </section>
+  <script>
+    const BASE = new URL("./", location.href).href;
+    const sel = document.getElementById("target"), custom = document.getElementById("custom");
+    function draw() {
+      let u = BASE, sub = "Тесты, квесты и миссии", steps = null;
+      if (sel.value === "parent/") { u = BASE + "parent/"; sub = "Кабинет родителя"; steps = ["Наведите камеру телефона на QR-код", "Нажмите <b>«Я родитель»</b>", "Введите код родителя с карточки"]; }
+      if (sel.value === "custom") { u = custom.value.trim() || BASE; sub = "Задание урока"; steps = ["Наведи камеру телефона на QR-код", "Открой ссылку", "Выполни задание"]; }
+      document.getElementById("customWrap").hidden = sel.value !== "custom";
+      document.getElementById("sub").textContent = sub;
+      document.getElementById("url").textContent = u.replace(/^https?:\/\//, "");
+      document.getElementById("steps").innerHTML = (steps || ["Наведи камеру телефона на QR-код", "Открой сайт и нажми <b>«📲 Установить приложение»</b>", "Войди: <b>«Я ученик»</b> → свой личный код"]).map((s) => `<li>${s}</li>`).join("");
+      const box = document.getElementById("qr");
+      if (!window.qrcode) { box.innerHTML = "<p>Не удалось загрузить генератор QR. Проверьте интернет и обновите страницу.</p>"; return; }
+      const q = qrcode(0, "M"); q.addData(u); q.make();
+      box.innerHTML = q.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+    }
+    sel.onchange = draw; custom.oninput = draw;
+    draw();
+  </script>
+</body>
+</html>
