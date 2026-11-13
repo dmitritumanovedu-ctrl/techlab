@@ -1,0 +1,15 @@
+/* Самостоятельная работа · поверх inf7/so1/so.css */
+.sr-badge { background: #fff; color: #0E7F72; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; }
+.sr-ribbon { display: inline-block; background: #FFF4DC; color: #8A5A00; border: 1px solid #F0D58F; font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
+.opts.one { grid-template-columns: 1fr; }
+.small { font-size: 13px; }
+.inl input { width: 160px; }
+.map-ans { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 14px; margin-top: 12px; }
+.map-ans label { display: flex; align-items: center; gap: 10px; }
+.map-ans select { flex: 1; }
+.ml { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2.5px solid #c0262d; color: #c0262d; display: grid; place-items: center; font-weight: 800; }
+.cz { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.cz-l { font-weight: 800; color: var(--muted); }
+.cz-arrow { font-size: 22px; color: var(--green); font-weight: 800; }
+@media (max-width: 700px) { .cz { grid-template-columns: 1fr; } .cz-arrow { display: none; } }

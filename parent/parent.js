@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { SUBJECTS } from "../tests.js?v=5";
+import { SUBJECTS } from "../tests.js?v=7";
 import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc } from "../engine/people.js?v=1";
 
 const $ = (s) => document.querySelector(s);

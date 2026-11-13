@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2E4BFF">
+  <title>Самостоятельная работа · География 12 · §5–8</title>
+  <link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js">
+  <link rel="stylesheet" href="../../engine/test-e2.css?v=4">
+  <link rel="stylesheet" href="../../inf7/so1/so.css?v=1">
+  <link rel="stylesheet" href="sr.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+</head>
+<body class="no-select">
+  <header class="top">
+    <div>
+      <h1><span class="sr-badge">✍️ Самостоятельная работа</span> География · 12 класс</h1>
+      <div class="who" id="hWho">Единица обучения II · Состояние окружающей среды (§5–8)</div>
+    </div>
+    <div class="timer" id="timer" hidden>20:00</div>
+  </header>
+  <main id="app"><div class="card center"><p class="muted">Загрузка…</p></div></main>
+  <div class="bar-bottom" id="bottomBar" hidden>
+    <span class="saved" id="progress"></span>
+    <button class="btn" id="btnSubmit">Сдать работу</button>
+    <span class="saved" id="savedState"></span>
+  </div>
+  <script type="module" src="student.js?v=1"></script>
+  <script type="module" src="../../engine/autofill.js?v=1"></script>
+</body>
+</html>
