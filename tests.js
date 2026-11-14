@@ -10,6 +10,7 @@ export const SUBJECTS = [
   { id: "geo",  name: "География",                  icon: "🌍", color: "#45D3FF", grades: ["11", "12"] },
   { id: "inf",  name: "Информатика",                icon: "💻", color: "#7B6CFF", grades: ["7"] },
   { id: "tech", name: "Технологическое воспитание", icon: "🛠", color: "#B26BFF", grades: ["5", "6", "7"] },
+  { id: "math", name: "Математика",                 icon: "📐", color: "#FF9F43", grades: ["5"] },
 ];
 
 // Типы работ: ярлык на сайте и в панели учителя. Тип можно поменять в панели учителя (поле «Тип работы»).

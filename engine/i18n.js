@@ -21,7 +21,7 @@ const D = {
 // ============================== РУССКИЙ ==============================
 ru: {
   nav_home: "Главная", grade_word: "класс",
-  subs: "Информатика · География · Технологическое воспитание",
+  subs: "Информатика · География · Технологическое воспитание · Математика",
   lead: "Выбери предмет и класс. Тест или миссию открывает учитель — она появится в блоке «Сейчас на уроке».",
   install_btn: "📲 Установить приложение",
   f_parent: "кабинет родителя", f_demo: "демо-режим", f_privacy: "конфиденциальность", f_teacher: "вход для учителя", f_start: "стартовая страница",
@@ -99,7 +99,7 @@ ru: {
 // ============================== ROMÂNĂ ===============================
 ro: {
   nav_home: "Acasă", grade_word: "clasa",
-  subs: "Informatică · Geografie · Educație tehnologică",
+  subs: "Informatică · Geografie · Educație tehnologică · Matematică",
   lead: "Alege disciplina și clasa. Testul sau misiunea o deschide profesorul — va apărea în blocul „Acum la lecție”.",
   install_btn: "📲 Instalează aplicația",
   f_parent: "cabinetul părintelui", f_demo: "modul demo", f_privacy: "confidențialitate", f_teacher: "intrare profesor", f_start: "pagina principală",
@@ -171,7 +171,7 @@ ro: {
 // ============================== ENGLISH ==============================
 en: {
   nav_home: "Home", grade_word: "grade",
-  subs: "Informatics · Geography · Technology education",
+  subs: "Informatics · Geography · Technology education · Mathematics",
   lead: "Choose a subject and grade. The teacher opens a test or mission — it will appear in the “Now in class” block.",
   install_btn: "📲 Install the app",
   f_parent: "parent dashboard", f_demo: "demo mode", f_privacy: "privacy", f_teacher: "teacher sign-in", f_start: "start page",

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2E4BFF">
+  <title>TechLab · Тест</title>
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js">
+  <link rel="stylesheet" href="../engine/test-e2.css?v=4">
+  <link rel="stylesheet" href="../engine/btest.css?v=1">
+</head>
+<body class="no-select">
+  <header class="top">
+    <div>
+      <h1 id="hTitle">TechLab</h1>
+      <div class="who" id="hWho"></div>
+    </div>
+    <div class="bt-top-r"><span id="langSw"></span><div class="timer" id="timer" hidden>00:00</div></div>
+  </header>
+  <main id="app"><div class="card center"><p class="muted" id="loadTxt">…</p></div></main>
+  <div class="bar-bottom" id="bottomBar" hidden>
+    <span class="saved" id="progress"></span>
+    <button class="btn" id="btnSubmit" type="button"></button>
+    <span class="saved" id="savedState"></span>
+  </div>
+  <script type="module" src="player.js?v=1"></script>
+  <script type="module" src="../engine/autofill.js?v=2"></script>
+</body>
+</html>

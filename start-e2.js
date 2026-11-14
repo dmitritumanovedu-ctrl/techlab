@@ -1,8 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { SUBJECTS, TESTS, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
-import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE } from "./engine/i18n.js?v=1";
+import { SUBJECTS, TESTS as TESTS_RAW, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
+let TESTS = TESTS_RAW;   // + тесты из конструктора (pubIndex)
+import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE, LANG } from "./engine/i18n.js?v=1";
 const kindOf = (x, S) => kindT(kindOfRaw(x, S));
 const KINDS = KINDS_RAW.map(kindT);
 
@@ -35,7 +36,11 @@ async function refresh() {
   if (!db || document.hidden) return;
   try {
     goOnline(db);
-    const s = (await get(ref(db, "settings"))).val() || {};
+    const [ss, pi] = await Promise.all([get(ref(db, "settings")), get(ref(db, "pubIndex")).catch(() => null)]);
+    const s = ss.val() || {};
+    const BT = Object.entries(pi?.val() || {}).map(([id, x]) => ({ id, type: "test", kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title,
+      note: [pl(x.n || 0, "pl_task"), x.minutes ? x.minutes + (LANG === "ru" ? " мин" : " min") : ""].filter(Boolean).join(" · "), path: `b/?t=${id}` }));
+    TESTS = TESTS_RAW.concat(BT);
     SET = s; CURRENT = s.current || null; LINKS = s.links || {}; PLAN = s.plan || {}; OPEN = {};
     for (const t of TESTS) OPEN[t.id] = !!(s[t.id] && s[t.id].open);
     renderNow(); render();

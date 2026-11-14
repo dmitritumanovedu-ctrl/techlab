@@ -209,7 +209,10 @@ async function syncAll() {
     for (const [code, s] of Object.entries(ROSTER)) byName[clsKey(s.cls) + "|" + nameKey(s.name)] = code;
     const works = {};                 // code → {testId: work}
     let matched = 0, unmatched = 0;
-    for (const t of READY) {
+    // + тесты из конструктора: итог (result) записывает страница результатов конструктора
+    let BT = [];
+    try { BT = Object.entries((await get(ref(db, "pubIndex"))).val() || {}).map(([id, x]) => ({ id, type: "test", teacher: true, kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title, path: `b/?t=${id}` })); } catch (e) {}
+    for (const t of READY.concat(BT)) {
       const list = RES[t.id]; if (!list) continue;
       let KEYS = null;
       if (t.type !== "mission" && !t.teacher) { try { KEYS = (await get(ref(db, `keys/${t.id}`))).val(); } catch (e) {} }
