@@ -1,9 +1,9 @@
 // TechLab · service worker: быстрый запуск, установка как приложение, экран «нет интернета».
 // Стратегия «сначала сеть»: ученики всегда получают свежие тесты, а кэш — только запасной вариант.
 // Ответы тестов хранятся в Firebase и через этот файл НЕ проходят.
-const CACHE = "techlab-v2";
-const SHELL = ["./", "index.html", "style-e2.css?v=8", "start-e2.js?v=8", "home.js?v=5", "install.js?v=1", "tests.js?v=8",
-  "firebase-config.js", "engine/people.js?v=1", "manifest.webmanifest", "offline.html", "privacy.html", "demo/", "engine/consent.js?v=1",
+const CACHE = "techlab-v3";
+const SHELL = ["./", "index.html", "style-e2.css?v=8", "start-e2.js?v=9", "home.js?v=6", "install.js?v=2", "tests.js?v=8",
+  "firebase-config.js", "engine/people.js?v=2", "engine/i18n.js?v=1", "manifest.webmanifest", "offline.html", "privacy.html", "demo/", "engine/consent.js?v=2",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png"];
 
 self.addEventListener("install", (e) => {

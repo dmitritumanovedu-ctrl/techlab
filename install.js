@@ -1,3 +1,4 @@
+import { t } from "./engine/i18n.js?v=1";
 // Установка TechLab как приложения (компьютер, Android, iPhone) + регистрация service worker
 const btn = document.getElementById("installBtn");
 const ua = navigator.userAgent;
@@ -13,7 +14,7 @@ if ("serviceWorker" in navigator) {
 if (btn && !standalone) {
   btn.hidden = false;
   addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; btn.classList.add("ready"); });
-  addEventListener("appinstalled", () => { btn.hidden = true; toast("✓ TechLab установлен — ищи значок на рабочем столе"); });
+  addEventListener("appinstalled", () => { btn.hidden = true; toast(t("inst_done")); });
   btn.onclick = async () => {
     if (deferred) {
       deferred.prompt();
@@ -27,19 +28,15 @@ if (btn && !standalone) {
 }
 
 function help() {
-  const steps = isIOS
-    ? [["Открой сайт в <b>Safari</b>", "в Chrome на iPhone установка не работает"], ["Нажми кнопку <b>«Поделиться»</b>", "квадрат со стрелкой вверх внизу экрана"], ["Выбери <b>«На экран „Домой“»</b>", "прокрути список вниз"], ["Нажми <b>«Добавить»</b>", "значок TechLab появится на экране"]]
-    : isAndroid
-      ? [["Открой сайт в <b>Chrome</b>", ""], ["Нажми меню <b>⋮</b>", "три точки справа вверху"], ["Выбери <b>«Установить приложение»</b>", "или «Добавить на главный экран»"], ["Подтверди <b>«Установить»</b>", "значок TechLab появится среди приложений"]]
-      : [["Открой сайт в <b>Chrome</b> или <b>Edge</b>", "в Firefox установка недоступна"], ["Найди значок <b>«Установить»</b>", "справа в адресной строке (монитор со стрелкой) или меню ⋮ → «Установить TechLab»"], ["Нажми <b>«Установить»</b>", "TechLab откроется отдельным окном"], ["Готово!", "ярлык появится на рабочем столе и в меню «Пуск»"]];
+  const steps = t(isIOS ? "inst_steps_ios" : isAndroid ? "inst_steps_and" : "inst_steps_pc");
   const o = document.createElement("div");
   o.className = "code-ov";
   o.innerHTML = `<div class="code-box inst-box" role="dialog" aria-modal="true" aria-labelledby="instT">
-    <h2 id="instT">📲 Установить TechLab</h2>
-    <p>${isIOS ? "На iPhone и iPad:" : isAndroid ? "На телефоне Android:" : "На компьютере:"}</p>
+    <h2 id="instT">${t("inst_h")}</h2>
+    <p>${t(isIOS ? "inst_ios" : isAndroid ? "inst_and" : "inst_pc")}</p>
     <ol class="inst">${steps.map(([a, b]) => `<li><span>${a}</span>${b ? `<small>${b}</small>` : ""}</li>`).join("")}</ol>
-    <small>Приложение бесплатное, весит меньше 1 МБ и обновляется само. Для тестов нужен интернет.</small>
-    <div class="cb-row"><button type="button" class="btn-p" id="instOk">Понятно</button></div></div>`;
+    <small>${t("inst_note")}</small>
+    <div class="cb-row"><button type="button" class="btn-p" id="instOk">${t("ok")}</button></div></div>`;
   document.body.appendChild(o);
   o.querySelector("#instOk").onclick = () => o.remove();
   o.addEventListener("click", (e) => { if (e.target === o) o.remove(); });

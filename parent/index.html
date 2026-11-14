@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2E4BFF">
   <meta name="robots" content="noindex">
-  <title>Кабинет родителя · TechLab</title>
+  <title data-i18n-title="parent_title">Кабинет родителя · TechLab</title>
   <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,14 +18,18 @@
     <header class="hero p-hero">
       <div>
         <a class="logo" href="../">TechLab</a>
-        <span class="p-badge mono">КАБИНЕТ РОДИТЕЛЯ</span>
+        <span class="p-badge mono" data-i18n="p_badge">КАБИНЕТ РОДИТЕЛЯ</span>
       </div>
-      <div id="who" class="p-who"></div>
+      <div class="p-who"><span id="langSw"></span><span id="who" class="p-who"></span></div>
     </header>
-    <main id="app"><div class="pc"><p class="muted">Загрузка…</p></div></main>
-    <footer><a href="../">стартовая страница</a> · <a href="../privacy.html">конфиденциальность</a></footer>
+    <main id="app"><div class="pc"><p class="muted" data-i18n="loading">Загрузка…</p></div></main>
+    <footer><a href="../" data-i18n="f_start">стартовая страница</a> · <a href="../privacy.html" data-i18n="f_privacy">конфиденциальность</a></footer>
   </div>
-  <script type="module" src="parent.js?v=4"></script>
-  <script type="module" src="../engine/consent.js?v=1"></script>
+  <script type="module">
+    import { applyI18n, mountLangSwitch } from "../engine/i18n.js?v=1";
+    applyI18n(); mountLangSwitch(document.getElementById("langSw"));
+  </script>
+  <script type="module" src="parent.js?v=5"></script>
+  <script type="module" src="../engine/consent.js?v=2"></script>
 </body>
 </html>

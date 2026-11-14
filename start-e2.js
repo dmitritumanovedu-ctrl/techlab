@@ -1,16 +1,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
-import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=8";
+import { SUBJECTS, TESTS, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
+import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE } from "./engine/i18n.js?v=1";
+const kindOf = (x, S) => kindT(kindOfRaw(x, S));
+const KINDS = KINDS_RAW.map(kindT);
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const subj = (id) => SUBJECTS.find((s) => s.id === id);
-const plural = (n, a, b, c) => n % 10 === 1 && n % 100 !== 11 ? a : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? b : c;
 
 let CURRENT = null, LINKS = {}, OPEN = {}, SET = {}, PLAN = {}, FILTER = "all", LASTGRADE = "";
 const ktag = (k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`;
-const rtag = `<span class="ktag k-retake">🔁 Пересдача</span>`;
+const rtag = `<span class="ktag k-retake">🔁 ${t("retake")}</span>`;
 
 // ---------- лёгкий режим для слабых компьютеров ----------
 const LITE = (() => { try { const v = localStorage.getItem("techlab_lite"); if (v) return v === "1"; } catch (e) {}
@@ -19,8 +21,8 @@ if (LITE) document.documentElement.classList.add("lite");
 
 function tick() {
   const d = new Date();
-  $("#clock").innerHTML = d.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" }) +
-    "<br><b>" + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) + "</b>";
+  $("#clock").innerHTML = d.toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long" }) +
+    "<br><b>" + d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) + "</b>";
 }
 tick(); setInterval(tick, 15000);
 
@@ -53,13 +55,13 @@ function renderNow() {
     const mission = T?.type === "mission";
     const K = T ? kindOf(T, SET) : null;
     box.innerHTML = `<a class="now" href="${esc(CURRENT.path)}">
-      <div><div class="lbl"><span class="pulse"></span>Сейчас на уроке${K ? ` <span class="now-k">${K.icon} ${esc(K.name)}</span>` : ""}</div>
+      <div><div class="lbl"><span class="pulse"></span>${t("now")}${K ? ` <span class="now-k">${K.icon} ${esc(K.name)}</span>` : ""}</div>
         <div class="ttl">${esc(CURRENT.title)}</div>
-        <div class="sub">${s ? esc(s.icon + " " + s.name) : ""}${CURRENT.grade ? " · " + esc(CURRENT.grade) + " класс" : ""}</div></div>
-      <span class="go">${mission ? "Начать миссию →" : "Начать →"}</span></a>`;
+        <div class="sub">${s ? esc(s.icon + " " + subjName(s)) : ""}${CURRENT.grade ? " · " + esc(gradeLabel(CURRENT.grade)) : ""}</div></div>
+      <span class="go">${mission ? t("start_mission") : t("start")}</span></a>`;
   } else {
-    box.innerHTML = `<div class="now empty"><div><div class="lbl">● Сейчас на уроке</div>
-      <div class="sub" style="margin-top:4px">Учитель ещё не открыл задание. Выбери предмет ниже или подожди.</div></div></div>`;
+    box.innerHTML = `<div class="now empty"><div><div class="lbl">● ${t("now")}</div>
+      <div class="sub" style="margin-top:4px">${t("now_empty")}</div></div></div>`;
   }
 }
 
@@ -68,9 +70,8 @@ addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 render();
 
 function renderTabs(active) {
-  const SHORT = { tech: "Техн. воспитание" };
-  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>ГЛАВНАЯ</small><b>Все предметы</b></a>` +
-    SUBJECTS.map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}"><small>ПРЕДМЕТ ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(SHORT[s.id] || s.name)}</b></a>`).join("");
+  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>${t("tab_home")}</small><b>${t("tab_all")}</b></a>` +
+    SUBJECTS.map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}"><small>${t("tab_subj")} ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(subjShort(s))}</b></a>`).join("");
 }
 
 function render() {
@@ -91,36 +92,35 @@ function stats(sid, grade) {
 }
 function statLine(st) {
   const parts = [];
-  if (st.exps) parts.push(`${st.exps} ${plural(st.exps, "экспедиция", "экспедиции", "экспедиций")}`);
-  const tests = st.ready;
-  if (tests) parts.push(`${tests} ${plural(tests, "задание", "задания", "заданий")}`);
-  if (st.links) parts.push(`${st.links} ${plural(st.links, "материал", "материала", "материалов")}`);
-  return parts.join(" · ") || "скоро появятся задания";
+  if (st.exps) parts.push(pl(st.exps, "pl_exp"));
+  if (st.ready) parts.push(pl(st.ready, "pl_task"));
+  if (st.links) parts.push(pl(st.links, "pl_mat"));
+  return parts.join(" · ") || t("soon_tasks");
 }
 
 function renderHome() {
-  $("#view").innerHTML = `<h2>Выбери предмет</h2><div class="tiles">${SUBJECTS.map((s) => {
+  $("#view").innerHTML = `<h2>${t("choose_subject")}</h2><div class="tiles">${SUBJECTS.map((s) => {
     const st = stats(s.id);
     const pr = st.total ? Math.round(st.ready / st.total * 100) : 0;
     const on = Math.max(1, Math.round(pr / 25));
     return `<a class="tile" href="#${s.id}">
-      <div class="ic">${s.icon}</div><div class="nm">${esc(s.name)}</div>
+      <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
       <div class="ds">${statLine(st)}</div>
-      <div class="cls">${s.grades.map((g) => `<b>${esc(g)} класс</b>`).join("")}</div>
+      <div class="cls">${s.grades.map((g) => `<b>${esc(gradeLabel(g))}</b>`).join("")}</div>
       <div class="seg">${[0, 1, 2, 3].map((i) => `<span${i < on ? ' class="on"' : ""}></span>`).join("")}</div></a>`;
   }).join("")}</div>`;
 }
 
 function renderSubject(s) {
-  $("#view").innerHTML = `<div class="crumbs"><a href="#">Главная</a> › ${esc(s.name)}</div>
-    <h2>${s.icon} ${esc(s.name)} — выбери класс</h2>
+  $("#view").innerHTML = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › ${esc(subjName(s))}</div>
+    <h2>${s.icon} ${esc(subjName(s))} — ${t("choose_grade")}</h2>
     <div class="tiles">${s.grades.map((g) => `<a class="tile" href="#${s.id}-${g}">
-        <div class="big">${esc(g)}</div><div class="nm" style="margin-top:6px">класс</div>
+        <div class="big">${esc(g)}</div><div class="nm" style="margin-top:6px">${t("grade_word")}</div>
         <div class="ds">${statLine(stats(s.id, g))}</div></a>`).join("")}</div>`;
 }
 
 // ---------- план недели ----------
-const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт"];
+const DAYS = t("days");
 const pad = (n) => String(n).padStart(2, "0");
 const iso = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
 function weekHtml(sid, g) {
@@ -132,7 +132,7 @@ function weekHtml(sid, g) {
   const days = DAYS.map((name, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return { name, d, key: iso(d) }; });
   if (!list.some((e) => days.some((x) => x.key === e.d))) return "";
   const today = iso(now);
-  return `<h3>📅 План недели</h3><div class="week">${days.map((x) => {
+  return `<h3>${t("week_plan")}</h3><div class="week">${days.map((x) => {
     const es = list.filter((e) => e.d === x.key).sort((a, b) => (a.at || 0) - (b.at || 0));
     return `<div class="day${x.key === today ? " today" : ""}"><b>${x.name} ${pad(x.d.getDate())}.${pad(x.d.getMonth() + 1)}</b>
       ${es.length ? es.map((e) => { const k = KINDS.find((k) => k.id === e.k); return `<div class="ev">${esc(e.t)}${k ? `<br>${ktag(k)}` : ""}</div>`; }).join("") : '<span class="none">—</span>'}</div>`;
@@ -150,27 +150,28 @@ function renderGrade(s, g) {
   const all = tests.concat(missions);
   const cnt = {}; all.forEach((t) => { const k = kindOf(t, SET).id; cnt[k] = (cnt[k] || 0) + 1; });
   const nRetake = all.filter((t) => t.retake).length;
-  const chips = [["all", "Все", all.length + links.length]]
+  const chips = [["all", t("f_all"), all.length + links.length]]
     .concat(KINDS.filter((k) => cnt[k.id]).map((k) => [k.id, k.icon + " " + k.short, cnt[k.id]]))
-    .concat(nRetake ? [["retake", "🔁 Пересдачи", nRetake]] : [])
-    .concat(links.length ? [["links", "📎 Материалы", links.length]] : []);
+    .concat(nRetake ? [["retake", t("f_retakes"), nRetake]] : [])
+    .concat(links.length ? [["links", t("f_materials"), links.length]] : []);
   if (!chips.some(([id]) => id === FILTER)) FILTER = "all";
+  const tr = t;
   const show = (t) => FILTER === "all" || (FILTER === "retake" ? !!t.retake : kindOf(t, SET).id === FILTER);
 
-  let html = `<div class="crumbs"><a href="#">Главная</a> › <a href="#${s.id}">${esc(s.name)}</a> › ${esc(g)} класс</div>
-    <h2>${s.icon} ${esc(s.name)} · ${esc(g)} класс</h2>` + weekHtml(s.id, g) +
+  let html = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › <a href="#${s.id}">${esc(subjName(s))}</a> › ${esc(gradeLabel(g))}</div>
+    <h2>${s.icon} ${esc(subjName(s))} · ${esc(gradeLabel(g))}</h2>` + weekHtml(s.id, g) +
     `<div class="filters">${chips.map(([id, name, n]) => `<button type="button" class="flt${FILTER === id ? " on" : ""}" data-f="${id}">${esc(name)} <i>${n}</i></button>`).join("")}</div>`;
 
   // экспедиции (квесты)
   const expsShown = exps.map((e) => [e, TESTS.filter((t) => t.expedition === e.id).sort((a, b) => a.n - b.n).filter(show)]).filter(([, ms]) => ms.length);
   if (expsShown.length && FILTER !== "links") {
-    html += `<h3>🚀 Экспедиции и квесты</h3>` + expsShown.map(([e, ms]) => `<div class="exp"><div class="exp-head"><span class="ic">${e.icon}</span>
+    html += `<h3>${t("exps_h")}</h3>` + expsShown.map(([e, ms]) => `<div class="exp"><div class="exp-head"><span class="ic">${e.icon}</span>
         <div><div class="t">${esc(e.title)}</div><div class="s">${esc(e.note || "")}</div></div></div>
         <div class="route">${ms.map((m) => {
           const live = OPEN[m.id], K = kindOf(m, SET);
-          const inner = `<div class="n">МИССИЯ ${String(m.n).padStart(2, "0")}${m.date ? " · " + esc(m.date) : ""}</div>
+          const inner = `<div class="n">${t("mission")} ${String(m.n).padStart(2, "0")}${m.date ? " · " + esc(m.date) : ""}</div>
             <div class="mt">${esc(m.title)}</div>
-            <div class="md">${K.id !== "quest" ? ktag(K) + " " : ""}${m.path ? (live ? '<span class="badge open">открыта</span>' : '<span class="badge closed">закрыта</span>') : '<span class="badge soon">🔒 скоро</span>'}</div>`;
+            <div class="md">${K.id !== "quest" ? ktag(K) + " " : ""}${m.path ? (live ? `<span class="badge open">${t("b_open_f")}</span>` : `<span class="badge closed">${t("b_closed_f")}</span>`) : `<span class="badge soon">${t("b_soon")}</span>`}</div>`;
           return m.path ? `<a class="ms${live ? " live" : ""}" href="${esc(m.path)}">${inner}</a>` : `<div class="ms locked">${inner}</div>`;
         }).join("")}</div></div>`).join("");
   }
@@ -181,15 +182,15 @@ function renderGrade(s, g) {
     const groups = KINDS.map((k) => [k, shownTests.filter((t) => kindOf(t, SET).id === k.id)]).filter(([, l]) => l.length);
     if (groups.length) html += groups.map(([k, l]) => `<h3>${k.icon} ${esc(k.name)}</h3><div class="list">${l.map((t) => `<a class="row" href="${esc(t.path)}">
         <span class="ri">${t.retake ? "🔁" : k.icon}</span><span><div class="rt">${esc(t.title)}</div><div class="rs">${esc(t.note || "")}</div></span>
-        <span class="rb">${ktag(k)}${t.retake ? " " + rtag : ""} ${OPEN[t.id] ? '<span class="badge open">открыт</span>' : '<span class="badge closed">закрыт</span>'}</span></a>`).join("")}</div>`).join("");
-    else if (!expsShown.length) html += `<div class="empty-note" style="margin-top:12px">${FILTER === "all" ? "Заданий пока нет." : "Работ этого типа пока нет."}</div>`;
+        <span class="rb">${ktag(k)}${t.retake ? " " + rtag : ""} ${OPEN[t.id] ? `<span class="badge open">${tr("b_open_m")}</span>` : `<span class="badge closed">${tr("b_closed_m")}</span>`}</span></a>`).join("")}</div>`).join("");
+    else if (!expsShown.length) html += `<div class="empty-note" style="margin-top:12px">${FILTER === "all" ? t("no_tasks") : t("no_kind")}</div>`;
   }
 
   if (FILTER === "all" || FILTER === "links") {
-    html += `<h3>📎 Материалы к урокам</h3>` + (links.length ? `<div class="list">${links.map((l) => `<a class="row" href="${esc(l.url)}" target="_blank" rel="noopener">
+    html += `<h3>${t("materials_h")}</h3>` + (links.length ? `<div class="list">${links.map((l) => `<a class="row" href="${esc(l.url)}" target="_blank" rel="noopener">
         <span class="ri">${icon(l.url)}</span><span><div class="rt">${esc(l.title)}</div><div class="rs">${esc(host(l.url))}</div></span>
         <span class="rb">↗</span></a>`).join("")}</div>`
-      : `<div class="empty-note">Материалов пока нет.</div>`);
+      : `<div class="empty-note">${t("no_materials")}</div>`);
   }
 
   $("#view").innerHTML = html;
@@ -210,6 +211,6 @@ function icon(u) {
 // ---------- переключатель «лёгкий режим» ----------
 const lt = document.getElementById("liteToggle");
 if (lt) {
-  lt.textContent = LITE ? "✨ обычный режим" : "⚡ лёгкий режим (для слабых компьютеров)";
+  lt.textContent = LITE ? t("lite_off") : t("lite_on");
   lt.onclick = (e) => { e.preventDefault(); try { localStorage.setItem("techlab_lite", LITE ? "0" : "1"); } catch (x) {} location.reload(); };
 }
