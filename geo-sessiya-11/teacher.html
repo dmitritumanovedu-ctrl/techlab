@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Для учителя · Пробная сессия по географии</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗂️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="hero" style="padding-bottom:80px"><div class="hero-in">
+  <div class="kicker">Кабинет учителя</div>
+  <h1>Бланки, баремы и ключи</h1>
+  <p>Печать бумажных вариантов, схемы оценивания и шкалы отметок. В окне печати выберите «Сохранить как PDF», чтобы получить файл.</p>
+</div></div>
+
+<div class="wrap">
+  <div class="card" id="gate">
+    <h2>Вход</h2>
+    <div class="row"><input type="password" class="inp" id="pin" placeholder="PIN учителя" inputmode="numeric" autocomplete="off"><button class="btn" id="btnIn">Войти</button></div>
+    <div class="err" id="gErr"></div>
+    <p class="note">PIN задаётся в файле <code>js/config.js</code> (поле <code>teacherPin</code>).</p>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="card">
+      <h2>1. Выберите варианты</h2>
+      <div class="vchk" id="vchk"></div>
+      <div class="acts-row" style="margin-top:0">
+        <button class="btn ghost" id="selAll">Выбрать все</button>
+        <button class="btn ghost" id="selNone">Снять все</button>
+      </div>
+      <h2 style="margin-top:22px">2. Что подготовить</h2>
+      <div class="acts-row" style="margin-top:0">
+        <button class="btn" data-mk="paper">📝 Бланки тестов</button>
+        <button class="btn" data-mk="key">✅ Схема оценивания (барем)</button>
+        <button class="btn" data-mk="scale">📊 Шкала отметок</button>
+        <button class="btn sand" data-mk="all">Всё вместе</button>
+      </div>
+      <div class="acts-row">
+        <button class="btn ghost" id="btnPrint" disabled>🖨 Печать / Сохранить как PDF</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ссылки для учеников (вариант закреплён)</h2>
+      <p class="note">Отправьте ученику ссылку – он не сможет выбрать другой вариант. Без номера в ссылке вариант выбирается на сайте или случайно.</p>
+      <div class="links" id="links"></div>
+    </div>
+
+    <div class="out-scroll"><div id="out"></div></div>
+  </div>
+  <footer class="site"><a href="index.html">← На страницу теста</a></footer>
+</div>
+
+<div id="printArea"></div>
+
+<script src="js/config.js"></script>
+<script src="js/variants.js"></script>
+<script src="js/engine.js"></script>
+<script>
+(function () {
+  const C = window.GEO_CONFIG, G = window.GEO, V = GEO_VARIANTS, $ = id => document.getElementById(id);
+  const enter = () => { $('gate').classList.add('hidden'); $('panel').classList.remove('hidden'); };
+  try { if (sessionStorage.getItem('geoTeacher') === '1') enter(); } catch (e) { }
+  $('btnIn').onclick = () => {
+    if ($('pin').value === String(C.teacherPin)) { try { sessionStorage.setItem('geoTeacher', '1'); } catch (e) { } enter(); }
+    else $('gErr').textContent = 'Неверный PIN.';
+  };
+  $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnIn').click(); });
+
+  $('vchk').innerHTML = V.map(v => `<label class="seg"><input type="checkbox" value="${v.id}" checked><span>В${v.id}</span></label>`).join('');
+  $('selAll').onclick = () => $('vchk').querySelectorAll('input').forEach(i => i.checked = true);
+  $('selNone').onclick = () => $('vchk').querySelectorAll('input').forEach(i => i.checked = false);
+
+  const base = location.href.replace(/teacher\.html.*$/, 'index.html');
+  $('links').innerHTML = V.map(v => `<div>Вариант ${v.id}: <a href="${base}?v=${v.id}" target="_blank">${base}?v=${v.id}</a></div>`).join('');
+
+  document.querySelectorAll('[data-mk]').forEach(b => b.onclick = () => {
+    const ids = [...$('vchk').querySelectorAll('input:checked')].map(i => +i.value);
+    const vs = V.filter(v => ids.includes(v.id)), mk = b.dataset.mk, pages = [];
+    if (mk === 'paper' || mk === 'all') vs.forEach(v => pages.push(G.renderPaper(v, C)));
+    if (mk === 'key' || mk === 'all') vs.forEach(v => pages.push(G.renderKey(v, C)));
+    if (mk === 'scale' || mk === 'all') pages.push(G.renderScale(C));
+    if (!pages.length) { $('out').innerHTML = '<div class="card">Выберите хотя бы один вариант.</div>'; return; }
+    $('out').innerHTML = pages.map((p, i) => i ? p.replace('class="paper', 'class="page-break paper') : p).join('');
+    $('btnPrint').disabled = false;
+    $('out').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  $('btnPrint').onclick = () => {
+    $('printArea').innerHTML = $('out').innerHTML;
+    document.body.classList.add('printing');
+    window.print();
+  };
+  window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
+})();
+</script>
+</body>
+</html>

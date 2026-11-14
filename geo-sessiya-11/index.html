@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Пробная сессия по географии · 11 класс</title>
+<meta name="description" content="Тренировочное тестирование: подготовка к зимней сессии по географии, 11 класс">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ СТАРТ ============ -->
+<div id="start">
+  <div class="hero"><div class="hero-in">
+    <div class="kicker" id="kicker">Тренировочное тестирование</div>
+    <h1 id="hTitle">Пробная сессия по географии</h1>
+    <p id="hSub">Подготовка к зимней сессии · 11 класс</p>
+  </div></div>
+
+  <div class="wrap">
+    <div class="card resume hidden" id="resumeCard">
+      <h2>У вас есть незавершённый тест</h2>
+      <p id="resumeInfo"></p>
+      <div class="acts-row"><button class="btn sand big" id="btnResume">Продолжить тест</button></div>
+      <p class="note">Повторное открытие страницы фиксируется в протоколе. Таймер не останавливается.</p>
+    </div>
+
+    <div class="card" id="startCard">
+      <h2>Перед началом</h2>
+      <div class="facts">
+        <div class="fact"><b>8</b><span>заданий</span></div>
+        <div class="fact"><b>49</b><span>баллов максимум</span></div>
+        <div class="fact"><b id="fMin">90</b><span>минут (2 урока)</span></div>
+        <div class="fact"><b>10</b><span>вариантов</span></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="fName">Фамилия и имя</label><input class="inp" id="fName" autocomplete="off" placeholder="Например: Иванов Андрей"></div>
+        <div class="field"><label for="fClass">Класс</label><input class="inp" id="fClass" list="clsList" autocomplete="off" placeholder="11 «А»"><datalist id="clsList"></datalist></div>
+        <div class="field"><label for="fVar">Вариант</label><select class="inp" id="fVar"></select></div>
+        <div class="field"><label>&nbsp;</label><p class="note" style="margin:6px 0 0">Если учитель назвал номер варианта – выберите его. Иначе вариант будет выбран случайно.</p></div>
+      </div>
+      <h2 style="margin-top:22px">Правила «закрытого экрана»</h2>
+      <ul class="rules">
+        <li>Тест открывается на весь экран. Нельзя переключаться на другие вкладки, окна и программы.</li>
+        <li>Каждый выход из теста фиксируется. После <b id="rMax">3</b> выходов экран блокируется – разблокировать может только учитель.</li>
+        <li>Копирование, вставка и правая кнопка мыши отключены. Ответы сохраняются автоматически.</li>
+        <li>Пользуйтесь школьным географическим атласом. Расчёты записывайте полностью: «5600 – 200 = 5400 м».</li>
+        <li>Когда время закончится, тест завершится автоматически. Затем вы получите бланк ответов в PDF.</li>
+      </ul>
+      <label class="check"><input type="checkbox" id="fAgree"> Я прочитал(а) правила и готов(а) начать.</label>
+      <button class="btn big" id="btnStart">Начать тест →</button>
+      <div class="err" id="startErr"></div>
+    </div>
+    <footer class="site"><span id="footSchool"></span> · <a href="teacher.html">Для учителя</a></footer>
+  </div>
+</div>
+
+<!-- ============ ТЕСТ ============ -->
+<div id="test" class="hidden">
+  <div class="bar">
+    <div class="bar-in">
+      <div class="who"><b id="bName"></b><span id="bInfo"></span></div>
+      <div class="prog" id="bProg"></div>
+      <div class="timer" id="timer">90:00</div>
+      <button class="btn light" id="btnFinish">Завершить</button>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </div>
+  <main class="test">
+    <div id="tasks"></div>
+    <div class="finish">
+      <button class="btn big" id="btnFinish2">Завершить тест и получить результат</button>
+      <p class="note">Перед завершением проверьте, что ответили на все задания.</p>
+    </div>
+  </main>
+</div>
+
+<!-- ============ РЕЗУЛЬТАТ ============ -->
+<div id="result" class="hidden">
+  <div class="hero" style="padding-bottom:80px"><div class="hero-in">
+    <div class="kicker">Тест завершён</div>
+    <h1 id="rTitle">Ваш результат</h1>
+    <p id="rSub"></p>
+  </div></div>
+  <div class="wrap">
+    <div class="card">
+      <div class="res-top">
+        <div class="gradebox" id="gBox" style="--p:0"><div><b id="gMark">–</b><span>отметка<br>(предварит.)</span></div></div>
+        <div>
+          <div class="kv">
+            <div><b id="kTotal">0 / 49</b><span>всего баллов</span></div>
+            <div><b id="kAuto">0</b><span>автоматическая проверка</span></div>
+            <div><b id="kOpen">—</b><span>развёрнутые ответы</span></div>
+          </div>
+          <div class="warnbox" id="openWarn">Развёрнутые ответы проверяет учитель. Для тренировки оцените их сами по образцу ниже – результат пересчитается.</div>
+          <div class="acts-row">
+            <button class="btn" id="btnPdf">⬇ Скачать бланк ответов (PDF)</button>
+            <button class="btn ghost" id="btnPrint">🖨 Печать бланка</button>
+            <button class="btn ghost" id="btnAgain">Пройти другой вариант</button>
+          </div>
+          <div class="err" id="pdfErr"></div>
+        </div>
+      </div>
+    </div>
+    <div id="review"></div>
+    <footer class="site"><span id="footSchool2"></span></footer>
+  </div>
+</div>
+
+<!-- ============ ЗАКРЫТЫЙ ЭКРАН ============ -->
+<div class="lock hidden" id="lock">
+  <div class="lock-box">
+    <div class="lock-ico">🔒</div>
+    <h2 id="lockTitle">Экран теста закрыт</h2>
+    <p id="lockText"></p>
+    <div class="count" id="lockCount"></div>
+    <div id="lockReturn"><button class="btn sand big" id="btnBack">Вернуться к тесту</button></div>
+    <div id="lockPin" class="hidden">
+      <p>Позовите учителя для разблокировки.</p>
+      <div class="pin"><input type="password" class="inp" id="pinInp" inputmode="numeric" autocomplete="off" placeholder="PIN"><button class="btn sand" id="btnPin">Разблокировать</button></div>
+      <div class="err" id="pinErr" style="color:#ffb4a8"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ МОДАЛЬНОЕ ОКНО ============ -->
+<div class="modal hidden" id="modal">
+  <div class="modal-box">
+    <h3 id="mTitle"></h3>
+    <div id="mText"></div>
+    <div class="acts"><button class="btn ghost" id="mNo">Отмена</button><button class="btn" id="mYes">Да</button></div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+<script src="js/config.js"></script>
+<script src="js/variants.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
