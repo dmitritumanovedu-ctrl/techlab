@@ -60,6 +60,11 @@ export const TESTS = [
     note: "§19 · сравнительный анализ · 30 вариантов · 45 минут · проверка ИИ", path: "geo11/prakt-1/",
     teacher: "geo11/prakt-1/teacher.html", aiSubject: "география, 11 класс" },
 
+  { id: "geo11-sess", type: "test", kind: "so", subject: "geo", grade: "11",
+    title: "Пробная сессия по географии · подготовка к зимней сессии",
+    note: "Формат сессии и БАК · 8 заданий · 49 баллов · 10 вариантов · 90 минут · проверка ИИ", path: "geo11/sessiya/",
+    teacher: "geo11/sessiya/teacher.html", aiSubject: "география, 11 класс" },
+
   { id: "geo12-sr1", type: "test", kind: "sr", subject: "geo", grade: "12",
     title: "Самостоятельная работа · Состояние окружающей среды в мире и в Республике Молдова",
     note: "§5–8 · формат БАК · 6 заданий · 30 вариантов · 20 минут · проверка ИИ", path: "geo12/sr1/",

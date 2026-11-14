@@ -1,0 +1,33 @@
+/* Пробная сессия · география 11 · поверх engine/test-e2.css и inf7/so1/so.css */
+.ss-badge { background: #fff; color: #2E4BFF; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; }
+.ss-ribbon { display: inline-block; background: #E8EDFF; color: #1B3F9E; border: 1px solid #C9D3FF; font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
+.ss-sec { font-family: var(--mono); font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--green); margin: 22px 4px 8px; }
+.ss-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.ss-nav a { width: 36px; height: 32px; display: grid; place-items: center; border-radius: 9px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 800; background: #fff; }
+.ss-nav a.done { background: var(--green); color: #fff; border-color: var(--green); }
+.task u { text-decoration-color: #F2994A; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.ss-in { width: 100%; padding: 9px 12px; border: 1px solid #C9D4E8; border-radius: 10px; background: #fff; }
+.ss-in.deg { width: 84px; text-align: center; font-family: var(--mono); font-weight: 700; }
+.ss-sel { width: auto; min-width: 190px; }
+.ss-sel.dig { min-width: 70px; width: 70px; }
+.row { display: flex; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.row .lbl { min-width: 220px; font-weight: 600; }
+.step { margin: 10px 0 14px; }
+.step .ss-in:not(.deg) { margin-top: 6px; }
+.ss-grid td { vertical-align: middle; }
+.ss-grid td.given { background: var(--amber-2); font-weight: 700; }
+.grp { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px dashed var(--line); flex-wrap: wrap; }
+.grp-n { width: 190px; font-weight: 700; }
+.match { display: grid; grid-template-columns: 1fr 1.3fr; gap: 18px; }
+.mh { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--green); margin-bottom: 6px; }
+.ml { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px dashed var(--line); flex-wrap: wrap; }
+.ml-s { margin-left: auto; display: flex; gap: 6px; }
+.mr { padding: 7px 0; border-top: 1px dashed var(--line); }
+.ss-it { margin: 14px 0; }
+.ss-it.subit { margin-top: -4px; padding-left: 22px; }
+.ss-q { margin-bottom: 6px; }
+.ss-p { font-size: 12px; color: var(--muted); background: #EEF2F8; border-radius: 12px; padding: 1px 8px; white-space: nowrap; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.quote { margin: 0 0 12px; padding: 12px 16px; border-left: 4px solid #F2994A; background: #FFF6E0; border-radius: 0 10px 10px 0; font-style: italic; }
+@media (max-width: 700px) { .match, .two { grid-template-columns: 1fr; } .row .lbl, .grp-n { width: 100%; min-width: 0; } }
