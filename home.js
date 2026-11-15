@@ -3,9 +3,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { SUBJECTS } from "./tests.js?v=8";
-import { getSession, setSession, clearSession, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP } from "./engine/people.js?v=2";
-import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE } from "./engine/i18n.js?v=1";
+import { getSession, setSession, clearSession, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey } from "./engine/people.js?v=2";
+import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 
+// стили блока «Мои работы» по предметам
+document.head.insertAdjacentHTML("beforeend", `<style>
+  .ws-h{display:flex;justify-content:space-between;align-items:center;margin:14px 2px 8px;font-weight:800;font-size:15px}
+  .ws-h b{background:#E8EDFF;color:#2E4BFF;border-radius:999px;padding:2px 10px;font-size:14px}
+  a.wk{text-decoration:none;color:inherit;transition:background .15s}
+  a.wk:hover{background:#E8EDFF}
+</style>`);
 const box = document.getElementById("home");
 const chip = document.getElementById("meChip");
 let db = null;
@@ -13,20 +20,24 @@ try { db = getDatabase(initializeApp(firebaseConfig, "home")); } catch (e) { con
 const subjName = (id) => subjNameT(SUBJECTS.find((s) => s.id === id));
 
 render();
+// Оценки появляются сами: страница ученика перечитывает прогресс раз в минуту
+setInterval(() => { if (getSession() && !document.hidden && !document.querySelector(".code-ov")) render(true); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && getSession()) render(true); });
 
-async function render() {
+async function render(quiet = false) {
   const S = getSession();
   if (!S) { chip.innerHTML = `<button type="button" class="me-btn" id="chipIn">${t("sign_in")}</button>`; chip.querySelector("#chipIn").onclick = askCode; return portal(); }
   chip.innerHTML = `<span class="me-chip"><span class="av">${esc(initials(S.name))}</span>${esc(short(S.name))} · ${esc(S.cls)}</span>`;
-  box.innerHTML = `<div class="gc-load">${t("loading_progress")}</div>`;
-  let P = null, B = {};
+  if (!quiet) box.innerHTML = `<div class="gc-load">${t("loading_progress")}</div>`;
+  let P = null, B = {}, CS = null;
   try {
     goOnline(db);
-    const [p, b] = await Promise.all([get(ref(db, `progress/${S.code}`)), get(ref(db, "board"))]);
-    P = p.val(); B = b.val() || {};
+    const [p, b, cs] = await Promise.all([get(ref(db, `progress/${S.code}`)), get(ref(db, "board")),
+      get(ref(db, `settings/classSubjects/${clsKey(S.cls)}`)).catch(() => null)]);
+    P = p.val(); B = b.val() || {}; CS = cs?.val() ? Object.keys(cs.val()) : null;
   } catch (e) { console.warn(e); }
   finally { try { goOffline(db); } catch (e) {} }
-  center(S, P || { xp: 0, works: {} }, B);
+  center(S, P || { xp: 0, works: {} }, B, CS);
 }
 
 // ---------------- портал ----------------
@@ -85,8 +96,8 @@ function askCode() {
 }
 
 // ---------------- игровой центр ----------------
-function center(S, P, B) {
-  const works = Object.values(P.works || {}).sort((a, b) => (b.date || 0) - (a.date || 0));
+function center(S, P, B, CS = null) {
+  const works = Object.values(P.works || {}).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
   const done = works.filter((w) => w.complete && !w.qual);
   const avg = done.length ? done.reduce((a, w) => a + w.grade, 0) / done.length : null;
   const xp = P.xp || 0, L = levelOf(xp);
@@ -117,11 +128,16 @@ function center(S, P, B) {
     <div class="gc-grid">
       <div class="gc-card">
         <h2>${t("my_works")}</h2>
-        ${works.length ? works.slice(0, 5).map((w) => `<div class="wk">
+        ${works.length ? bySubject(works).map(([sid, list]) => {
+          const g = list.filter((w) => w.complete && !w.qual); const av = g.length ? g.reduce((x, w) => x + w.grade, 0) / g.length : null;
+          const sj = SUBJECTS.find((x) => x.id === sid);
+          return `<div class="ws-h"><span>${sj ? esc(sj.icon + " " + subjName(sid)) : ""}</span>${av !== null ? `<b>${fmt1(av)}</b>` : ""}</div>` +
+            list.map((w) => `<${w.path ? `a href="${esc(w.path)}"` : "div"} class="wk">
             <span class="wg ${w.complete ? gColor(w.qual ? ({ "ОХ": 10, "Х": 8, "У": 6, "Н": 4 })[w.qual] : w.grade) : "g-wait"}" title="${esc(w.qualName || "")}">${w.complete ? (w.qual ? qualShow(w.qual) : w.grade) : "…"}</span>
-            <div><div class="wt">${esc(w.title)}</div><div class="ws">${esc(subjName(w.subject))} · ${esc(kindShortById(w.kind, w.kindName || ""))}${w.complete ? ` · +${20 + w.grade * 10 + (w.viol ? 0 : 10)} XP` : " · " + t("waiting_check")}</div></div></div>`).join("")
-          : `<p class="muted">${t("no_works_student")}</p>`}
+            <div><div class="wt">${esc(w.title)}</div><div class="ws">${esc(kindShortById(w.kind, w.kindName || ""))}${w.complete ? ` · ${fmt1(w.total)} / ${w.max} · +${20 + w.grade * 10 + (w.viol ? 0 : 10)} XP` : " · " + t("waiting_check")}${w.date ? " · " + new Date(w.date).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }) : ""}</div></div></${w.path ? "a" : "div"}>`).join("");
+        }).join("") : `<p class="muted">${t("no_works_student")}</p>`}
         ${works.find((w) => w.summary) ? `<div class="tip"><b>${t("tip_last")}</b> ${esc(works.find((w) => w.summary).summary.advice)}</div>` : ""}
+        <p class="muted small">🔒 ${({ ru: "Твои оценки видишь только ты, твои родители и учитель.", ro: "Notele tale le vezi doar tu, părinții tăi și profesorul.", en: "Only you, your parents and your teacher can see your grades." })[LANG_] || ""}</p>
       </div>
 
       <div class="gc-card">
@@ -143,6 +159,11 @@ function center(S, P, B) {
   document.getElementById("logout").onclick = () => { clearSession(); render(); };
 }
 
+function bySubject(works) {
+  const m = new Map();
+  for (const w of works) { if (!m.has(w.subject)) m.set(w.subject, []); m.get(w.subject).push(w); }
+  return [...m.entries()];
+}
 function firstName(n) { const p = String(n).split(" "); return p[1] || p[0]; }
 function short(n) { const p = String(n).split(" "); return p.length > 1 ? `${p[1]} ${p[0][0]}.` : n; }
 function initials(n) { return String(n).split(" ").slice(0, 2).map((x) => x[0] || "").join("").toUpperCase(); }

@@ -3,8 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { grade, toGrade, usesQual, qualOf } from "../engine/grading.js?v=5";
-import { SUBJECTS, TESTS, kindOf } from "../tests.js?v=8";
+import { SUBJECTS, TESTS } from "../tests.js?v=8";
+import { syncProgress, startAutoSync, autoSyncOn, setAutoSync, getClassSubjects, setClassSubjects } from "../engine/sync.js?v=1";
 import { CLASSES, PLAN, makeCode, prettyCode, nameKey, clsKey, xpOf, levelOf, fmt1, esc } from "../engine/people.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -14,7 +14,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const SITE = new URL("../", location.href).href;
 const READY = TESTS.filter((t) => t.path);
 
-let ROSTER = {}, PROGRESS = {}, CUR = localStorage.getItem("techlab_roster_cls") || "";
+let ROSTER = {}, PROGRESS = {}, CSUBJ = {}, CUR = localStorage.getItem("techlab_roster_cls") || "";
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) return showLogin();
@@ -29,6 +29,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   render();
+  startAutoSync(db, async (r) => { if (!$("#names")?.value) { await load(); render(); } const el = $("#syncInfo"); if (el) el.innerHTML = `⚡ Прогресс обновлён автоматически в ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} · учтено работ: <b>${r.matched}</b>`; });
 });
 
 function showLogin() {
@@ -39,8 +40,8 @@ function showLogin() {
 }
 
 async function load() {
-  const [r, p] = await Promise.all([get(ref(db, "roster")), get(ref(db, "progress"))]);
-  ROSTER = r.val() || {}; PROGRESS = p.val() || {};
+  const [r, p, cs] = await Promise.all([get(ref(db, "roster")), get(ref(db, "progress")), getClassSubjects(db)]);
+  ROSTER = r.val() || {}; PROGRESS = p.val() || {}; CSUBJ = cs || {};
 }
 
 // =====================================================================
@@ -64,6 +65,9 @@ function render() {
         const n = Object.values(ROSTER).filter((s) => s.cls === c).length;
         return `<option value="${esc(c)}" ${c === CUR ? "selected" : ""}>${esc(c)}${n ? ` · ${n} уч.` : ""}</option>`; }).join("")}</select>
       <p class="muted" style="font-size:14px">Всего учеников со своими кодами: <b>${total}</b>.</p>
+      ${CUR ? `<h2 style="margin-top:18px">Предметы, которые я веду в ${esc(CUR)}</h2>
+      <div class="subj-pick">${SUBJECTS.map((s) => `<label class="sp${CSUBJ[clsKey(CUR)]?.[s.id] ? " on" : ""}"><input type="checkbox" data-subj="${s.id}" ${CSUBJ[clsKey(CUR)]?.[s.id] ? "checked" : ""}> ${s.icon} ${esc(s.name)}</label>`).join("")}</div>
+      <p class="muted" style="font-size:14px" id="subjInfo">${Object.keys(CSUBJ[clsKey(CUR)] || {}).length ? "Ученики этого класса и их родители видят только эти предметы." : "Предметы не выбраны — ученики видят все предметы сайта."}</p>` : ""}
       <h2 style="margin-top:18px">2. Добавить учеников</h2>
       <label class="f" for="names">Вставьте список класса — каждый ученик с новой строки: «Фамилия Имя»</label>
       <textarea id="names" placeholder="Попеску Андрей&#10;Руссу Анна&#10;…" ${CUR ? "" : "disabled"}></textarea>
@@ -79,8 +83,9 @@ function render() {
         <button class="btn ghost" id="bCsv" ${inCls.length ? "" : "disabled"}>Скачать CSV</button>
       </div>
       <h2 style="margin-top:18px">4. Прогресс и битва классов</h2>
-      <p>Оценки, опыт (XP), награды и рейтинг классов пересчитываются из результатов всех работ. Нажимайте после проверки работ.</p>
-      <button class="btn" id="bSync">🔄 Обновить прогресс всех учеников</button>
+      <p>Оценки, опыт (XP), награды и рейтинг классов пересчитываются из результатов всех работ и сразу видны ученику на его странице и родителю в его кабинете.</p>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auto" ${autoSyncOn() ? "checked" : ""}> ⚡ Автообновление, пока открыта страница учителя</label>
+      <button class="btn" id="bSync">🔄 Обновить прогресс сейчас</button>
       <div class="muted" id="syncInfo" style="margin-top:8px;font-size:14px"></div>
     </div>
   </div>
@@ -105,6 +110,13 @@ function render() {
   $("#bCards").onclick = () => printCards(inCls);
   $("#bCsv").onclick = () => csv(inCls);
   $("#bSync").onclick = syncAll;
+  $("#auto").onchange = (e) => { setAutoSync(e.target.checked); if (e.target.checked) startAutoSync(db); else location.reload(); };
+  app.querySelectorAll("[data-subj]").forEach((c) => c.onchange = async () => {
+    const ids = [...app.querySelectorAll("[data-subj]:checked")].map((x) => x.dataset.subj);
+    $("#subjInfo").textContent = "Сохраняю…";
+    try { await setClassSubjects(db, CUR, ids); await load(); render(); }
+    catch (e) { $("#subjInfo").textContent = "Не удалось сохранить: " + (e.code || e.message); }
+  });
   app.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
     const s = ROSTER[b.dataset.del];
     if (!confirm(`Удалить ученика «${s.name}» и его коды? Результаты тестов останутся.`)) return;
@@ -179,87 +191,18 @@ function csv(list) {
 }
 
 // =====================================================================
-//  Пересчёт прогресса: результаты всех работ → progress/<код> и board/<класс>
+//  Пересчёт прогресса вручную (то же делает автообновление — engine/sync.js)
 // =====================================================================
-const MSCALE = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2], [0, 1]];
-const mGrade = (pct) => { for (const [p, g] of MSCALE) if (pct >= p) return g; return 1; };
-function missionEval(r, t) {
-  const parts = t.parts || [];
-  const max = parts.reduce((a, p) => a + (p.bonus ? 0 : p.max), 0);
-  let pending = 0, openSum = 0;
-  for (const q of t.openQs || []) {
-    const ans = String(r.open?.[q.k] || "").trim();
-    const teacher = Number.isFinite(r.manual?.[q.k]) ? r.manual[q.k] : null;
-    const ai = r.ai?.[q.k] && Number.isFinite(r.ai[q.k].score) ? r.ai[q.k].score : null;
-    const sc = !ans ? 0 : (teacher ?? ai);
-    if (sc === null) pending++; else openSum += sc;
-  }
-  const pts = parts.reduce((a, p) => a + (p.open ? openSum : Number(r.score?.[p.k]) || 0), 0);
-  const pct = max ? Math.min(100, Math.round(pts / max * 100)) : 0;
-  return { total: pts, max, pct, grade: mGrade(pct), complete: pending === 0 };
-}
-
 async function syncAll() {
   const btn = $("#bSync"), info = $("#syncInfo");
   btn.disabled = true; btn.textContent = "Считаю…"; info.textContent = "";
   try {
-    const [rs, ss] = await Promise.all([get(ref(db, "results")), get(ref(db, "settings"))]);
-    const RES = rs.val() || {}, SET = ss.val() || {};
-    const byName = {};
-    for (const [code, s] of Object.entries(ROSTER)) byName[clsKey(s.cls) + "|" + nameKey(s.name)] = code;
-    const works = {};                 // code → {testId: work}
-    let matched = 0, unmatched = 0;
-    // + тесты из конструктора: итог (result) записывает страница результатов конструктора
-    let BT = [];
-    try { BT = Object.entries((await get(ref(db, "pubIndex"))).val() || {}).map(([id, x]) => ({ id, type: "test", teacher: true, kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title, path: `b/?t=${id}` })); } catch (e) {}
-    for (const t of READY.concat(BT)) {
-      const list = RES[t.id]; if (!list) continue;
-      let KEYS = null;
-      if (t.type !== "mission" && !t.teacher) { try { KEYS = (await get(ref(db, `keys/${t.id}`))).val(); } catch (e) {} }
-      const K = kindOf(t, SET);
-      for (const r of Object.values(list)) {
-        if (r.status !== "submitted") continue;
-        const code = byName[clsKey(r.cls) + "|" + nameKey(r.name)];
-        if (!code) { unmatched++; continue; }
-        let e = null;
-        try {
-          if (t.type === "mission") e = missionEval(r, t);
-          else if (t.teacher) e = r.result ? { total: r.result.total, max: r.result.max, pct: Math.round(r.result.total / r.result.max * 100), grade: r.result.grade, complete: !!r.result.complete } : { complete: false, total: 0, max: 0, pct: 0, grade: 0 };
-          else if (KEYS) {
-            const k = KEYS.variants?.[String(r.variant)];
-            if (k) { const g = grade({ ...k, points: KEYS.points }, r.answers || {}, r.manual || {}, r.ai || {});
-              e = { total: g.total, max: g.max, pct: Math.round(g.total / g.max * 100), grade: g.complete ? g.grade : toGrade(g.total, g.max), complete: g.complete }; }
-          }
-        } catch (err) { console.warn(t.id, err); }
-        if (!e) e = { complete: false, total: 0, max: 0, pct: 0, grade: 0 };
-        const date = r.submittedAt || r.updatedAt || r.startedAt || 0;
-        const prev = works[code]?.[t.id];
-        if (prev && prev.date > date) continue;           // берём последнюю попытку
-        const w = { title: t.title, subject: t.subject, kind: K.id, kindName: K.short, retake: !!t.retake,
-          grade: e.grade || 0, total: Math.round((e.total || 0) * 10) / 10, max: e.max || 0, pct: e.pct || 0, complete: !!e.complete,
-          viol: r.violations || 0, date };
-        if (usesQual(t.subject)) { const q = qualOf(w.pct); w.qual = q[1]; w.qualName = q[2]; }
-        if (r.aiSummary) w.summary = { strengths: r.aiSummary.strengths || "", gaps: r.aiSummary.gaps || "", advice: r.aiSummary.advice || "" };
-        (works[code] = works[code] || {})[t.id] = w;
-        matched++;
-      }
-    }
-    const upd = {}, board = {};
-    for (const [code, s] of Object.entries(ROSTER)) {
-      const ws = works[code] || {};
-      const xp = Object.values(ws).reduce((a, w) => a + xpOf(w), 0);
-      upd[`progress/${code}`] = { name: s.name, cls: s.cls, xp, works: ws, updatedAt: Date.now() };
-      const ck = clsKey(s.cls);
-      board[ck] = board[ck] || { cls: s.cls, xp: 0, n: 0 };
-      board[ck].xp += xp; board[ck].n++;
-    }
-    upd.board = board;
-    await update(ref(db), upd);
+    const r = await syncProgress(db, ROSTER);
     await load(); render();
-    $("#syncInfo").innerHTML = `✓ Готово: учтено работ — <b>${matched}</b>.` + (unmatched ? ` Не найдено в списках — ${unmatched} (ученик написал имя иначе или его нет в списке класса).` : "");
+    $("#syncInfo").innerHTML = `✓ Готово: учтено работ — <b>${r.matched}</b>.` + (r.unmatched ? ` Не найдено в списках — ${r.unmatched} (ученик написал имя иначе или его нет в списке класса).` : "");
   } catch (e) {
     console.error(e);
-    btn.disabled = false; btn.textContent = "🔄 Обновить прогресс всех учеников";
+    btn.disabled = false; btn.textContent = "🔄 Обновить прогресс сейчас";
     info.textContent = "Ошибка: " + (e.code || e.message);
   }
 }

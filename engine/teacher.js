@@ -4,6 +4,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
+import { startAutoSync } from "./sync.js?v=1";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -36,6 +37,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) return showLogin();
   $("#who").innerHTML = `${esc(user.email)} · <a href="#" id="logout" style="color:#fff">выйти</a>`;
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
+  startAutoSync(db);   // оценки сразу уходят на страницы учеников и родителей
   if (OVERVIEW) return showOverview();
   if (IS_MISSION) return showMissionDashboard();
   try {

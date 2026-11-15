@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS } from "../tests.js?v=8";
-import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc } from "../engine/people.js?v=2";
+import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc, clsKey } from "../engine/people.js?v=2";
 import { t, plw, subjName, kindShortById, qualShow, LOCALE } from "../engine/i18n.js?v=1";
 
 const $ = (s) => document.querySelector(s);
@@ -16,6 +16,8 @@ const saveCodes = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); }
 let CUR = null;
 
 start();
+// Оценки обновляются сами: кабинет перечитывает данные раз в минуту
+setInterval(() => { if (CUR && !document.hidden && document.getElementById("child")) show(CUR, true); }, 60000);
 async function start() {
   const list = codes();
   if (!list.length) return login();
@@ -49,14 +51,15 @@ function login(err = "") {
   };
 }
 
-async function show(pcode) {
-  app.innerHTML = `<div class="pc"><p class="muted">${t("loading")}</p></div>`;
-  let scode, R, P;
+async function show(pcode, quiet = false) {
+  if (!quiet) app.innerHTML = `<div class="pc"><p class="muted">${t("loading")}</p></div>`;
+  let scode, R, P, CS = null;
   try {
     scode = (await get(ref(db, `parentCodes/${pcode}`))).val();
     if (!scode) { saveCodes(codes().filter((x) => x !== pcode)); return login(t("pe_expired")); }
     const [r, p] = await Promise.all([get(ref(db, `roster/${scode}`)), get(ref(db, `progress/${scode}`))]);
     R = r.val(); P = p.val() || { xp: 0, works: {} };
+    if (R) { try { const cs = (await get(ref(db, `settings/classSubjects/${clsKey(R.cls)}`))).val(); CS = cs ? Object.keys(cs) : null; } catch (e) {} }
   } catch (e) { app.innerHTML = `<div class="pc"><h2>${t("p_nonet_h")}</h2><p>${t("p_nonet_p")}</p></div>`; return; }
   if (!R) { saveCodes(codes().filter((x) => x !== pcode)); return login(t("pe_nostudent")); }
 
@@ -74,7 +77,7 @@ async function show(pcode) {
   $("#child").onchange = (e) => { if (e.target.value === "+") return login(); CUR = e.target.value; show(CUR); };
   $("#out").onclick = () => { if (confirm(t("confirm_out"))) { saveCodes([]); login(); } };
 
-  const works = Object.values(P.works || {}).sort((a, b) => (b.date || 0) - (a.date || 0));
+  const works = Object.values(P.works || {}).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
   const done = works.filter((w) => w.complete && !w.qual);
   const quals = works.filter((w) => w.complete && w.qual);
   const avg = done.length ? done.reduce((a, w) => a + w.grade, 0) / done.length : null;
@@ -121,6 +124,8 @@ async function show(pcode) {
         ${Object.entries(qualSubj).map(([s, q]) => `<div class="sb"><span>${esc(subj(s).name)}</span><b style="font-size:13px">${["ОХ", "Х", "У", "Н"].filter((c) => q.includes(c)).map((c) => `${qualShow(c)} × ${q.filter((x) => x === c).length}`).join(" · ")}</b></div>`).join("")}
         ${!Object.keys(bySubj).length && !Object.keys(qualSubj).length ? `<p class="muted">${t("no_checked")}</p>` : ""}
       </div>
+      <div class="pc p-note"><h2>🔒 ${({ ro: "Confidențial", en: "Private" })[document.documentElement.lang] || "Конфиденциально"}</h2>
+        <p class="small">${({ ro: "Rezultatele copilului le vedeți doar dumneavoastră (după codul de părinte), copilul și profesorul. Se actualizează automat.", en: "Only you (with the parent code), your child and the teacher can see these results. They update automatically." })[document.documentElement.lang] || "Результаты ребёнка видите только вы (по коду родителя), сам ребёнок и учитель. Они обновляются автоматически."}</p></div>
       <div class="pc p-note"><h2>${t("how_h")}</h2>
         <p class="small">${t("how_p")}${upd ? esc(t("upd", { d: upd })) : ""}</p></div>
     </div>

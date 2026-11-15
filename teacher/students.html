@@ -18,6 +18,9 @@
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
     textarea#names { min-height: 180px; }
     .lvl { font-family: var(--display); font-weight: 700; color: var(--blue); }
+    .subj-pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+    .subj-pick .sp { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border: 2px solid #DCE4F2; border-radius: 999px; cursor: pointer; font-weight: 700; }
+    .subj-pick .sp.on { border-color: var(--blue); background: #E8EDFF; }
   </style>
 </head>
 <body>
@@ -29,6 +32,6 @@
     <div class="who" id="who"></div>
   </header>
   <main id="app" style="max-width:1200px"><div class="card center"><p class="muted">Загрузка…</p></div></main>
-  <script type="module" src="students.js?v=5"></script>
+  <script type="module" src="students.js?v=6"></script>
 </body>
 </html>

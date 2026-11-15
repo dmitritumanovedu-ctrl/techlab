@@ -4,6 +4,7 @@ import { firebaseConfig } from "./firebase-config.js";
 import { SUBJECTS, TESTS as TESTS_RAW, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
 let TESTS = TESTS_RAW;   // + тесты из конструктора (pubIndex)
 import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE, LANG } from "./engine/i18n.js?v=1";
+import { getSession, clsKey } from "./engine/people.js?v=2";
 const kindOf = (x, S) => kindT(kindOfRaw(x, S));
 const KINDS = KINDS_RAW.map(kindT);
 
@@ -12,6 +13,14 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const subj = (id) => SUBJECTS.find((s) => s.id === id);
 
 let CURRENT = null, LINKS = {}, OPEN = {}, SET = {}, PLAN = {}, FILTER = "all", LASTGRADE = "";
+
+// ---------- ученик вошёл по личному коду: показываем только его предметы и его класс ----------
+const ME = getSession();
+const MYGRADE = ME ? String(ME.cls).split(" ")[0] : "";
+let MYSUBJ = null;                                   // null = учитель не выбрал предметы → видно всё
+const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG] || ru;
+const mySubjects = () => MYSUBJ ? SUBJECTS.filter((s) => MYSUBJ.includes(s.id)) : SUBJECTS;
+const mine = () => !!(ME && MYSUBJ);
 const ktag = (k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`;
 const rtag = `<span class="ktag k-retake">🔁 ${t("retake")}</span>`;
 
@@ -41,7 +50,8 @@ async function refresh() {
     const BT = Object.entries(pi?.val() || {}).map(([id, x]) => ({ id, type: "test", kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title,
       note: [pl(x.n || 0, "pl_task"), x.minutes ? x.minutes + (LANG === "ru" ? " мин" : " min") : ""].filter(Boolean).join(" · "), path: `b/?t=${id}` }));
     TESTS = TESTS_RAW.concat(BT);
-    SET = s; CURRENT = s.current || null; LINKS = s.links || {}; PLAN = s.plan || {}; OPEN = {};
+    SET = s; CURRENT = s.current || null;
+    if (ME) { const cs = s.classSubjects?.[clsKey(ME.cls)]; MYSUBJ = cs ? Object.keys(cs) : null; } LINKS = s.links || {}; PLAN = s.plan || {}; OPEN = {};
     for (const t of TESTS) OPEN[t.id] = !!(s[t.id] && s[t.id].open);
     renderNow(); render();
   } catch (e) { renderNow(); }
@@ -54,7 +64,8 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) refr
 // ---------- «Сейчас на уроке» ----------
 function renderNow() {
   const box = $("#now");
-  if (CURRENT && CURRENT.path) {
+  const forMe = !mine() || !CURRENT || (MYSUBJ.includes(CURRENT.subject) && (!CURRENT.grade || CURRENT.grade === MYGRADE));
+  if (CURRENT && CURRENT.path && forMe) {
     const s = subj(CURRENT.subject);
     const T = TESTS.find((t) => t.id === CURRENT.id);
     const mission = T?.type === "mission";
@@ -75,15 +86,17 @@ addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 render();
 
 function renderTabs(active) {
-  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>${t("tab_home")}</small><b>${t("tab_all")}</b></a>` +
-    SUBJECTS.map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}"><small>${t("tab_subj")} ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(subjShort(s))}</b></a>`).join("");
+  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>${t("tab_home")}</small><b>${mine() ? L3("Мои предметы", "Disciplinele mele", "My subjects") : t("tab_all")}</b></a>` +
+    mySubjects().map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}${mine() ? "-" + MYGRADE : ""}"><small>${t("tab_subj")} ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(subjShort(s))}</b></a>`).join("");
 }
 
 function render() {
   const [sid, grade] = decodeURIComponent(location.hash.slice(1)).split("-");
-  const s = subj(sid);
+  let s = subj(sid);
+  if (s && mine() && !MYSUBJ.includes(s.id)) s = null;          // чужой предмет — на главную
   renderTabs(s ? s.id : "");
   if (!s) return renderHome();
+  if (mine() && grade !== MYGRADE) return renderGrade(s, MYGRADE);   // ученик видит только свой класс
   if (!grade || !s.grades.includes(grade)) return renderSubject(s);
   renderGrade(s, grade);
 }
@@ -104,6 +117,15 @@ function statLine(st) {
 }
 
 function renderHome() {
+  if (mine()) {
+    $("#view").innerHTML = `<h2>${L3("Мои предметы", "Disciplinele mele", "My subjects")} · ${esc(ME.cls)}</h2>
+      ${mySubjects().length ? `<div class="tiles">${mySubjects().map((s) => `<a class="tile" href="#${s.id}-${MYGRADE}">
+        <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
+        <div class="ds">${statLine(stats(s.id, MYGRADE))}</div>
+        <div class="cls"><b>${esc(ME.cls)}</b></div></a>`).join("")}</div>`
+      : `<div class="empty-note">${L3("Учитель ещё не добавил предметы для твоего класса.", "Profesorul încă nu a adăugat disciplinele pentru clasa ta.", "Your teacher has not added subjects for your class yet.")}</div>`}`;
+    return;
+  }
   $("#view").innerHTML = `<h2>${t("choose_subject")}</h2><div class="tiles">${SUBJECTS.map((s) => {
     const st = stats(s.id);
     const pr = st.total ? Math.round(st.ready / st.total * 100) : 0;
@@ -163,7 +185,7 @@ function renderGrade(s, g) {
   const tr = t;
   const show = (t) => FILTER === "all" || (FILTER === "retake" ? !!t.retake : kindOf(t, SET).id === FILTER);
 
-  let html = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › <a href="#${s.id}">${esc(subjName(s))}</a> › ${esc(gradeLabel(g))}</div>
+  let html = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › ${mine() ? esc(subjName(s)) : `<a href="#${s.id}">${esc(subjName(s))}</a>`} › ${esc(gradeLabel(g))}</div>
     <h2>${s.icon} ${esc(subjName(s))} · ${esc(gradeLabel(g))}</h2>` + weekHtml(s.id, g) +
     `<div class="filters">${chips.map(([id, name, n]) => `<button type="button" class="flt${FILTER === id ? " on" : ""}" data-f="${id}">${esc(name)} <i>${n}</i></button>`).join("")}</div>`;
 
