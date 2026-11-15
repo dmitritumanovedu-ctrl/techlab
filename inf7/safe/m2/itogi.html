@@ -1,1 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2E4BFF">
+<title>Итоги урока · Миссия 2 · Цифровой щит</title>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<style>
+  :root{--blue:#2E4BFF;--blue2:#3aa0ff;--bg:#EEF2F8;--ink:#0B1A3B;--muted:#556A92;--ok:#12A46B;--bad:#dc2626;--line:#DCE4F2}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(90deg,var(--blue),var(--blue2));color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:20px;margin:0}
+  header a{color:#fff;font-weight:600;text-decoration:none;opacity:.9}
+  header select,header button{font:inherit;border:0;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer}
+  header .r{margin-left:auto;display:flex;gap:10px;align-items:center}
+  main{max-width:1200px;margin:20px auto;padding:0 18px 40px}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+  .st{background:#fff;border-radius:14px;padding:14px 18px;box-shadow:0 4px 16px rgba(22,35,63,.06)}
+  .st b{display:block;font-size:30px;color:var(--blue)}.st span{color:var(--muted);font-size:14px}
+  .card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 4px 16px rgba(22,35,63,.06);margin-bottom:16px}
+  .card h2{font-size:18px;margin:0 0 10px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.two,.stats{grid-template-columns:1fr 1fr}}
+  .lb-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:18px}
+  .lb-row .bar{flex:1;height:12px;background:#e5eaf3;border-radius:6px;overflow:hidden}
+  .lb-row .bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd84d,#12A46B)}
+  ol,ul{margin:0;padding-left:22px}li{margin:5px 0}
+  .muted{color:var(--muted)}
+  .center{text-align:center;padding:60px 20px}
+  .btn{background:var(--blue);color:#fff;border:0;border-radius:12px;padding:12px 22px;font:inherit;font-weight:700;cursor:pointer}
+  body.proj main{max-width:none;padding:0 40px}
+  body.proj .lb-row{font-size:26px}
+  body.proj .card h2{font-size:24px}
+  body.proj .st b{font-size:44px}
+</style>
+</head>
+<body>
+<header>
+  <a href="../../../teacher/?test=inf7-safe-m2">← Центр управления</a>
+  <h1>📊 Итоги урока · Миссия 2 «Защити свою цифровую комнату»</h1>
+  <div class="r">
+    <select id="cls"><option value="">Все классы</option><option>7 «А»</option><option>7 «Б»</option><option selected>7 «В»</option><option>7 «Г»</option></select>
+    <button id="proj" type="button">🖥 Для проектора</button>
+  </div>
+</header>
+<main id="app"><div class="card center muted">Загрузка…</div></main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+
+const MISSION_ID = "inf7-safe-m2";
+const fb = initializeApp(firebaseConfig);
+const db = getDatabase(fb), auth = getAuth(fb);
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const avg = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const mark = (p) => { for (const [m, v] of [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2]]) if (p >= m) return v; return 1; };
+
+const MAIL = { m1: "«Instagram Support»: аккаунт удалят через 24 часа", m2: "Классный руководитель: экскурсия", m3: "SMS: выиграли iPhone", m4: "Steam с адреса steamcommunlty.com", m5: "Игрок просит код из SMS", m6: "Google: новый вход в аккаунт" };
+const TEST = ["Расстояние до монитора", "Правило 20-20-20", "Самый надёжный пароль", "Двухфакторная аутентификация", "«Срочно! Введи пароль» — это…", "Что можно публиковать в профиле", "Цифровой след", "Правильная посадка"];
+const ROOM = { window: "Окно позади монитора", close: "Слишком близко к экрану", stool: "Табурет без спинки", lamp: "Тёмная комната, лампа выключена", cup: "Напиток у клавиатуры", cord: "Перегруженный удлинитель", sticker: "Пароль на стикере", popup: "Окно «Ты выиграл iPhone»" };
+const PROFILE = { nick: "Никнейм", phone: "Номер телефона", music: "Любимая музыка", address: "Домашний адрес", school: "Школа и класс", hobby: "Хобби", geo: "Фото с геометкой", trip: "Пост об отъезде", avatar: "Аватар", bday: "Полная дата рождения" };
+
+let ALL = {}, unsub = null;
+$("#cls").onchange = paint;
+$("#proj").onclick = () => { document.body.classList.toggle("proj"); if (document.body.classList.contains("proj")) document.documentElement.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.().catch(() => {}); };
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    $("#app").innerHTML = `<div class="card center"><p>Войдите тем же Google-аккаунтом, что и в «Центре управления».</p><button class="btn" id="in">Войти через Google</button></div>`;
+    $("#in").onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch((e) => alert(e.message));
+    return;
+  }
+  if (unsub) unsub();
+  unsub = onValue(ref(db, `results/${MISSION_ID}`), (s) => { ALL = s.val() || {}; paint(); },
+    (e) => { $("#app").innerHTML = `<div class="card center">Нет доступа к результатам: ${esc(e.message)}</div>`; });
+});
+
+function paint() {
+  const cls = $("#cls").value;
+  const rows = Object.values(ALL).filter((r) => !cls || r.cls === cls);
+  const tot = (r) => Object.values(r.score || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+  const fin = rows.filter((r) => r.status === "submitted");
+  const tests = rows.filter((r) => r.score && r.score.test != null).map((r) => r.score.test / 3);
+  const det = (r) => r.details || {};
+
+  // трудные места
+  const cnt = (obj) => Object.entries(obj).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  const mailW = {}, testW = {}, roomW = {}, profW = {};
+  rows.forEach((r) => {
+    const d = det(r);
+    if (d.mailOk) Object.entries(d.mailOk).forEach(([k, ok]) => { if (!ok) mailW[k] = (mailW[k] || 0) + 1; });
+    if (d.testOk) d.testOk.forEach((ok, i) => { if (!ok) testW[i] = (testW[i] || 0) + 1; });
+    if (d.roomFound) Object.keys(ROOM).forEach((k) => { if (!d.roomFound.includes(k)) roomW[k] = (roomW[k] || 0) + 1; });
+    if (d.profileWrong) d.profileWrong.forEach((k) => { profW[k] = (profW[k] || 0) + 1; });
+  });
+  const list = (arr, name) => arr.length ? arr.slice(0, 4).map(([k, n]) => `<li>${esc(name(k))} — <b>${n}</b> ош.</li>`).join("") : '<li class="muted">пока ошибок нет</li>';
+
+  const top = rows.slice().sort((a, b) => tot(b) - tot(a)).slice(0, 8);
+  const moods = { "🟢": 0, "🟡": 0, "🔴": 0 };
+  rows.forEach((r) => { const m = r.mood || ""; if (m.startsWith("Мне всё")) moods["🟢"]++; else if (m.startsWith("Понятно")) moods["🟡"]++; else if (m) moods["🔴"]++; });
+
+  $("#app").innerHTML = `
+  <div class="stats">
+    <div class="st"><b>${rows.length}</b><span>учеников вошли</span></div>
+    <div class="st"><b>${fin.length}</b><span>получили паспорт 🏅</span></div>
+    <div class="st"><b>${Math.round(avg(rows.map(tot)))}%</b><span>средняя защита класса</span></div>
+    <div class="st"><b>${tests.length ? avg(tests).toFixed(1) : "—"}</b><span>средний тест (из 8)</span></div>
+    <div class="st"><b>${fin.length ? avg(fin.map((r) => mark(tot(r)))).toFixed(1) : "—"}</b><span>средняя отметка</span></div>
+  </div>
+  <div class="card"><h2>🏆 Защита класса — в реальном времени</h2>
+    ${top.length ? top.map((r, i) => `<div class="lb-row"><span style="width:34px">${["🥇", "🥈", "🥉"][i] || i + 1 + "."}</span><span style="width:34%">${esc(r.name)}</span><span class="bar"><i style="width:${tot(r)}%"></i></span><b style="width:64px;text-align:right">${tot(r)}%</b></div>`).join("") : '<p class="muted">Ждём учеников…</p>'}
+  </div>
+  <div class="two">
+    <div class="card"><h2>📨 Где чаще ошибались в почте</h2><ol>${list(cnt(mailW), (k) => MAIL[k] || k)}</ol></div>
+    <div class="card"><h2>✅ Самые трудные вопросы теста</h2><ol>${list(cnt(testW), (k) => "№" + (+k + 1) + ". " + TEST[k])}</ol></div>
+    <div class="card"><h2>🔍 Какие ошибки в комнате чаще пропускали</h2><ol>${list(cnt(roomW), (k) => ROOM[k] || k)}</ol></div>
+    <div class="card"><h2>👤 Профиль: где ошибались</h2><ol>${list(cnt(profW), (k) => PROFILE[k] || k)}</ol></div>
+  </div>
+  <div class="card"><h2>💬 «Что такое эргономика?» — предположения учеников</h2>
+    <ul>${rows.filter((r) => r.idea || det(r).idea).map((r) => `<li><b>${esc(r.name)}:</b> ${esc(r.idea || det(r).idea)}</li>`).join("") || '<li class="muted">пока пусто</li>'}</ul></div>
+  <div class="card"><h2>🪞 Рефлексия · 🟢 ${moods["🟢"]} · 🟡 ${moods["🟡"]} · 🔴 ${moods["🔴"]}</h2>
+    <ul>${fin.filter((r) => r.change || r.learned).map((r) => `<li><b>${esc(r.name)}:</b> узнал(а) — ${esc(r.learned || "—")}; <i>дома изменю — ${esc(r.change || "—")}</i></li>`).join("") || '<li class="muted">пока пусто</li>'}</ul></div>
+  <p class="muted">Страница обновляется сама. Отметки, удаление результатов и CSV — в «Центре управления».</p>`;
+}
+</script>
+</body>
+</html>
 
