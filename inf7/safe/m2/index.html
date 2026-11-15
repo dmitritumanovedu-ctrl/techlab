@@ -1,1 +1,908 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2E4BFF">
+<title>Миссия 2 · Защити свою цифровую комнату · 7 класс</title>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<style>
+  :root{
+    --blue:#1e5bd8; --blue2:#3aa0ff; --bg:#eef5ff; --card:#fff; --ink:#16233f; --muted:#5b6b8c;
+    --ok:#16a34a; --bad:#dc2626; --warn:#f59e0b; --line:#d6e4fb; --r:16px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:17px}
+  header.top{background:linear-gradient(90deg,var(--blue),var(--blue2));color:#fff;padding:12px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:sticky;top:0;z-index:5;box-shadow:0 4px 16px rgba(30,91,216,.25)}
+  .brand{font-size:20px;font-weight:600;letter-spacing:.3px}
+  .who{opacity:.95;font-size:15px}
+  .back{color:#fff;text-decoration:none;font-weight:600;opacity:.9}
+  .linkbtn{background:rgba(255,255,255,.18);padding:6px 12px;font-size:13px;border-radius:10px}
+  .shield{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px}
+  .bar{width:200px;height:14px;background:rgba(255,255,255,.3);border-radius:10px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd84d,#5df58a);transition:width .8s}
+  #shieldPct{font-size:20px;min-width:52px;text-align:right}
+  nav.steps{display:flex;gap:6px;padding:12px 24px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--line)}
+  .chip{white-space:nowrap;padding:6px 12px;border-radius:20px;font-size:13px;background:#eef2f9;color:#8592ad}
+  .chip.done{background:#dcfce7;color:#166534}
+  .chip.cur{background:var(--blue);color:#fff;font-weight:600}
+  main{max-width:1060px;margin:24px auto;padding:0 18px 60px}
+  .card{background:var(--card);border-radius:var(--r);padding:26px 28px;box-shadow:0 6px 22px rgba(22,35,63,.07);margin-bottom:18px}
+  h1{font-size:28px;margin:0 0 6px} h2{font-size:23px;margin:0 0 8px} h3{margin:18px 0 8px}
+  .lead{color:var(--muted);margin:0 0 16px}
+  .mission-tag{display:inline-block;background:#e6efff;color:var(--blue);font-weight:600;font-size:13px;border-radius:12px;padding:4px 10px;margin-bottom:10px}
+  button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 22px;background:var(--blue);color:#fff;font-weight:600;transition:.15s}
+  button:hover{filter:brightness(1.08)} button:disabled{background:#b9c6de;cursor:not-allowed}
+  button.ghost{background:#eef2f9;color:var(--ink)}
+  button.big{font-size:19px;padding:14px 30px}
+  input[type=text],input[type=number],textarea,select{font:inherit;padding:11px 13px;border:2px solid var(--line);border-radius:12px;width:100%;background:#fbfdff}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue2)}
+  label.cb{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#f5f8ff;margin:8px 0;cursor:pointer}
+  label.cb input{width:20px;height:20px;margin-top:2px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}.bar{width:120px}}
+  .note{background:#fff8e1;border-left:5px solid var(--warn);padding:12px 16px;border-radius:10px;margin:12px 0}
+  .good{color:var(--ok);font-weight:600}.badc{color:var(--bad);font-weight:600}
+  .actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(120px);background:#16233f;color:#fff;padding:14px 22px;border-radius:14px;font-weight:600;transition:.35s;z-index:20}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+
+  /* рабочий лист */
+  .sheet{border:2px dashed var(--line);border-radius:14px;padding:18px 20px;background:#fbfdff}
+  .sheet .date{font-size:22px;font-weight:700;color:var(--blue)}
+  .sheet .topic{font-size:21px;font-weight:700;margin:6px 0 12px}
+  .plan li{margin:4px 0}
+
+  /* комната */
+  .room-svg{width:100%;height:auto;border-radius:14px;display:block;user-select:none}
+  .room-svg [data-hot]{cursor:pointer}
+  .mk{display:none}.mk.found,.mk.missed,.reveal .mk{display:block}
+  .mk-c{fill:#16a34a;stroke:#fff;stroke-width:3}.mk.missed .mk-c{fill:#dc2626}
+  .mk-t{fill:#fff;font-weight:700;font-size:16px;font-family:Arial}
+  .found-list{list-style:none;padding:0;margin:12px 0 0}
+  .found-list li{padding:9px 12px;border-radius:10px;margin:6px 0;background:#f0fdf4}
+  .found-list li.miss{background:#fef2f2}
+  .counter{font-size:20px;font-weight:700}
+  .shake{animation:sh .35s}@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  /* почта */
+  .mail{border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0;background:#fff}
+  .mail .from{font-weight:700}.mail .addr{color:var(--muted);font-size:14px}
+  .mail .subj{margin:6px 0;font-weight:600}.mail .txt{color:#33415e}
+  .mail .btns{display:flex;gap:10px;margin-top:10px}
+  .mail .btns button{padding:9px 16px;background:#eef2f9;color:var(--ink)}
+  .mail .btns button.sel.safe{background:var(--ok);color:#fff}
+  .mail .btns button.sel.phish{background:var(--bad);color:#fff}
+  .mail.right{border-color:var(--ok);background:#f0fdf4}.mail.wrong{border-color:var(--bad);background:#fef2f2}
+  .why{margin-top:8px;font-size:15px}
+
+  /* замок */
+  .meter{height:18px;border-radius:10px;background:#e5eaf3;overflow:hidden;margin:12px 0}
+  .meter i{display:block;height:100%;width:0;transition:.3s}
+  .crack{font-size:24px;font-weight:700}
+  .rules li{list-style:none;margin:5px 0}.rules{padding:0}
+
+  /* профиль */
+  .pitem{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:#f5f8ff;margin:7px 0}
+  .pitem .lbl{flex:1}.pitem .lbl small{display:block;color:var(--muted)}
+  .tog{display:flex;border-radius:10px;overflow:hidden}
+  .tog button{border-radius:0;padding:7px 12px;font-size:14px;background:#e2e8f3;color:#334}
+  .tog button.on.pub{background:#2563eb;color:#fff}.tog button.on.hid{background:#334155;color:#fff}
+  .pitem.right{background:#f0fdf4}.pitem.wrong{background:#fef2f2}
+  .social{border-radius:16px;overflow:hidden;border:2px solid var(--line);position:sticky;top:120px}
+  .social .cover{height:70px;background:linear-gradient(90deg,#8b5cf6,#ec4899)}
+  .social .body{padding:0 16px 16px}
+  .social .ava{width:72px;height:72px;border-radius:50%;background:#fff3e0;border:4px solid #fff;margin-top:-36px;display:flex;align-items:center;justify-content:center;font-size:36px}
+  .social .line{padding:7px 10px;border-radius:8px;margin:5px 0;font-size:15px;background:#f8fafc}
+  .social .line.danger{background:#fee2e2;color:#991b1b}
+
+  /* рабочее место */
+  .desk-svg{width:100%;height:auto;background:#f5f8ff;border-radius:14px}
+  .ctl{margin:12px 0}.ctl .top{display:flex;justify-content:space-between;font-weight:600}
+  input[type=range]{width:100%}
+  .st{font-size:14px}
+
+  /* глаза */
+  .eyes{position:relative;height:300px;border-radius:16px;background:linear-gradient(180deg,#0e1a33,#1c2e57);overflow:hidden}
+  .eyes .dot{position:absolute;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#fff,#5df58a);box-shadow:0 0 24px #5df58a;transform:translate(-50%,-50%)}
+  .eyes .cap{position:absolute;top:14px;left:0;right:0;text-align:center;color:#fff;font-size:20px;font-weight:600}
+  .eyes .tm{position:absolute;bottom:12px;right:18px;color:#9fb3dc;font-size:18px}
+
+  /* тест */
+  .q{padding:14px 16px;border-radius:14px;background:#f8faff;margin:12px 0}
+  .q .qt{font-weight:600;margin-bottom:8px}
+  .q label{display:block;padding:8px 10px;border-radius:10px;cursor:pointer;margin:3px 0}
+  .q label:hover{background:#eaf1ff}
+  .q label.c{background:#dcfce7}.q label.x{background:#fee2e2}
+
+  /* рефлексия */
+  .emo{display:flex;gap:14px;flex-wrap:wrap}
+  .emo button{background:#f1f5fb;color:var(--ink);font-size:16px;padding:14px 18px;border:3px solid transparent}
+  .emo button span{font-size:34px;display:block}
+  .emo button.on{border-color:var(--blue);background:#e6efff}
+
+  /* паспорт */
+  .passport{border-radius:22px;padding:30px;background:linear-gradient(135deg,#1e5bd8,#3aa0ff 60%,#5df5c9);color:#fff;position:relative;overflow:hidden}
+  .passport h1{font-size:30px}.passport .nm{font-size:26px;font-weight:700;margin:6px 0}
+  .passport .big{font-size:64px;font-weight:800;line-height:1}
+  .passport .badges{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+  .passport .bd{background:rgba(255,255,255,.18);border-radius:12px;padding:8px 12px;font-size:14px}
+  .passport .rules2{background:rgba(255,255,255,.15);border-radius:14px;padding:12px 18px}
+  .passport::after{content:"🛡️";position:absolute;right:20px;top:10px;font-size:110px;opacity:.25}
+  @media print{header,nav,.actions,.noprint{display:none!important}body{background:#fff}main{margin:0}.passport{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<!--
+  TechLab · Информатика 7 · Экспедиция «Цифровой щит» · Миссия 2
+  Урок 18.11: «Эргономика и личная безопасность в цифровых средах».
+  Результаты пишутся в Firebase (results/inf7-safe-m2) и сразу видны учителю
+  в «Центре управления»: teacher/?test=inf7-safe-m2
+-->
+<header class="top">
+  <a class="back" href="../../../#inf-7">← TechLab</a>
+  <div class="brand"><b>Моя цифровая комната</b></div>
+  <div class="who" id="who"></div>
+  <div class="shield"><span>🛡️ Защита комнаты</span><div class="bar"><i id="shieldBar"></i></div><b id="shieldPct">0%</b></div>
+  <button class="linkbtn" id="logout" type="button">сменить ученика</button>
+</header>
+<nav class="steps" id="stepsNav"></nav>
+<main id="main"></main>
+<div id="toast"></div>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script type="module">
+/* Связь миссии с сайтом TechLab: результаты попадают в «Центр управления» */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "inf7-safe-m2";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Рабочий лист", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+/* =====================================================================
+   TechLab · Урок «Эргономика и личная безопасность в цифровых средах»
+   Общий модуль для ergo-7b.html (ученик) и ergo-teacher.html (учитель)
+   ===================================================================== */
+
+window.ERGO = (function () {
+
+  const CLASSES = ['7 «А»', '7 «Б»', '7 «В»', '7 «Г»'];
+
+  /* ---------- 2. ЭТАПЫ КВЕСТА (сумма max = 100) ---------- */
+  const STEPS = [
+    { id: 'start',    title: 'Вход',              icon: '🔑' },
+    { id: 'notebook', title: 'Рабочий лист',      icon: '📒', max: 4 },
+    { id: 'room',     title: 'Найди ошибки',      icon: '🔍', max: 16 },
+    { id: 'mail',     title: 'Почтовый ящик',     icon: '📨', max: 12 },
+    { id: 'lock',     title: 'Замок на двери',    icon: '🔐', max: 12 },
+    { id: 'profile',  title: 'Мой профиль',       icon: '👤', max: 10 },
+    { id: 'desk',     title: 'Рабочее место',     icon: '🪑', max: 12 },
+    { id: 'eyes',     title: 'Отдых для глаз',    icon: '👀', max: 4 },
+    { id: 'test',     title: 'Проверка знаний',   icon: '✅', max: 24 },
+    { id: 'reflect',  title: 'Рефлексия',         icon: '💬', max: 6 },
+    { id: 'passport', title: 'Цифровой паспорт',  icon: '🏅' }
+  ];
+
+  function mark(p) {
+    const t = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2]];   // та же шкала, что в «Центре управления»
+    for (const [min, v] of t) if (p >= min) return v;
+    return 1;
+  }
+  function rank(p) {
+    if (p >= 90) return 'Кибер-страж';
+    if (p >= 70) return 'Защитник';
+    if (p >= 50) return 'Хранитель';
+    return 'Новичок';
+  }
+
+  /* ---------- 3. МИССИЯ «НАЙДИ ОШИБКИ» ---------- */
+  const ERRORS = [
+    { id: 'window',  x: 440, y: 60,  title: 'Окно позади монитора',
+      tip: 'Яркий свет из окна бьёт в глаза, экран кажется тёмным — глаза быстро устают. Окно должно быть сбоку.' },
+    { id: 'close',   x: 330, y: 215, title: 'Слишком близко к экрану, сутулая спина',
+      tip: 'Глаза — в 50–70 см от экрана (примерно вытянутая рука), спина прямая и опирается на спинку.' },
+    { id: 'stool',   x: 205, y: 365, title: 'Табурет без спинки, ноги не достают до пола',
+      tip: 'Нужен стул со спинкой; ступни стоят на полу, колени согнуты примерно под 90°.' },
+    { id: 'lamp',    x: 625, y: 205, title: 'Тёмная комната, лампа выключена',
+      tip: 'Яркий экран в тёмной комнате утомляет глаза. Нужен равномерный свет и настольная лампа.' },
+    { id: 'cup',     x: 538, y: 262, title: 'Напиток рядом с клавиатурой',
+      tip: 'Пролитый напиток портит технику и может вызвать замыкание. Еду и напитки держат подальше.' },
+    { id: 'cord',    x: 650, y: 405, title: 'Перегруженный удлинитель, провода под ногами',
+      tip: 'Опасность перегрева и пожара, о провода легко споткнуться.' },
+    { id: 'sticker', x: 532, y: 170, title: 'Пароль на стикере',
+      tip: 'Пароль на виду может прочитать любой. Пароли не пишут на мониторе и не говорят друзьям.' },
+    { id: 'popup',   x: 440, y: 230, title: '«Ты выиграл iPhone! Жми сюда»',
+      tip: 'Это фишинг: бесплатных призов не бывает. По таким ссылкам не переходят, окно закрывают.' }
+  ];
+
+  function roomSvg(interactive) {
+    const hot = interactive ? 'data-hot' : 'data-nohot';
+    const markers = ERRORS.map((e, i) =>
+      `<g class="mk" id="mk-${e.id}" transform="translate(${e.x} ${e.y})">
+         <circle r="17" class="mk-c"/><text y="6" text-anchor="middle" class="mk-t">${i + 1}</text></g>`).join('');
+    return `
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" class="room-svg" role="img" aria-label="Комната с ошибками">
+  <defs>
+    <linearGradient id="rgWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#27304b"/><stop offset="1" stop-color="#1a2135"/></linearGradient>
+    <radialGradient id="rgSun" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#fffbe0"/><stop offset="1" stop-color="#ffd25a"/></radialGradient>
+  </defs>
+  <rect width="800" height="410" fill="url(#rgWall)"/>
+  <rect y="410" width="800" height="40" fill="#3a3145"/>
+  <!-- окно -->
+  <rect x="330" y="30" width="220" height="140" rx="6" fill="url(#rgSun)" stroke="#8a6d3b" stroke-width="8"/>
+  <line x1="440" y1="30" x2="440" y2="170" stroke="#8a6d3b" stroke-width="6"/>
+  <line x1="330" y1="100" x2="550" y2="100" stroke="#8a6d3b" stroke-width="6"/>
+  <g stroke="#ffe27a" stroke-width="3" opacity=".55"><line x1="335" y1="175" x2="290" y2="230"/><line x1="545" y1="175" x2="590" y2="230"/><line x1="440" y1="175" x2="440" y2="185"/></g>
+  <!-- стол -->
+  <rect x="260" y="300" width="420" height="14" rx="3" fill="#8b5a2b"/>
+  <rect x="275" y="314" width="12" height="96" fill="#6d4520"/><rect x="653" y="314" width="12" height="96" fill="#6d4520"/>
+  <!-- монитор -->
+  <rect x="430" y="284" width="20" height="14" fill="#555"/><rect x="405" y="296" width="70" height="6" rx="2" fill="#555"/>
+  <rect x="360" y="180" width="160" height="104" rx="6" fill="#0f1115"/>
+  <rect x="368" y="188" width="144" height="88" fill="#2a6ff0"/>
+  <g>
+    <rect x="380" y="200" width="120" height="62" rx="6" fill="#ff3d3d"/>
+    <text x="440" y="219" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">🎁 ТЫ ВЫИГРАЛ</text>
+    <text x="440" y="235" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">iPhone 17!</text>
+    <rect x="407" y="242" width="66" height="14" rx="3" fill="#fff"/>
+    <text x="440" y="253" text-anchor="middle" font-size="9" font-weight="700" fill="#ff3d3d">ЖМИ СЮДА</text>
+  </g>
+  <g transform="rotate(8 532 198)">
+    <rect x="506" y="176" width="52" height="46" fill="#ffe94d"/>
+    <text x="532" y="193" text-anchor="middle" font-size="9" fill="#333">пароль:</text>
+    <text x="532" y="210" text-anchor="middle" font-size="12" font-weight="700" fill="#c00">123456</text>
+  </g>
+  <!-- клавиатура -->
+  <rect x="300" y="292" width="92" height="8" rx="2" fill="#d9dde6"/>
+  <!-- чашка -->
+  <rect x="525" y="274" width="26" height="26" rx="4" fill="#e04848"/>
+  <path d="M551 280 q10 0 10 8 q0 8 -10 8" fill="none" stroke="#e04848" stroke-width="4"/>
+  <g stroke="#cfd6e6" stroke-width="2" fill="none" opacity=".7"><path d="M532 268 q-5 -8 0 -16"/><path d="M542 268 q5 -8 0 -16"/></g>
+  <!-- лампа (выключена) -->
+  <rect x="610" y="294" width="40" height="6" rx="2" fill="#555"/>
+  <polyline points="630,296 645,236 616,216" fill="none" stroke="#666" stroke-width="5" stroke-linecap="round"/>
+  <polygon points="592,204 636,212 626,234 588,226" fill="#3d3d48"/>
+  <circle cx="607" cy="232" r="6" fill="#4a4a55"/>
+  <text x="652" y="262" font-size="11" fill="#9aa3b8">выкл</text>
+  <!-- табурет -->
+  <rect x="160" y="330" width="90" height="10" rx="3" fill="#a46a3a"/>
+  <line x1="172" y1="340" x2="166" y2="410" stroke="#7a4b25" stroke-width="7"/>
+  <line x1="238" y1="340" x2="244" y2="410" stroke="#7a4b25" stroke-width="7"/>
+  <!-- ученик -->
+  <path d="M205 330 Q190 285 282 258" fill="none" stroke="#3aa0ff" stroke-width="26" stroke-linecap="round"/>
+  <line x1="205" y1="332" x2="262" y2="336" stroke="#2d3a5c" stroke-width="20" stroke-linecap="round"/>
+  <line x1="262" y1="336" x2="266" y2="390" stroke="#2d3a5c" stroke-width="16" stroke-linecap="round"/>
+  <line x1="262" y1="392" x2="286" y2="392" stroke="#111" stroke-width="10" stroke-linecap="round"/>
+  <polyline points="278,262 290,296 320,294" fill="none" stroke="#f1c27d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="318" cy="238" r="22" fill="#f1c27d"/>
+  <path d="M297 230 q20 -26 42 -4" fill="#5a3b1e"/>
+  <!-- удлинитель -->
+  <path d="M600 425 C 560 440 520 400 470 430 S 380 415 350 440" fill="none" stroke="#ddd" stroke-width="3"/>
+  <path d="M640 418 C 640 380 700 380 668 320" fill="none" stroke="#bbb" stroke-width="3"/>
+  <path d="M690 418 C 720 370 600 360 640 316" fill="none" stroke="#999" stroke-width="3"/>
+  <rect x="600" y="416" width="110" height="18" rx="4" fill="#f2f2f2"/>
+  <g fill="#e04848"><circle cx="615" cy="425" r="6"/><circle cx="635" cy="425" r="6"/><circle cx="655" cy="425" r="6"/><circle cx="675" cy="425" r="6"/><circle cx="695" cy="425" r="6"/></g>
+  <text x="655" y="447" text-anchor="middle" font-size="9" fill="#ffb3b3">⚡</text>
+  <!-- зоны для клика -->
+  <g class="hots" fill="transparent">
+    <rect ${hot}="window"  x="326" y="26" width="228" height="150"/>
+    <rect ${hot}="popup"   x="378" y="198" width="124" height="66"/>
+    <rect ${hot}="sticker" x="500" y="170" width="66" height="60"/>
+    <rect ${hot}="lamp"    x="584" y="196" width="80" height="108"/>
+    <rect ${hot}="cup"     x="518" y="250" width="50" height="52"/>
+    <rect ${hot}="stool"   x="150" y="324" width="108" height="88"/>
+    <circle ${hot}="close" cx="330" cy="236" r="34"/>
+    <rect ${hot}="cord"    x="590" y="380" width="130" height="66"/>
+  </g>
+  <g class="markers">${markers}</g>
+</svg>`;
+  }
+
+  /* ---------- 4. МИССИЯ «ПОЧТОВЫЙ ЯЩИК» ---------- */
+  const MAIL = [
+    { id: 'm1', from: 'Instagram Support', addr: 'security@insta-help-support.com',
+      subj: '⚠️ Твой аккаунт будет удалён через 24 часа!',
+      text: 'Мы обнаружили нарушение правил. Чтобы сохранить аккаунт, срочно подтверди логин и пароль по ссылке: insta-help-support.com/verify',
+      phish: true, why: 'Срочность и угроза, чужой адрес (не instagram.com), просят пароль — классический фишинг.' },
+    { id: 'm2', from: 'Классный руководитель', addr: 'Группа «7 Б — ученики»',
+      subj: 'Экскурсия в пятницу',
+      text: 'Напоминаю: в пятницу экскурсия в Национальный музей. Сбор в 8:15 у школы. Не опаздывайте!',
+      phish: false, why: 'Знакомый отправитель, ничего не просит: ни паролей, ни денег, ни перехода по ссылке.' },
+    { id: 'm3', from: '+373 6•• ••• •••', addr: 'SMS',
+      subj: 'Поздравляем! 🎁',
+      text: 'Вы выиграли iPhone 17! Оплатите только доставку — 50 лей: bit.ly/iph0ne-win',
+      phish: true, why: '«Выигрыш» в конкурсе, где ты не участвовал, просьба заплатить и короткая ссылка — признаки мошенничества.' },
+    { id: 'm4', from: 'Steam', addr: 'support@steamcommunlty.com',
+      subj: 'Друг отправил тебе подарок',
+      text: 'Войди в свой аккаунт по ссылке, чтобы получить игру в подарок.',
+      phish: true, why: 'Подмена буквы в адресе: steamcommun<b>l</b>ty вместо steamcommun<b>i</b>ty. Это поддельный сайт для кражи аккаунта.' },
+    { id: 'm5', from: 'Игрок «Pro_Gamer228»', addr: 'Чат в игре',
+      subj: 'Помоги, плиз 🙏',
+      text: 'Я по ошибке отправил код из SMS на твой номер. Скинь его мне, пожалуйста!',
+      phish: true, why: 'Коды из SMS никому нельзя сообщать — именно так угоняют аккаунты.' },
+    { id: 'm6', from: 'Google', addr: 'no-reply@accounts.google.com',
+      subj: 'Новый вход в аккаунт',
+      text: 'Выполнен вход с устройства Windows (Кишинёв). Если это были вы, ничего делать не нужно.',
+      phish: false, why: 'Официальный адрес, ничего не просит ввести. Если вход был не твой — сам открой сайт Google и смени пароль.' }
+  ];
+
+  /* ---------- 5. МИССИЯ «МОЙ ПРОФИЛЬ» ---------- */
+  const PROFILE = [
+    { id: 'nick',    label: 'Никнейм',               val: 'Star_Fox',                    hide: false },
+    { id: 'phone',   label: 'Номер телефона',        val: '+373 69 ••• •••',             hide: true,  why: 'Номер используют мошенники для звонков и SMS, по нему находят другие твои аккаунты.' },
+    { id: 'music',   label: 'Любимая музыка',        val: 'Imagine Dragons',             hide: false },
+    { id: 'address', label: 'Домашний адрес',        val: 'ул. Садовая, 12, кв. 5',      hide: true,  why: 'Адрес — это место, где тебя можно найти. Его не публикуют.' },
+    { id: 'school',  label: 'Школа и класс',         val: 'Лицей, 7 «Б»',                hide: true,  why: 'Незнакомец узнает, где тебя найти каждый день.' },
+    { id: 'hobby',   label: 'Хобби',                 val: 'Рисую комиксы',               hide: false },
+    { id: 'geo',     label: 'Фото у дома с геометкой', val: '📍 фото у подъезда',        hide: true,  why: 'Геометка показывает точное место, где ты живёшь.' },
+    { id: 'trip',    label: 'Пост',                  val: '«Уезжаем всей семьёй на 2 недели на море! Квартира пустая 😄»', hide: true, why: 'Ворам станет известно, что дома никого нет.' },
+    { id: 'avatar',  label: 'Аватар',                val: '🦊 рисунок лисы',             hide: false },
+    { id: 'bday',    label: 'Полная дата рождения',  val: '14.03.2013',                  hide: true,  why: 'Дату рождения используют для подбора паролей и «секретных вопросов».' }
+  ];
+
+  /* ---------- 6. ТЕСТ ---------- */
+  const TEST = [
+    { q: 'Каким должно быть расстояние от глаз до монитора?',
+      a: ['20–30 см', '50–70 см', '100–120 см', 'Любым, как удобно'], c: 1,
+      why: 'Оптимально 50–70 см — примерно длина вытянутой руки.' },
+    { q: 'Что означает правило «20-20-20»?',
+      a: ['Работать 20 минут в день', 'Каждые 20 минут 20 секунд смотреть вдаль (около 6 м)', 'Сидеть в 20 см от экрана', 'Делать 20 приседаний каждые 20 минут'], c: 1,
+      why: 'Каждые 20 минут — 20 секунд смотреть на предмет примерно в 6 метрах (20 футах). Глаза расслабляются.' },
+    { q: 'Какой пароль самый надёжный?',
+      a: ['12345678', 'Ivan2013', 'Kot!Luna_7*Plyazh', 'qwerty'], c: 2,
+      why: 'Длинный, с буквами разного регистра, цифрами и символами, без имени и даты рождения.' },
+    { q: 'Двухфакторная аутентификация — это…',
+      a: ['Два одинаковых пароля', 'Вход по паролю + дополнительный код (SMS или приложение)', 'Вход с двух компьютеров', 'Пароль из двух слов'], c: 1,
+      why: 'Даже если пароль украли, без второго кода войти не получится.' },
+    { q: 'Пишут: «Срочно! Аккаунт заблокируют, перейди по ссылке и введи пароль». Это…',
+      a: ['Забота службы поддержки', 'Фишинг', 'Обычная рассылка', 'Обновление программы'], c: 1,
+      why: 'Срочность + ссылка + просьба ввести пароль = фишинг.' },
+    { q: 'Что МОЖНО публиковать в открытом профиле?',
+      a: ['Домашний адрес', 'Номер школы и класс', 'Любимую книгу', 'Фото билета на самолёт'], c: 2,
+      why: 'Интересы безопасны; адрес, школа и билеты (с кодом брони и датами) — нет.' },
+    { q: 'Цифровой след — это…',
+      a: ['След от пальца на экране', 'Вся информация о тебе в интернете, которую трудно удалить', 'История звонков', 'Размер файла'], c: 1,
+      why: 'Посты, фото, комментарии, лайки — всё это остаётся в сети надолго.' },
+    { q: 'Как правильно сидеть за компьютером?',
+      a: ['Спина опирается на спинку, ступни на полу, колени примерно под 90°', 'Положив ногу на ногу', 'Наклонившись к экрану', 'На краю стула'], c: 0,
+      why: 'Правильная посадка бережёт спину, шею и глаза.' }
+  ];
+
+  return { CLASSES, STEPS, mark, rank, ERRORS, roomSvg, MAIL, PROFILE, TEST };
+})();
+
+</script>
+<script>
+(function(){
+  const E = window.ERGO;
+  const KEY = 'techlab_inf7_m2';
+  const $ = s => document.querySelector(s);
+  const main = $('#main');
+  const params = new URLSearchParams(location.search);
+
+  let S = load();
+  let confirmed = false;   // на общем компьютере каждый раз спрашиваем «это ты?»
+  function load(){ try{ const v=JSON.parse(localStorage.getItem(KEY)); if(v && v.name && Date.now()-(v.started||0) < 4*3600*1000) return v; localStorage.removeItem(KEY); }catch(e){} return null; }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} sync(); paintHeader(); }
+  function total(){ return S ? Object.values(S.pts||{}).reduce((a,b)=>a+b,0) : 0; }
+  function stepIdx(id){ return E.STEPS.findIndex(s=>s.id===id); }
+  function esc(t){ return String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function today(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear(); }
+  function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600); }
+
+  /* связь с TechLab: результаты сразу попадают в «Центр управления» учителя */
+  function TL(){ return Promise.race([window.TL_READY, new Promise((_,rej)=>setTimeout(()=>rej(new Error('нет связи')),10000))]); }
+  function minutes(){ return Math.max(1, Math.round((Date.now()-S.started)/60000)); }
+  function sync(){
+    if(!S || !S.rec || S.sent) return;
+    TL().then(t=>t.progress(S.rec,{ score:S.pts, stage:E.STEPS[S.step].title, doneCount:Math.max(0,S.step-1), idea:S.data.idea||'', details:S.data })).catch(()=>{});
+  }
+  function submitFinal(){
+    if(!S || !S.rec) return Promise.reject(new Error('нет записи'));
+    if(S.sent) return Promise.resolve();
+    const d=S.data;
+    return TL().then(t=>t.submit(S.rec,{ score:S.pts, stage:'Цифровой паспорт', total:total(), minutes:minutes(),
+      mood:d.moodText||'', idea:d.idea||'', learned:d.learned||'', change:d.change||'', details:d })).then(()=>{ S.sent=1; save(); });
+  }
+
+  function paintHeader(){
+    const p = total();
+    $('#shieldBar').style.width = p+'%';
+    $('#shieldPct').textContent = p+'%';
+    $('#who').textContent = S && S.name ? `${S.name} · ${S.cls}` : '';
+    $('#stepsNav').innerHTML = E.STEPS.map((s,i)=>{
+      const cls = !S ? (i===0?'cur':'') : (i<S.step?'done':(i===S.step?'cur':''));
+      return `<span class="chip ${cls}">${s.icon} ${s.title}</span>`;
+    }).join('');
+  }
+
+  function finishStep(id, pts, extra){
+    S.pts[id] = pts;
+    if(extra) Object.assign(S.data, extra);
+    save();
+    toast(`+${pts} к защите комнаты! 🛡️`);
+  }
+  function next(){ S.step++; save(); render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+  function render(){
+    paintHeader();
+    const id = (S && confirmed) ? E.STEPS[S.step].id : 'start';
+    ({start, notebook, room, mail, lock, profile, desk, eyes, test, reflect, passport})[id]();
+  }
+
+  /* ---------- ВХОД ---------- */
+  function start(){
+    if(S && S.name){
+      main.innerHTML = `<div class="card"><h1>С возвращением, ${esc(S.name)}! 👋</h1>
+        <p class="lead">Твоя комната сохранена — продолжай с того места, где остановился(ась).</p>
+        <div class="actions" style="justify-content:flex-start"><button class="big" id="cont">Продолжить</button>
+        <button class="ghost" id="notme">Это не я — начать заново</button></div></div>`;
+      $('#cont').onclick = ()=>{ confirmed=true; render(); };
+      $('#notme').onclick = ()=>{ if(confirm('Начать миссию заново под другим именем?')){ localStorage.removeItem(KEY); S=null; render(); } };
+      return;
+    }
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">🛡 Экспедиция «Цифровой щит» · Миссия 2 · Тревога! 🚨</span>
+      <h1>Защити свою цифровую комнату</h1>
+      <p class="lead">В твою комнату пытаются проникнуть. Её защита сейчас — <b>0%</b>.
+      Выполняй миссии, и с каждой защита будет расти. В конце ты получишь <b>Цифровой паспорт</b>.</p>
+      <form id="login" novalidate><div class="grid2">
+        <div><label for="fio">Фамилия и имя</label><input type="text" id="fio" autocomplete="off" maxlength="60" placeholder="Например: Руссу Анна"></div>
+        <div><label for="cls">Класс</label><select id="cls"><option value="">выбери…</option>${E.CLASSES.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      </div>
+      <p class="badc" id="err" style="min-height:24px;margin:12px 0 0"></p>
+      <div class="actions"><button class="big" id="go" type="submit">Войти в комнату →</button></div></form></div>`;
+    $('#login').onsubmit = (ev)=>{
+      ev.preventDefault();
+      const n = $('#fio').value.trim().replace(/\s+/g,' '), cls=$('#cls').value, err=$('#err'), btn=$('#go');
+      if(n.split(' ').length<2){ err.textContent='Напиши фамилию и имя полностью, через пробел.'; $('#fio').focus(); return; }
+      if(!cls){ err.textContent='Выбери свой класс.'; $('#cls').focus(); return; }
+      err.textContent='Подключаюсь к TechLab…'; btn.disabled=true;
+      TL().then(async t=>{
+        if(!(await t.isOpen())){ err.textContent='🔒 Миссия ещё не открыта учителем. Подожди и нажми ещё раз.'; btn.disabled=false; return; }
+        const rec = await t.start({ name:n, cls });
+        S = { name:n, cls, rec, sid:rec, step:1, pts:{}, data:{}, started:Date.now(), sent:0 };
+        confirmed = true; save(); render();
+      }).catch(()=>{ err.textContent='Нет связи с сайтом. Проверь интернет и нажми ещё раз.'; btn.disabled=false; });
+    };
+  }
+
+  /* ---------- 1. РАБОЧИЙ ЛИСТ ---------- */
+  function notebook(){
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Шаг 1 · Рабочий лист урока</span>
+      <h2>Запиши в тетрадь число и тему урока</h2>
+      <div class="sheet">
+        <div class="date">${today()}</div>
+        <div class="topic">Эргономика и личная безопасность в цифровых средах</div>
+        <b>Сегодня ты научишься:</b>
+        <ul class="plan">
+          <li>правильно организовывать рабочее место за компьютером;</li>
+          <li>беречь глаза, спину и осанку;</li>
+          <li>создавать надёжный пароль;</li>
+          <li>распознавать фишинг и мошеннические сообщения;</li>
+          <li>защищать свои личные данные в сети.</li>
+        </ul>
+        <b>План урока (миссии):</b>
+        <ol class="plan">${E.STEPS.filter(s=>s.max&&s.id!=='notebook').map(s=>`<li>${s.icon} ${s.title} — до ${s.max} баллов</li>`).join('')}</ol>
+      </div>
+      <label class="cb"><input type="checkbox" id="wrote"> <span>Я записал(а) в тетрадь <b>число</b> и <b>тему урока</b></span></label>
+      <h3>Вопрос-разминка</h3>
+      <p>Как ты думаешь, что изучает <b>эргономика</b>? Напиши своё предположение — проверим его на уроке.</p>
+      <textarea id="idea" rows="2" placeholder="Я думаю, эргономика — это…"></textarea>
+      <div class="actions"><button class="big" id="ok">Начать квест →</button></div></div>`;
+    $('#ok').onclick = ()=>{
+      if(!$('#wrote').checked){ toast('Сначала запиши число и тему в тетрадь ✍️'); return; }
+      const idea=$('#idea').value.trim();
+      if(idea.length<5){ toast('Напиши своё предположение'); $('#idea').focus(); return; }
+      finishStep('notebook', 4, { idea }); next();
+    };
+  }
+
+  /* ---------- 2. НАЙДИ ОШИБКИ ---------- */
+  function room(){
+    const found = new Set(); let miss=0, done=false;
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 1 · ${E.STEPS[2].icon} Найди ошибки</span>
+      <h2>Это комната горе-геймера. Найди 8 опасных ошибок!</h2>
+      <p class="lead">Нажимай на предметы, которые вредят здоровью или безопасности.</p>
+      <div id="roomWrap">${E.roomSvg(true)}</div>
+      <div class="row" style="justify-content:space-between;margin-top:14px">
+        <div class="counter">Найдено: <span id="cnt">0</span> из 8</div>
+        <button id="fin">Завершить миссию</button>
+      </div>
+      <ul class="found-list" id="fl"></ul>
+      <div class="actions"><button class="big" id="nx" style="display:none">Дальше →</button></div></div>`;
+    const svg = main.querySelector('.room-svg');
+    svg.addEventListener('click', ev=>{
+      if(done) return;
+      const t = ev.target.closest('[data-hot]');
+      if(!t){ miss++; svg.classList.remove('shake'); void svg.offsetWidth; svg.classList.add('shake'); return; }
+      const id=t.getAttribute('data-hot'); if(found.has(id)) return;
+      found.add(id); svg.querySelector('#mk-'+id).classList.add('found');
+      const e=E.ERRORS.find(x=>x.id===id), n=E.ERRORS.indexOf(e)+1;
+      $('#fl').insertAdjacentHTML('beforeend',`<li><b>${n}. ${e.title}.</b> ${e.tip}</li>`);
+      $('#cnt').textContent=found.size;
+      if(found.size===8){ toast('Все ошибки найдены! 🎉'); finish(); }
+    });
+    $('#fin').onclick = ()=>{ if(found.size<8 && !confirm(`Найдено ${found.size} из 8. Завершить миссию?`)) return; finish(); };
+    function finish(){
+      if(done) return; done=true;
+      E.ERRORS.forEach((e,i)=>{ if(!found.has(e.id)){ svg.querySelector('#mk-'+e.id).classList.add('missed');
+        $('#fl').insertAdjacentHTML('beforeend',`<li class="miss"><b>${i+1}. ${e.title} (пропущено).</b> ${e.tip}</li>`);} });
+      $('#fin').style.display='none'; $('#nx').style.display='';
+      finishStep('room', found.size*2, { roomFound:[...found], roomMiss:miss });
+    }
+    $('#nx').onclick = next;
+  }
+
+  /* ---------- 3. ПОЧТОВЫЙ ЯЩИК ---------- */
+  function mail(){
+    const ans={};
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 2 · 📨 Почтовый ящик</span>
+      <h2>В твою комнату пришли сообщения. Где ловушка?</h2>
+      <p class="lead">Отметь каждое сообщение: <b>безопасно</b> или <b>фишинг</b> (попытка обмана, чтобы украсть данные или деньги).</p>
+      <div id="box">${E.MAIL.map(m=>`<div class="mail" id="ml-${m.id}">
+        <div class="from">${esc(m.from)} <span class="addr">&lt;${esc(m.addr)}&gt;</span></div>
+        <div class="subj">${esc(m.subj)}</div><div class="txt">${esc(m.text)}</div>
+        <div class="btns"><button data-m="${m.id}" data-v="safe" class="safe">✅ Безопасно</button>
+        <button data-m="${m.id}" data-v="phish" class="phish">🎣 Фишинг</button></div>
+        <div class="why" style="display:none"></div></div>`).join('')}</div>
+      <div class="actions"><button class="big" id="chk">Проверить</button><button class="big" id="nx" style="display:none">Дальше →</button></div></div>`;
+    main.querySelectorAll('.btns button').forEach(b=>b.onclick=()=>{
+      if($('#chk').disabled) return;
+      ans[b.dataset.m]=b.dataset.v;
+      b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('sel',x===b));
+    });
+    $('#chk').onclick=()=>{
+      if(Object.keys(ans).length<E.MAIL.length){ toast('Отметь все сообщения'); return; }
+      let ok=0; const mailOk={};
+      E.MAIL.forEach(m=>{
+        const r = (ans[m.id]==='phish')===m.phish; if(r) ok++; mailOk[m.id]=r;
+        const el=$('#ml-'+m.id); el.classList.add(r?'right':'wrong');
+        const w=el.querySelector('.why'); w.style.display='';
+        w.innerHTML=`${r?'<span class="good">Верно!</span>':'<span class="badc">Ошибка.</span>'} Это <b>${m.phish?'фишинг':'безопасное сообщение'}</b>. ${m.why}`;
+      });
+      $('#chk').disabled=true; $('#chk').style.display='none'; $('#nx').style.display='';
+      finishStep('mail', ok*2, { mailOk, mailScore:ok });
+    };
+    $('#nx').onclick=next;
+  }
+
+  /* ---------- 4. ЗАМОК НА ДВЕРИ (пароль) ---------- */
+  function plural(n,f){ n=Math.abs(n)%100; const n1=n%10; if(n>10&&n<20) return f[2]; if(n1>1&&n1<5) return f[1]; if(n1===1) return f[0]; return f[2]; }
+  function fmt(s){
+    if(s<1) return 'мгновенно';
+    if(s<60) return Math.round(s)+' сек';
+    if(s<3600) return Math.round(s/60)+' мин';
+    if(s<86400){ const h=Math.round(s/3600); return h+' '+plural(h,['час','часа','часов']); }
+    if(s<31536000){ const d=Math.round(s/86400); return d+' '+plural(d,['день','дня','дней']); }
+    const y=s/31536000;
+    if(y<1000){ const r=Math.round(y); return r+' '+plural(r,['год','года','лет']); }
+    if(y<1e6) return Math.round(y/1000)+' тыс. лет';
+    if(y<1e9) return Math.round(y/1e6)+' млн лет';
+    return 'больше миллиарда лет';
+  }
+  function analyze(pw){
+    const types = [/[a-zа-яё]/.test(pw), /[A-ZА-ЯЁ]/.test(pw), /\d/.test(pw), /[^a-zA-Zа-яёА-ЯЁ0-9]/.test(pw)];
+    let pool=0;
+    if(/[a-z]/.test(pw))pool+=26; if(/[A-Z]/.test(pw))pool+=26; if(/[а-яё]/.test(pw))pool+=33; if(/[А-ЯЁ]/.test(pw))pool+=33;
+    if(/\d/.test(pw))pool+=10; if(types[3])pool+=33;
+    const lp = Math.log2(pool||1);
+    let bits = pw.length*lp;
+    const low = pw.toLowerCase();
+    let common=false, personal=false;
+    ['1234','123','qwerty','password','parola','1111','0000','abc','йцукен','пароль','admin','love','iloveyou','2012','2013','2014'].forEach(c=>{
+      if(low.includes(c)){ bits -= c.length*lp*0.9; common=true; } });
+    S.name.toLowerCase().split(' ').forEach(p=>{ if(p.length>=3 && low.includes(p)){ bits -= p.length*lp*0.9; personal=true; } });
+    if(/(.)\1\1/.test(pw)) bits -= 8;
+    bits=Math.max(0,bits);
+    const secs = Math.pow(2,bits)/2/1e10;   // 10 млрд попыток в секунду
+    return { secs, len:pw.length, nTypes:types.filter(Boolean).length, types, common, personal };
+  }
+  function lock(){
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 3 · 🔐 Замок на двери</span>
+      <h2>Поставь на дверь надёжный замок — придумай пароль</h2>
+      <div class="note">⚠️ <b>Не вводи свой настоящий пароль!</b> Придумай новый, учебный. Пароль никуда не отправляется — учитель увидит только оценку надёжности.</div>
+      <input type="text" id="pw" autocomplete="off" spellcheck="false" placeholder="Придумай пароль…" style="font-size:22px">
+      <div class="meter"><i id="mt"></i></div>
+      <div>Компьютер злоумышленника взломает этот пароль за: <div class="crack" id="ct">—</div></div>
+      <ul class="rules" id="rl"></ul>
+      <p class="lead">💡 Секрет надёжного пароля: возьми 3–4 слова, которые знаешь только ты, и добавь цифры и символы. Например: <code>Kot!Luna_7*Plyazh</code> (только не этот!).</p>
+      <div class="actions"><button class="big" id="ok" disabled>Закрепить замок</button></div></div>`;
+    const pw=$('#pw'); let res=null;
+    pw.oninput=()=>{
+      const v=pw.value; $('#ok').disabled=!v;
+      if(!v){ $('#ct').textContent='—'; $('#mt').style.width='0'; $('#rl').innerHTML=''; return; }
+      res=analyze(v);
+      const y=res.secs/31536000;
+      const pct = Math.max(4, Math.min(100, (Math.log10(res.secs+1)/Math.log10(31536000*1e6))*100));
+      const col = y>=100 ? '#16a34a' : y>=1 ? '#84cc16' : res.secs>=86400 ? '#f59e0b' : '#dc2626';
+      $('#mt').style.width=pct+'%'; $('#mt').style.background=col;
+      $('#ct').textContent=fmt(res.secs); $('#ct').style.color=col;
+      const r=(ok,t)=>`<li>${ok?'✅':'❌'} ${t}</li>`;
+      $('#rl').innerHTML = r(res.len>=12,`Не короче 12 символов (сейчас ${res.len})`)+
+        r(res.types[0]&&res.types[1],'Есть маленькие и БОЛЬШИЕ буквы')+
+        r(res.types[2],'Есть цифры')+ r(res.types[3],'Есть символы: ! ? _ * # …')+
+        r(!res.common,'Нет простых комбинаций (123, qwerty, год рождения…)')+
+        r(!res.personal,'Нет твоего имени или фамилии');
+    };
+    $('#ok').onclick=()=>{
+      if(!res) return;
+      const y=res.secs/31536000;
+      let p = (y>=100 && res.len>=12 && res.nTypes>=3 && !res.personal) ? 12 : y>=1 ? 8 : res.secs>=86400 ? 4 : 0;
+      if(p<12 && !confirm('Замок ещё можно усилить. Закрепить такой?')) return;
+      pw.value=''; pw.disabled=true;
+      finishStep('lock', p, { lockTime: fmt(res.secs), lockLen: res.len, lockTypes: res.nTypes });
+      main.querySelector('.actions').innerHTML=`<span class="${p>=8?'good':'badc'}" style="margin-right:auto">Замок закреплён: взлом за ${fmt(res.secs)} · +${p} баллов</span><button class="big" id="nx">Дальше →</button>`;
+      $('#nx').onclick=next;
+    };
+  }
+
+  /* ---------- 5. МОЙ ПРОФИЛЬ ---------- */
+  function profile(){
+    const st={}; E.PROFILE.forEach(p=>st[p.id]='pub');
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 4 · 👤 Мой профиль</span>
+      <h2>Твоя страница в соцсети открыта для всех. Спрячь лишнее!</h2>
+      <p class="lead">Для каждой строки выбери: <b>Всем</b> — видят все, <b>Скрыть</b> — не публиковать.</p>
+      <div class="grid2"><div id="items">${E.PROFILE.map(p=>`<div class="pitem" id="pi-${p.id}">
+          <div class="lbl"><b>${esc(p.label)}</b><small>${esc(p.val)}</small><div class="why" style="display:none"></div></div>
+          <div class="tog"><button data-p="${p.id}" data-v="pub" class="pub on">👁 Всем</button><button data-p="${p.id}" data-v="hid" class="hid">🔒 Скрыть</button></div></div>`).join('')}</div>
+        <div><div class="social"><div class="cover"></div><div class="body"><div class="ava">🦊</div>
+          <div style="font-weight:700;font-size:18px;margin:6px 0">${esc(S.name.split(' ')[1]||S.name)}</div><div id="pv"></div></div></div></div></div>
+      <div class="actions"><button class="big" id="chk">Проверить профиль</button><button class="big" id="nx" style="display:none">Дальше →</button></div></div>`;
+    function paint(){
+      $('#pv').innerHTML = E.PROFILE.filter(p=>st[p.id]==='pub').map(p=>`<div class="line ${locked&&p.hide?'danger':''}">${locked&&p.hide?'⚠️ ':''}<b>${esc(p.label)}:</b> ${esc(p.val)}</div>`).join('') || '<div class="line">Профиль пуст</div>';
+    }
+    let locked=false; paint();
+    main.querySelectorAll('.tog button').forEach(b=>b.onclick=()=>{
+      if(locked) return; st[b.dataset.p]=b.dataset.v;
+      b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); paint();
+    });
+    $('#chk').onclick=()=>{
+      locked=true; let ok=0; const wrong=[];
+      E.PROFILE.forEach(p=>{
+        const r=(st[p.id]==='hid')===p.hide; if(r) ok++; else wrong.push(p.id);
+        const el=$('#pi-'+p.id); el.classList.add(r?'right':'wrong');
+        const w=el.querySelector('.why'); w.style.display='';
+        w.innerHTML = p.hide ? `${r?'✅':'❌'} Скрыть. ${p.why}` : `${r?'✅':'❌'} Можно показывать — это не раскрывает, где тебя найти.`;
+      });
+      paint(); $('#chk').style.display='none'; $('#nx').style.display='';
+      finishStep('profile', ok, { profileScore:ok, profileWrong:wrong });
+    };
+    $('#nx').onclick=next;
+  }
+
+  /* ---------- 6. РАБОЧЕЕ МЕСТО ---------- */
+  function desk(){
+    const v={ dist:30, h:16, ang:65, light:'behind' };
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 5 · 🪑 Рабочее место</span>
+      <h2>Часть 1. Настрой рабочее место героя</h2>
+      <p class="lead">Двигай ползунки, пока все показатели не станут зелёными ✅.</p>
+      <div class="grid2">
+        <div id="sv"></div>
+        <div>
+          <div class="ctl"><div class="top"><span>Расстояние до экрана</span><span id="vd"></span></div><input type="range" id="rd" min="20" max="100" step="5"><div class="st" id="sd"></div></div>
+          <div class="ctl"><div class="top"><span>Высота экрана (верхний край)</span><span id="vh"></span></div><input type="range" id="rh" min="-20" max="20" step="2"><div class="st" id="sh"></div></div>
+          <div class="ctl"><div class="top"><span>Высота стула (угол в коленях)</span><span id="va"></span></div><input type="range" id="ra" min="60" max="120" step="5"><div class="st" id="sa"></div></div>
+          <div class="ctl"><div class="top"><span>Освещение</span></div>
+            <select id="rlg"><option value="behind">Окно за монитором</option><option value="back">Окно за спиной (блики на экране)</option><option value="dark">Тёмная комната, светит только экран</option><option value="side">Окно сбоку + настольная лампа</option></select><div class="st" id="sl"></div></div>
+        </div>
+      </div>
+      <div class="actions"><button class="big" id="sv1">Сохранить настройку</button></div>
+      <div id="part2" style="display:none">
+        <hr style="border:0;border-top:2px dashed var(--line);margin:24px 0">
+        <h2>Часть 2. Проверь СВОЁ рабочее место прямо сейчас 📏</h2>
+        <p class="lead">Встань, работай в паре с соседом: измерь линейкой расстояние от глаз до экрана (или вытяни руку — кончики пальцев почти касаются экрана ≈ 50–60 см). Поправь стул и монитор.</p>
+        <div class="row"><div style="flex:0 0 220px"><label>Моё расстояние, см</label><input type="number" id="md" min="10" max="200" placeholder="например, 55"></div><div id="mdf" style="flex:1"></div></div>
+        <label class="cb"><input type="checkbox" class="rc"> Спина опирается на спинку стула</label>
+        <label class="cb"><input type="checkbox" class="rc"> Ступни стоят на полу, колени примерно под 90°</label>
+        <label class="cb"><input type="checkbox" class="rc"> Верхний край экрана на уровне глаз или чуть ниже</label>
+        <label class="cb"><input type="checkbox" class="rc"> Свет не бьёт в экран и в глаза</label>
+        <div class="actions"><button class="big" id="sv2">Готово, моё место настроено</button></div>
+      </div></div>`;
+    const ok = {
+      dist: ()=> v.dist>=50 && v.dist<=70, h: ()=> v.h>=-10 && v.h<=0,
+      ang: ()=> v.ang>=85 && v.ang<=100, light: ()=> v.light==='side' };
+    const set=(id,good,txtOk,txtBad)=>{ $(id).innerHTML = good?`<span class="good">✅ ${txtOk}</span>`:`<span class="badc">❌ ${txtBad}</span>`; };
+    function draw(){
+      const floor=320, deskY=215;
+      const seatY = 250 - (v.ang-90)*1.2;
+      const hipX=110, kneeX=170;
+      const footX = kneeX + Math.max(-10,(v.ang-90)*0.8), footY = Math.min(floor, seatY + 70 + (v.ang-90)*0.7);
+      const eyeX=140, eyeY=seatY-112;
+      const mx = eyeX + v.dist*3.4, mTop = eyeY - v.h*2.2, mH=66;
+      const allOk = ok.dist()&&ok.h()&&ok.ang()&&ok.light();
+      const bg = v.light==='dark' ? '#1a2135' : '#f5f8ff';
+      const win = v.light==='behind' ? `<rect x="${mx+20}" y="40" width="70" height="90" fill="#ffe27a" stroke="#c9a14a" stroke-width="4"/><text x="${mx+55}" y="150" text-anchor="middle" font-size="12" fill="#8a6d3b">окно</text>`
+                : v.light==='back' ? `<rect x="10" y="40" width="60" height="90" fill="#ffe27a" stroke="#c9a14a" stroke-width="4"/><line x1="70" y1="85" x2="${mx}" y2="${mTop+30}" stroke="#ffd25a" stroke-width="3" stroke-dasharray="6 5"/>`
+                : v.light==='side' ? `<g><line x1="${mx+45}" y1="${deskY}" x2="${mx+60}" y2="${deskY-60}" stroke="#666" stroke-width="4"/><polygon points="${mx+40},${deskY-70} ${mx+80},${deskY-62} ${mx+70},${deskY-45} ${mx+38},${deskY-52}" fill="#ffd25a"/><circle cx="${mx+55}" cy="${deskY-45}" r="22" fill="#fff3b0" opacity=".5"/></g><text x="480" y="30" text-anchor="end" font-size="13" fill="#5b6b8c">☀ окно сбоку</text>` : '';
+      $('#sv').innerHTML = `<svg viewBox="0 0 520 340" class="desk-svg" style="background:${bg}">
+        ${win}
+        <rect x="0" y="${floor}" width="520" height="20" fill="#cbd5e1"/>
+        <rect x="230" y="${deskY}" width="280" height="10" fill="#8b5a2b"/><rect x="490" y="${deskY+10}" width="10" height="${floor-deskY-10}" fill="#6d4520"/>
+        <rect x="${mx-4}" y="${mTop}" width="8" height="${mH}" rx="2" fill="#0f1115"/>
+        ${mTop+mH<deskY?`<line x1="${mx}" y1="${mTop+mH}" x2="${mx}" y2="${deskY}" stroke="#555" stroke-width="5"/>`:''}
+        <rect x="${mx-14}" y="${deskY-4}" width="28" height="4" fill="#555"/>
+        <rect x="70" y="${seatY-95}" width="8" height="95" rx="3" fill="#7a4b25"/>
+        <rect x="70" y="${seatY}" width="90" height="9" rx="3" fill="#a46a3a"/>
+        <line x1="115" y1="${seatY+9}" x2="115" y2="${floor}" stroke="#555" stroke-width="6"/>
+        <line x1="${hipX}" y1="${seatY}" x2="${hipX+8}" y2="${seatY-85}" stroke="#3aa0ff" stroke-width="24" stroke-linecap="round"/>
+        <line x1="${hipX}" y1="${seatY-4}" x2="${kneeX}" y2="${seatY-4}" stroke="#2d3a5c" stroke-width="18" stroke-linecap="round"/>
+        <line x1="${kneeX}" y1="${seatY-4}" x2="${footX}" y2="${footY-6}" stroke="#2d3a5c" stroke-width="15" stroke-linecap="round"/>
+        <line x1="${footX}" y1="${footY-4}" x2="${footX+22}" y2="${footY-4}" stroke="#111" stroke-width="9" stroke-linecap="round"/>
+        <polyline points="${hipX+8},${seatY-78} ${hipX+40},${seatY-40} 225,${deskY-4}" fill="none" stroke="#f1c27d" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="${eyeX-12}" cy="${eyeY+4}" r="20" fill="#f1c27d"/><circle cx="${eyeX}" cy="${eyeY}" r="3" fill="#111"/>
+        <line x1="${eyeX}" y1="${eyeY}" x2="${mx-4}" y2="${mTop+mH*0.35}" stroke="${allOk?'#16a34a':'#dc2626'}" stroke-width="2" stroke-dasharray="6 5"/>
+        <text x="${(eyeX+mx)/2}" y="${Math.min(eyeY,mTop)-10}" text-anchor="middle" font-size="14" font-weight="700" fill="${ok.dist()?'#16a34a':'#dc2626'}">${v.dist} см</text>
+        ${allOk?'<text x="260" y="300" text-anchor="middle" font-size="18" font-weight="700" fill="#16a34a">Идеально! 👍</text>':''}
+      </svg>`;
+      $('#vd').textContent=v.dist+' см';
+      $('#vh').textContent = v.h===0?'на уровне глаз':(v.h>0?`выше глаз на ${v.h} см`:`ниже глаз на ${-v.h} см`);
+      $('#va').textContent=v.ang+'°';
+      set('#sd',ok.dist(),'Отлично: 50–70 см', v.dist<50?'Слишком близко — глаза перенапрягаются':'Слишком далеко — придётся щуриться и наклоняться');
+      set('#sh',ok.h(),'Верх экрана на уровне глаз или чуть ниже', v.h>0?'Экран выше глаз — шея запрокинута':'Экран слишком низко — шея наклонена');
+      set('#sa',ok.ang(),'Колени около 90°, ступни на полу', v.ang<85?'Стул слишком низкий':'Стул слишком высокий — ноги висят');
+      set('#sl',ok.light(),'Свет сбоку, без бликов', {behind:'Свет из окна бьёт в глаза',back:'Блики на экране',dark:'Яркий экран в темноте утомляет глаза'}[v.light]);
+    }
+    $('#rd').value=v.dist; $('#rh').value=v.h; $('#ra').value=v.ang; $('#rlg').value=v.light;
+    $('#rd').oninput=e=>{v.dist=+e.target.value;draw()}; $('#rh').oninput=e=>{v.h=+e.target.value;draw()};
+    $('#ra').oninput=e=>{v.ang=+e.target.value;draw()}; $('#rlg').onchange=e=>{v.light=e.target.value;draw()};
+    draw();
+    let simPts=0;
+    $('#sv1').onclick=()=>{
+      const n=['dist','h','ang','light'].filter(k=>ok[k]()).length;
+      if(n<4 && !confirm(`Правильно настроено ${n} из 4. Сохранить так?`)) return;
+      simPts=n*2; ['#rd','#rh','#ra','#rlg'].forEach(s=>$(s).disabled=true);
+      $('#sv1').disabled=true; $('#sv1').textContent=`Сохранено: +${simPts} баллов`;
+      $('#part2').style.display=''; $('#part2').scrollIntoView({behavior:'smooth'});
+    };
+    $('#md').oninput=()=>{
+      const d=+$('#md').value;
+      $('#mdf').innerHTML = !d?'' : d<50?'<span class="badc">Слишком близко — отодвинь монитор или сядь дальше.</span>' : d>80?'<span class="badc">Далековато — придвинься ближе.</span>' : '<span class="good">Отличное расстояние! ✅</span>';
+    };
+    $('#sv2').onclick=()=>{
+      const d=+$('#md').value;
+      if(!d || d<15 || d>200){ toast('Измерь и впиши своё расстояние до экрана'); $('#md').focus(); return; }
+      const checked=[...main.querySelectorAll('.rc')].filter(c=>c.checked).length;
+      const realPts = 1 + Math.min(3,checked);
+      finishStep('desk', simPts+realPts, { deskSim:simPts/2, myDistance:d, myChecks:checked });
+      next();
+    };
+  }
+
+  /* ---------- 7. ОТДЫХ ДЛЯ ГЛАЗ ---------- */
+  function eyes(){
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 6 · 👀 Отдых для глаз</span>
+      <h2>Гимнастика для глаз — 45 секунд</h2>
+      <p class="lead">Сядь ровно, голову не поворачивай — следи за светящейся точкой <b>только глазами</b>.
+      Запомни правило <b>20-20-20</b>: каждые 20 минут — 20 секунд смотри вдаль (на предмет примерно в 6 метрах).</p>
+      <div class="eyes" id="ey"><div class="cap" id="cap">Нажми «Начать»</div><div class="dot" id="dot" style="left:50%;top:55%"></div><div class="tm" id="tm"></div></div>
+      <div class="actions"><button class="big" id="go">Начать</button><button class="big" id="nx" style="display:none">Дальше →</button></div></div>`;
+    const phases=[
+      {t:10,cap:'Круг: следи за точкой',f:(k)=>[50+35*Math.cos(k*2*Math.PI*2),55+30*Math.sin(k*2*Math.PI*2)]},
+      {t:10,cap:'Влево — вправо',f:(k)=>[50+40*Math.sin(k*2*Math.PI*3),55]},
+      {t:10,cap:'Вверх — вниз',f:(k)=>[50,55+32*Math.sin(k*2*Math.PI*3)]},
+      {t:10,cap:'Восьмёрка',f:(k)=>[50+38*Math.sin(k*2*Math.PI*2),55+26*Math.sin(k*4*Math.PI*2)]},
+      {t:5,cap:'Закрой глаза… и часто поморгай 😌',f:()=>[50,55]}];
+    $('#go').onclick=()=>{
+      $('#go').style.display='none';
+      const T=phases.reduce((a,p)=>a+p.t,0), t0=performance.now();
+      (function tick(now){
+        const s=(now-t0)/1000; if(s>=T){ $('#cap').textContent='Молодец! Глаза отдохнули ✨'; $('#tm').textContent=''; $('#dot').style.opacity=.3;
+          finishStep('eyes',4,{eyesDone:true}); $('#nx').style.display=''; return; }
+        let acc=0,ph=phases[0],k=0; for(const p of phases){ if(s<acc+p.t){ph=p;k=(s-acc)/p.t;break;} acc+=p.t; }
+        const [x,y]=ph.f(k); $('#dot').style.left=x+'%'; $('#dot').style.top=y+'%';
+        $('#dot').style.opacity = (ph===phases[4]) ? 0.2 : 1;
+        $('#cap').textContent=ph.cap; $('#tm').textContent=Math.ceil(T-s)+' с';
+        requestAnimationFrame(tick);
+      })(t0);
+    };
+    $('#nx').onclick=next;
+  }
+
+  /* ---------- 8. ТЕСТ ---------- */
+  function test(){
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Миссия 7 · ✅ Проверка знаний</span>
+      <h2>Последний замок: ответь на 8 вопросов</h2>
+      <p class="lead">Каждый правильный ответ — +3 к защите. Это тренировка перед суммативным оцениванием!</p>
+      ${E.TEST.map((q,i)=>`<div class="q" id="q${i}"><div class="qt">${i+1}. ${esc(q.q)}</div>
+        ${q.a.map((a,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${esc(a)}</label>`).join('')}
+        <div class="why" style="display:none"></div></div>`).join('')}
+      <div class="actions"><button class="big" id="chk">Проверить</button><button class="big" id="nx" style="display:none">Дальше →</button></div></div>`;
+    $('#chk').onclick=()=>{
+      const a=E.TEST.map((q,i)=>{ const r=main.querySelector(`input[name=q${i}]:checked`); return r?+r.value:null; });
+      const miss=a.findIndex(x=>x===null);
+      if(miss>=0){ toast(`Ответь на вопрос ${miss+1}`); $('#q'+miss).scrollIntoView({behavior:'smooth',block:'center'}); return; }
+      let ok=0; const testOk=[];
+      E.TEST.forEach((q,i)=>{
+        const r=a[i]===q.c; if(r) ok++; testOk.push(r);
+        const box=$('#q'+i), labels=box.querySelectorAll('label');
+        labels[q.c].classList.add('c'); if(!r) labels[a[i]].classList.add('x');
+        box.querySelectorAll('input').forEach(x=>x.disabled=true);
+        const w=box.querySelector('.why'); w.style.display=''; w.innerHTML=(r?'<span class="good">Верно.</span> ':'<span class="badc">Неверно.</span> ')+esc(q.why);
+      });
+      $('#chk').style.display='none'; $('#nx').style.display='';
+      finishStep('test', ok*3, { testOk, testScore:ok });
+      toast(`Правильно ${ok} из 8`);
+    };
+    $('#nx').onclick=next;
+  }
+
+  /* ---------- 9. РЕФЛЕКСИЯ ---------- */
+  function reflect(){
+    let emo=null, moodText='';
+    main.innerHTML = `<div class="card">
+      <span class="mission-tag">Шаг 9 · 💬 Рефлексия</span>
+      <h2>Как прошёл урок для тебя?</h2>
+      <div class="emo">
+        <button data-e="😀" data-m="Мне всё понятно, могу объяснить другу"><span>😀</span>Мне всё понятно, могу объяснить другу</button>
+        <button data-e="🙂" data-m="Понятно, но есть вопросы"><span>🙂</span>Понятно, но есть вопросы</button>
+        <button data-e="😕" data-m="Нужна помощь"><span>😕</span>Нужна помощь</button>
+      </div>
+      <h3>Закончи предложения</h3>
+      <label>Сегодня я узнал(а), что…</label><textarea id="l1" rows="2"></textarea>
+      <label style="display:block;margin-top:12px">Дома я изменю…</label><textarea id="l2" rows="2" placeholder="Например: подниму монитор, сменю пароль в игре…"></textarea>
+      <div class="actions"><button class="big" id="ok">Получить Цифровой паспорт 🏅</button></div></div>`;
+    main.querySelectorAll('.emo button').forEach(b=>b.onclick=()=>{ emo=b.dataset.e; moodText=b.dataset.m; main.querySelectorAll('.emo button').forEach(x=>x.classList.toggle('on',x===b)); });
+    $('#ok').onclick=()=>{
+      const l1=$('#l1').value.trim(), l2=$('#l2').value.trim();
+      if(!emo){ toast('Выбери смайлик'); return; }
+      if(l1.length<5||l2.length<5){ toast('Закончи оба предложения'); return; }
+      finishStep('reflect',6,{ emo, moodText, learned:l1, change:l2 }); next();
+    };
+  }
+
+  /* ---------- 10. ЦИФРОВОЙ ПАСПОРТ ---------- */
+  function passport(){
+    const p=total(), m=E.mark(p);
+    main.innerHTML = `<div class="passport">
+      <h1>Цифровой паспорт безопасности</h1>
+      <div class="nm">${esc(S.name)}</div><div>${esc(S.cls)} · ${today()} · TechLab</div>
+      <div class="row" style="margin-top:18px;gap:40px">
+        <div><div class="big">${p}%</div><div>защита комнаты</div></div>
+        <div><div class="big">${m}</div><div>ориентировочная отметка</div></div>
+        <div><div style="font-size:30px;font-weight:800">${E.rank(p)}</div><div>звание</div></div>
+      </div>
+      <div class="badges">${E.STEPS.filter(s=>s.max).map(s=>`<span class="bd">${s.icon} ${s.title}: <b>${S.pts[s.id]??0}/${s.max}</b></span>`).join('')}</div>
+      <div class="rules2"><b>Мои правила цифровой безопасности:</b>
+        <ol style="margin:6px 0 0"><li>Экран — на расстоянии вытянутой руки, верх — на уровне глаз.</li>
+        <li>Каждые 20 минут — 20 секунд смотрю вдаль.</li>
+        <li>Длинный пароль из слов, цифр и символов; никому его не говорю.</li>
+        <li>Не перехожу по подозрительным ссылкам и не сообщаю коды из SMS.</li>
+        <li>Не публикую адрес, телефон, школу и геометки.</li></ol></div>
+    </div>
+    <div class="card noprint" style="margin-top:18px">
+      <p id="sendSt">⏳ Отправляю результат учителю…</p>
+      <div class="actions" style="justify-content:flex-start"><button id="pr">🖨 Распечатать паспорт</button><button class="ghost" id="resend" style="display:none">Отправить ещё раз</button></div></div>`;
+    $('#pr').onclick=()=>window.print();
+    const send=()=>{ $('#sendSt').textContent='⏳ Отправляю результат учителю…'; $('#resend').style.display='none';
+      submitFinal().then(()=>{ $('#sendSt').textContent='✅ Результат отправлен учителю. Отметку за урок выставляет учитель.'; })
+        .catch(()=>{ $('#sendSt').textContent='⚠️ Нет связи. Проверь интернет и нажми «Отправить ещё раз» — или покажи этот экран учителю.'; $('#resend').style.display=''; }); };
+    $('#resend').onclick=send; send();
+  }
+
+  $('#logout').onclick=()=>{ if(confirm('Выйти и начать заново под другим именем?')){ try{localStorage.removeItem(KEY)}catch(e){} location.reload(); } };
+  render();
+})();
+</script>
+<script type="module" src="../../../engine/autofill.js?v=2"></script>
+</body>
+</html>
 
