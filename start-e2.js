@@ -29,8 +29,19 @@ window.addEventListener(SESSION_EVENT, onSession);
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG] || ru;
 const mySubjects = () => MYSUBJ ? SUBJECTS.filter((s) => MYSUBJ.includes(s.id)) : SUBJECTS;
 const mine = () => !!(ME && MYSUBJ);
-const ktag = (k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`;
-const rtag = `<span class="ktag k-retake">🔁 ${t("retake")}</span>`;
+const ktag = (k) => `<span class="ktag k-${k.id}">${esc(k.short)}</span>`;
+const rtag = `<span class="ktag k-retake">${t("retake")}</span>`;
+// аккуратные линейные иконки вместо эмодзи (стиль «Строгий сервис»)
+const SV = (d) => `<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const IC = {
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  retake: '<path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  play: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  slides: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/>',
+};
 
 // ---------- лёгкий режим для слабых компьютеров ----------
 const LITE = (() => { try { const v = localStorage.getItem("techlab_lite"); if (v) return v === "1"; } catch (e) {}
@@ -85,12 +96,12 @@ function renderNow() {
     const mission = T?.type === "mission";
     const K = T ? kindOf(T, SET) : null;
     box.innerHTML = `<a class="now" href="${esc(CURRENT.path)}">
-      <div><div class="lbl"><span class="pulse"></span>${t("now")}${K ? ` <span class="now-k">${K.icon} ${esc(K.name)}</span>` : ""}</div>
+      <div><div class="lbl"><span class="pulse"></span>${t("now")}${K ? ` <span class="now-k">${esc(K.name)}</span>` : ""}</div>
         <div class="ttl">${esc(CURRENT.title)}</div>
-        <div class="sub">${s ? esc(s.icon + " " + subjName(s)) : ""}${CURRENT.grade ? " · " + esc(gradeLabel(CURRENT.grade)) : ""}</div></div>
+        <div class="sub">${s ? esc(subjName(s)) : ""}${CURRENT.grade ? " · " + esc(gradeLabel(CURRENT.grade)) : ""}</div></div>
       <span class="go">${mission ? t("start_mission") : t("start")}</span></a>`;
   } else {
-    box.innerHTML = `<div class="now empty"><div><div class="lbl">● ${t("now")}</div>
+    box.innerHTML = `<div class="now empty"><div><div class="lbl">${t("now")}</div>
       <div class="sub" style="margin-top:4px">${t("now_empty")}</div></div></div>`;
   }
 }
@@ -99,8 +110,8 @@ function renderNow() {
 addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 
 function renderTabs(active) {
-  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>${t("tab_home")}</small><b>🏠 ${mine() ? L3("Мои предметы", "Disciplinele mele", "My subjects") : t("tab_all")}</b></a>` +
-    mySubjects().map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}${mine() ? "-" + MYGRADE : ""}"><small>${t("tab_subj")} ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(subjShort(s))}</b></a>`).join("");
+  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><b>${mine() ? L3("Мои предметы", "Disciplinele mele", "My subjects") : t("tab_all")}</b></a>` +
+    mySubjects().map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" data-s="${s.id}" href="#${s.id}${mine() ? "-" + MYGRADE : ""}"><b>${esc(subjShort(s))}</b></a>`).join("");
 }
 
 function render() {
@@ -132,7 +143,7 @@ function statLine(st) {
 function renderHome() {
   if (mine()) {
     $("#view").innerHTML = `<h2>${L3("Мои предметы", "Disciplinele mele", "My subjects")} · ${esc(ME.cls)}</h2>
-      ${mySubjects().length ? `<div class="tiles">${mySubjects().map((s) => `<a class="tile" href="#${s.id}-${MYGRADE}">
+      ${mySubjects().length ? `<div class="tiles">${mySubjects().map((s) => `<a class="tile" data-s="${s.id}" href="#${s.id}-${MYGRADE}">
         <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
         <div class="ds">${statLine(stats(s.id, MYGRADE))}</div>
         <div class="cls"><b>${esc(ME.cls)}</b></div></a>`).join("")}</div>`
@@ -143,7 +154,7 @@ function renderHome() {
     const st = stats(s.id);
     const pr = st.total ? Math.round(st.ready / st.total * 100) : 0;
     const on = Math.max(1, Math.round(pr / 25));
-    return `<a class="tile" href="#${s.id}">
+    return `<a class="tile" data-s="${s.id}" href="#${s.id}">
       <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
       <div class="ds">${statLine(st)}</div>
       <div class="cls">${s.grades.map((g) => `<b>${esc(gradeLabel(g))}</b>`).join("")}</div>
@@ -153,8 +164,8 @@ function renderHome() {
 
 function renderSubject(s) {
   $("#view").innerHTML = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › ${esc(subjName(s))}</div>
-    <h2>${s.icon} ${esc(subjName(s))} — ${t("choose_grade")}</h2>
-    <div class="tiles">${s.grades.map((g) => `<a class="tile" href="#${s.id}-${g}">
+    <h2>${esc(subjName(s))} — ${t("choose_grade")}</h2>
+    <div class="tiles">${s.grades.map((g) => `<a class="tile" data-s="${s.id}" href="#${s.id}-${g}">
         <div class="big">${esc(g)}</div><div class="nm" style="margin-top:6px">${t("grade_word")}</div>
         <div class="ds">${statLine(stats(s.id, g))}</div></a>`).join("")}</div>`;
 }
@@ -191,7 +202,7 @@ function renderGrade(s, g) {
   const cnt = {}; all.forEach((t) => { const k = kindOf(t, SET).id; cnt[k] = (cnt[k] || 0) + 1; });
   const nRetake = all.filter((t) => t.retake).length;
   const chips = [["all", t("f_all"), all.length + links.length]]
-    .concat(KINDS.filter((k) => cnt[k.id]).map((k) => [k.id, k.icon + " " + k.short, cnt[k.id]]))
+    .concat(KINDS.filter((k) => cnt[k.id]).map((k) => [k.id, k.short, cnt[k.id]]))
     .concat(nRetake ? [["retake", t("f_retakes"), nRetake]] : [])
     .concat(links.length ? [["links", t("f_materials"), links.length]] : []);
   if (!chips.some(([id]) => id === FILTER)) FILTER = "all";
@@ -199,13 +210,13 @@ function renderGrade(s, g) {
   const show = (t) => FILTER === "all" || (FILTER === "retake" ? !!t.retake : kindOf(t, SET).id === FILTER);
 
   let html = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › ${mine() ? esc(subjName(s)) : `<a href="#${s.id}">${esc(subjName(s))}</a>`} › ${esc(gradeLabel(g))}</div>
-    <h2>${s.icon} ${esc(subjName(s))} · ${esc(gradeLabel(g))}</h2>` + weekHtml(s.id, g) +
+    <h2>${esc(subjName(s))} · ${esc(gradeLabel(g))}</h2>` + weekHtml(s.id, g) +
     `<div class="filters">${chips.map(([id, name, n]) => `<button type="button" class="flt${FILTER === id ? " on" : ""}" data-f="${id}">${esc(name)} <i>${n}</i></button>`).join("")}</div>`;
 
   // экспедиции (квесты)
   const expsShown = exps.map((e) => [e, TESTS.filter((t) => t.expedition === e.id).sort((a, b) => a.n - b.n).filter(show)]).filter(([, ms]) => ms.length);
   if (expsShown.length && FILTER !== "links") {
-    html += `<h3>${t("exps_h")}</h3>` + expsShown.map(([e, ms]) => `<div class="exp"><div class="exp-head"><span class="ic">${e.icon}</span>
+    html += `<h3>${t("exps_h")}</h3>` + expsShown.map(([e, ms]) => `<div class="exp"><div class="exp-head"><span class="ic">${SV(IC.flag)}</span>
         <div><div class="t">${esc(e.title)}</div><div class="s">${esc(e.note || "")}</div></div></div>
         <div class="route">${ms.map((m) => {
           const live = OPEN[m.id], K = kindOf(m, SET);
@@ -220,8 +231,8 @@ function renderGrade(s, g) {
   if (FILTER !== "links") {
     const shownTests = tests.filter(show);
     const groups = KINDS.map((k) => [k, shownTests.filter((t) => kindOf(t, SET).id === k.id)]).filter(([, l]) => l.length);
-    if (groups.length) html += groups.map(([k, l]) => `<h3>${k.icon} ${esc(k.name)}</h3><div class="list">${l.map((t) => `<a class="row" href="${esc(t.path)}">
-        <span class="ri">${t.retake ? "🔁" : k.icon}</span><span><div class="rt">${esc(t.title)}</div><div class="rs">${esc(t.note || "")}</div></span>
+    if (groups.length) html += groups.map(([k, l]) => `<h3>${esc(k.name)}</h3><div class="list">${l.map((t) => `<a class="row" href="${esc(t.path)}">
+        <span class="ri">${SV(t.retake ? IC.retake : IC.doc)}</span><span><div class="rt">${esc(t.title)}</div><div class="rs">${esc(t.note || "")}</div></span>
         <span class="rb">${ktag(k)}${t.retake ? " " + rtag : ""} ${OPEN[t.id] ? `<span class="badge open">${tr("b_open_m")}</span>` : `<span class="badge closed">${tr("b_closed_m")}</span>`}</span></a>`).join("")}</div>`).join("");
     else if (!expsShown.length) html += `<div class="empty-note" style="margin-top:12px">${FILTER === "all" ? t("no_tasks") : t("no_kind")}</div>`;
   }
@@ -240,12 +251,12 @@ function renderGrade(s, g) {
 function host(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } }
 function icon(u) {
   const h = host(u);
-  if (/docs\.google\.com\/presentation|canva|slides/.test(u)) return "📊";
-  if (/docs\.google\.com\/document|\.docx?$/.test(u)) return "📄";
-  if (/drive\.google|dropbox|onedrive/.test(h)) return "📁";
-  if (/youtube|youtu\.be|vimeo/.test(h)) return "▶️";
-  if (/forms\.gle|docs\.google\.com\/forms/.test(u)) return "📝";
-  return "🔗";
+  if (/docs\.google\.com\/presentation|canva|slides/.test(u)) return SV(IC.slides);
+  if (/docs\.google\.com\/document|\.docx?$/.test(u)) return SV(IC.doc);
+  if (/drive\.google|dropbox|onedrive/.test(h)) return SV(IC.folder);
+  if (/youtube|youtu\.be|vimeo/.test(h)) return SV(IC.play);
+  if (/forms\.gle|docs\.google\.com\/forms/.test(u)) return SV(IC.doc);
+  return SV(IC.link);
 }
 
 // ---------- переключатель «лёгкий режим» ----------

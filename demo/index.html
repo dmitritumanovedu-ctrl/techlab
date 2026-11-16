@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#2E4BFF">
+  <meta name="theme-color" content="#ffffff">
   <title>Демо-режим · TechLab</title>
   <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="../manifest.webmanifest">
@@ -20,10 +20,12 @@
     .roles a { display: inline-block; margin: 4px 6px 0 0; }
     .top-r { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   </style>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="../theme-classroom.css?v=1">
 </head>
 <body>
   <header class="top">
-    <div><h1 data-t="title">🎮 TechLab · Демо-режим</h1><div class="who" data-t="sub">Пробная работа — можно пройти без входа</div></div>
+    <div><h1 data-t="title">TechLab · Демо-режим</h1><div class="who" data-t="sub">Пробная работа — можно пройти без входа</div></div>
     <div class="top-r"><span id="langSw"></span><a class="btn small ghost" href="../" style="background:#fff" data-t="back">← На главную</a></div>
   </header>
   <main>
@@ -71,7 +73,7 @@
     // ---------- тексты демо на трёх языках ----------
     const TX = {
       ru: {
-        doc: "Демо-режим · TechLab", title: "🎮 TechLab · Демо-режим", sub: "Пробная работа — можно пройти без входа", back: "← На главную",
+        doc: "Демо-режим · TechLab", title: "TechLab · Демо-режим", sub: "Пробная работа — можно пройти без входа", back: "← На главную",
         bar: "Это демонстрация возможностей TechLab. Ответы <b>никуда не отправляются и не сохраняются</b>. Настоящие работы открывает учитель на уроке.",
         h1: "Задание 1 · выбор ответа", h2: "Задание 2 · верно / неверно", h3: "Задание 3 · вычисление", h4: "Задание 4 · распределение", p: "б.",
         q1: "Какое устройство является устройством ввода информации?", q2: "«1 байт = 8 бит»", yes: "Верно", no: "Неверно",
@@ -84,7 +86,7 @@
         chips: ["Клавиатура", "Монитор", "Микрофон", "Принтер"], e4: "Верно размещено: {n} из 4. Ввод — клавиатура, микрофон; вывод — монитор, принтер.",
       },
       ro: {
-        doc: "Mod demo · TechLab", title: "🎮 TechLab · Mod demo", sub: "Lucrare de probă — se poate face fără autentificare", back: "← Acasă",
+        doc: "Mod demo · TechLab", title: "TechLab · Mod demo", sub: "Lucrare de probă — se poate face fără autentificare", back: "← Acasă",
         bar: "Aceasta este o demonstrație a posibilităților TechLab. Răspunsurile <b>nu se trimit nicăieri și nu se salvează</b>. Lucrările reale le deschide profesorul la lecție.",
         h1: "Sarcina 1 · alegerea răspunsului", h2: "Sarcina 2 · adevărat / fals", h3: "Sarcina 3 · calcul", h4: "Sarcina 4 · repartizare", p: "p.",
         q1: "Care dispozitiv este un dispozitiv de intrare a informației?", q2: "„1 octet = 8 biți”", yes: "Adevărat", no: "Fals",
@@ -97,7 +99,7 @@
         chips: ["Tastatură", "Monitor", "Microfon", "Imprimantă"], e4: "Plasate corect: {n} din 4. Intrare — tastatura, microfonul; ieșire — monitorul, imprimanta.",
       },
       en: {
-        doc: "Demo mode · TechLab", title: "🎮 TechLab · Demo mode", sub: "A practice task — no sign-in needed", back: "← Home",
+        doc: "Demo mode · TechLab", title: "TechLab · Demo mode", sub: "A practice task — no sign-in needed", back: "← Home",
         bar: "This is a demo of what TechLab can do. Answers <b>are not sent anywhere and are not saved</b>. Real tasks are opened by the teacher during the lesson.",
         h1: "Task 1 · multiple choice", h2: "Task 2 · true / false", h3: "Task 3 · calculation", h4: "Task 4 · sorting", p: "pt",
         q1: "Which device is an input device?", q2: "“1 byte = 8 bits”", yes: "True", no: "False",

@@ -47,7 +47,7 @@ async function render(quiet = false) {
   if (!S) { chip.innerHTML = `<button type="button" class="me-btn" id="chipIn">${t("sign_in")}</button>`; chip.querySelector("#chipIn").onclick = askCode; return portal(); }
   // Кнопка выхода видна сразу — не ждёт загрузки данных
   chip.innerHTML = `<div class="me-row"><span class="me-chip"><span class="av">${esc(initials(S.name))}</span>${esc(short(S.name))} · ${esc(S.cls)}</span>
-    <button type="button" class="me-out" id="chipOut">🚪 ${esc(L3("Выйти", "Ieși", "Sign out"))}</button></div>`;
+    <button type="button" class="me-out" id="chipOut">${esc(L3("Выйти", "Ieși", "Sign out"))}</button></div>`;
   chip.querySelector("#chipOut").onclick = logout;
   const ck = "me_" + S.code;
   const cached = cacheGet(ck);
@@ -71,7 +71,7 @@ async function render(quiet = false) {
 function portal() {
   box.innerHTML = `<section class="portal">
     <div class="p-text">
-      <span class="p-tag mono">${t("p_tag")}</span>
+      <span class="p-tag">${t("p_tag")}</span>
       <h1>${t("p_h1")}</h1>
       <p>${t("p_text")}</p>
       <p style="margin-top:12px"><a href="demo/" style="color:var(--blue);font-weight:800">${t("p_demo")}</a></p>
@@ -173,7 +173,7 @@ function center(S, P, B, CS = null, note = "") {
         <div class="st st-v"><b>${aw.filter((a) => a.ok).length}</b><span>${plw(aw.filter((a) => a.ok).length, "pl_awards_of", { n: aw.length })}</span></div>
       </div>
       ${note ? `<div class="gc-sync">⏳ ${esc(note)}</div>` : ""}
-      <button type="button" class="gc-out" id="logout">🚪 ${t("not_me")}</button>
+      <button type="button" class="gc-out" id="logout">${t("not_me")}</button>
     </div>
 
     <div class="gc-grid">
@@ -188,7 +188,7 @@ function center(S, P, B, CS = null, note = "") {
             <div><div class="wt">${esc(w.title)}</div><div class="ws">${esc(kindShortById(w.kind, w.kindName || ""))}${w.complete ? ` · ${fmt1(w.total)} / ${w.max} · +${20 + w.grade * 10 + (w.viol ? 0 : 10)} XP` : " · " + t("waiting_check")}${w.date ? " · " + new Date(w.date).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }) : ""}</div></div></${w.path ? "a" : "div"}>`).join("");
         }).join("") : `<p class="muted">${t("no_works_student")}</p>`}
         ${works.find((w) => w.summary) ? `<div class="tip"><b>${t("tip_last")}</b> ${esc(works.find((w) => w.summary).summary.advice)}</div>` : ""}
-        <p class="muted small">🔒 ${({ ru: "Твои оценки видишь только ты, твои родители и учитель.", ro: "Notele tale le vezi doar tu, părinții tăi și profesorul.", en: "Only you, your parents and your teacher can see your grades." })[LANG_] || ""}</p>
+        <p class="muted small">${({ ru: "Твои оценки видишь только ты, твои родители и учитель.", ro: "Notele tale le vezi doar tu, părinții tăi și profesorul.", en: "Only you, your parents and your teacher can see your grades." })[LANG_] || ""}</p>
       </div>
 
       <div class="gc-card">

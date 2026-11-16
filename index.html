@@ -3,47 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#2E4BFF">
+  <meta name="theme-color" content="#ffffff">
   <title>TechLab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://dmitri-bcd33-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
   <link rel="stylesheet" href="style-e2.css?v=9">
+  <link rel="stylesheet" href="theme-classroom.css?v=1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="TechLab">
-    <script type="module" src="https://get.microsoft.com/badge/ms-store-badge.bundled.js"></script>
+  <script type="module" src="https://get.microsoft.com/badge/ms-store-badge.bundled.js"></script>
 </head>
 <body>
+  <header class="bar">
+    <div class="bar-in">
+      <a class="logo" href="#" title="Стартовая страница">TechLab</a>
+      <div class="hero-r"><div id="langSw"></div><div id="meChip"></div><button type="button" class="inst-btn" id="installBtn" data-i18n="install_btn" hidden>Установить приложение</button><div class="clock" id="clock"></div></div>
+    </div>
+  </header>
   <div class="wrap">
-    <header class="hero">
-      <div>
-        <span class="onair mono"><i></i>ON AIR · TechLab</span>
-        <div class="subs mono" data-i18n="subs">Информатика · География · Технологическое воспитание · Математика</div>
-        <a class="logo" href="#" title="Стартовая страница">TechLab</a>
-        <p class="lead" data-i18n="lead">Выбери предмет и класс. Тест или миссию открывает учитель — она появится в блоке «Сейчас на уроке».</p>
-        <ms-store-badge productid="9PP48L8KF98D" window-mode="direct" theme="auto" language="ru"></ms-store-badge>
-      </div>
-      <div class="hero-r"><div id="langSw"></div><div id="meChip"></div><button type="button" class="inst-btn" id="installBtn" data-i18n="install_btn" hidden>📲 Установить приложение</button><div class="clock" id="clock"></div></div>
-    </header>
     <nav class="tabs" id="tabs"></nav>
     <main>
       <div id="home"></div>
       <div id="now"></div>
       <div id="view"></div>
+      <section class="store-box">
+        <div><b data-i18n="store_h">TechLab для Windows</b><span data-i18n="store_p">Установите приложение из Microsoft Store — оно откроется отдельным окном.</span></div>
+        <ms-store-badge productid="9PP48L8KF98D" window-mode="direct" theme="dark" language="ru"></ms-store-badge>
+      </section>
     </main>
-    <footer><a href="parent/" data-i18n="f_parent">кабинет родителя</a> · <a href="demo/" data-i18n="f_demo">демо-режим</a> · <a href="privacy.html" data-i18n="f_privacy">конфиденциальность</a> · <a href="teacher/" data-i18n="f_teacher">вход для учителя</a> · <a href="#" id="liteToggle">⚡ лёгкий режим</a></footer>
+    <footer><a href="parent/" data-i18n="f_parent">кабинет родителя</a> · <a href="demo/" data-i18n="f_demo">демо-режим</a> · <a href="privacy.html" data-i18n="f_privacy">конфиденциальность</a> · <a href="teacher/" data-i18n="f_teacher">вход для учителя</a> · <a href="#" id="liteToggle">лёгкий режим</a></footer>
   </div>
   <script type="module">
-    import { applyI18n, mountLangSwitch } from "./engine/i18n.js?v=1";
+    import { applyI18n, mountLangSwitch } from "./engine/i18n.js?v=2";
     applyI18n(); mountLangSwitch(document.getElementById("langSw"));
   </script>
-  <script type="module" src="start-e2.js?v=12"></script>
-  <script type="module" src="home.js?v=8"></script>
+  <script type="module" src="start-e2.js?v=13"></script>
+  <script type="module" src="home.js?v=9"></script>
   <script type="module" src="install.js?v=2"></script>
   <script type="module" src="engine/consent.js?v=2"></script>
 </body>
