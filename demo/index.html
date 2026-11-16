@@ -147,5 +147,6 @@
       let ok = 0; cols.forEach((col, i) => { const el = document.querySelector(`[data-chip="${i}"]`); const z = el.closest("[data-col]"); if (Number(z.dataset.col) === col) ok++; });
       S[4] = ok === 4 ? 2 : ok >= 2 ? 1 : 0; setRes(4, ok === 4, L.e4.replace("{n}", ok)); total(); };
   </script>
+<script type="module" src="../engine/nav.js?v=1"></script>
 </body>
 </html>

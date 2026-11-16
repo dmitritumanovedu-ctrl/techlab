@@ -611,8 +611,7 @@ function bindKind() {
 // ---------- план недели ----------
 function showPlan() {
   openId = null;
-  const gradeOpts = SUBJECTS.flatMap((sub) => sub.grades.map((g) =>
-    `<option value="${sub.id}-${g}">${esc(sub.icon + " " + sub.name + " · " + g + " класс")}</option>`)).join("");
+  const gradeOpts = wsOptions("-");
   const today = new Date(); const pad = (n) => String(n).padStart(2, "0");
   const iso = today.getFullYear() + "-" + pad(today.getMonth() + 1) + "-" + pad(today.getDate());
   dlg.innerHTML = `<div class="dlg-head"><b>📅 План недели на стартовой</b>
@@ -663,8 +662,7 @@ function showPlan() {
 
 function showLinks() {
   openId = null;
-  const gradeOpts = SUBJECTS.flatMap((sub) => sub.grades.map((g) =>
-    `<option value="${sub.id}|${g}">${esc(sub.icon + " " + sub.name + " · " + g + " класс")}</option>`)).join("");
+  const gradeOpts = wsOptions("|");
   dlg.innerHTML = `<div class="dlg-head"><b>📎 Материалы на стартовой странице</b>
       <button class="btn small ghost" style="background:#fff" id="lClose">Закрыть ✕</button></div>
     <div class="dlg-body">
@@ -900,15 +898,16 @@ function missionCsv() {
 // =====================================================================
 async function showOverview() {
   document.title = "Центр управления · TechLab";
-  $("#hSub").textContent = "Все предметы · тесты и миссии · результаты в реальном времени";
+  $("#hSub").textContent = "Выберите предмет и класс — увидите только их работы · результаты в реальном времени";
   app.innerHTML = `<div class="card center"><p class="muted">Загружаю результаты…</p></div>`;
   const KEYSALL = {};
-  for (const t of READY.filter((x) => x.type !== "mission" && !x.teacher)) {
+  await Promise.all(READY.filter((x) => x.type !== "mission" && !x.teacher).map(async (t) => {
     try { KEYSALL[t.id] = (await get(ref(db, `keys/${t.id}`))).val(); } catch (e) { /* нет прав или ключей */ }
-  }
-  app.innerHTML = `<div id="hubNow"></div><div id="hub"></div>
+  }));
+  app.innerHTML = `<div id="hubNow"></div><div id="hubOpen"></div><div id="hubTools"></div><div id="hubSel"></div><div id="hub"></div>
     <p class="muted" style="font-size:14px;margin-top:26px">Нажмите на карточку, чтобы открыть подробные результаты, проверку и настройки теста или миссии.</p>`;
-  let SET = {}, RES = {};
+  let SET = {}, RES = {}, PUB = {};
+  let WS = getWS();
 
   const avgOf = (t, list) => {
     if (usesQual(t.subject) && t.type === "mission") {
@@ -920,7 +919,7 @@ async function showOverview() {
     for (const r of list) {
       if (r.status !== "submitted") continue;
       if (t.type === "mission") { const e = mEval(r, t); if (e.complete) g.push(e.grade); }
-      else if (t.teacher) { if (r.result?.complete) g.push(r.result.grade); }
+      else if (t.teacher || t.bt) { if (r.result?.complete && Number.isFinite(r.result.grade)) g.push(r.result.grade); }
       else if (KEYSALL[t.id]) {
         const k = KEYSALL[t.id].variants?.[String(r.variant)];
         if (!k) continue;
@@ -930,19 +929,26 @@ async function showOverview() {
     }
     return g.length ? fmtNum(g.reduce((a, b) => a + b, 0) / g.length) : "—";
   };
+  // все работы: готовые (tests.js) + тесты из конструктора (pubIndex)
+  const allItems = () => READY.map((t) => ({ ...t, href: `?test=${encodeURIComponent(t.id)}` })).concat(
+    Object.entries(PUB).map(([id, x]) => ({ id, bt: true, type: "test", kind: x.kind || "to", subject: x.subject, grade: String(x.grade || ""),
+      title: x.title || "Тест", href: `builder.html#/r/${id}` })));
+  const subjOf = (id) => SUBJECTS.find((x) => x.id === id);
+  const isOpen = (t) => !!SET[t.id]?.open;
+  const kindLine = (t) => t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : t.type === "practical" ? "Практическая работа" : t.bt ? "Тест · конструктор" : "Тест";
+  const where = (t) => { const sb = subjOf(t.subject); return `${sb ? sb.icon + " " + esc(sb.name) : ""}${t.grade ? " · " + esc(t.grade) + " класс" : ""}`; };
 
   function draw() {
+    const ITEMS = allItems();
     const c = SET.current;
+    // ---- что сейчас на стартовой ----
     $("#hubNow").innerHTML = c ? `<div class="hub-now">
-        <div><div class="l">📌 Сейчас на стартовой у учеников</div><div class="t">${esc(c.title)}</div></div>
-        <div class="r"><a class="btn small" href="?test=${encodeURIComponent(c.id)}">Открыть результаты</a>
+        <div><div class="l">📌 Сейчас на стартовой у учеников</div><div class="t">${esc(c.title)}</div>
+          <div class="muted" style="margin-top:2px">${where(c)}</div></div>
+        <div class="r"><a class="btn small" href="${ITEMS.find((t) => t.id === c.id)?.href || "?test=" + encodeURIComponent(c.id)}">Открыть результаты</a>
           <button class="btn small ghost" id="unpin">Убрать со стартовой</button></div></div>`
       : `<div class="hub-now"><div><div class="l">📌 Сейчас на стартовой</div>
         <div class="muted" style="margin-top:4px">Ничего не открыто. Откройте тест или миссию — они появятся у учеников в блоке «Сейчас на уроке».</div></div></div>`;
-    $("#hubNow").insertAdjacentHTML("beforeend", `<div class="hub-tools"><a class="btn small" href="builder.html">🧩 Конструктор тестов</a> <a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
-      <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
-      <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`);
-    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
     const un = $("#unpin");
     if (un) un.onclick = async () => {
       if (!confirm("Убрать с стартовой и закрыть «" + c.title + "»? Уже начатые работы ученики смогут закончить.")) return;
@@ -950,29 +956,90 @@ async function showOverview() {
       await remove(ref(db, "settings/current"));
     };
 
-    $("#hub").innerHTML = SUBJECTS.map((sub) => {
-      const items = READY.filter((t) => t.subject === sub.id).sort((a, b) => (a.grade + (a.n || 0)).localeCompare(b.grade + (b.n || 0)));
-      const soon = TESTS.filter((t) => t.subject === sub.id && !t.path).length;
-      const head = `<div class="hub-subj"><span class="ic">${sub.icon}</span>${esc(sub.name)}
-        <span class="muted" style="font-family:inherit;font-size:14px;font-weight:600">· ${sub.grades.join(", ")} класс</span></div>`;
-      if (!items.length) return head + `<div class="hub-empty">Пока нет тестов и миссий. Пришлите материал урока — Claude подготовит задание.</div>`;
-      return head + `<div class="hub-grid">${items.map((t) => {
-        const list = Object.values(RES[t.id] || {});
-        const run = list.filter((r) => r.status === "in_progress").length;
-        const done = list.filter((r) => r.status === "submitted").length;
-        const open = !!SET[t.id]?.open;
-        return `<a class="hub-card" href="?test=${encodeURIComponent(t.id)}">
-          <span class="live">${open ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
-          <div class="k">${esc(t.grade)} класс · ${t.type === "mission" ? "Миссия " + t.n + (t.date ? " · " + esc(t.date) : "") : t.type === "practical" ? "Практическая работа" : "Тест"}</div>
-          <div class="n">${esc(t.title)}</div>
-          <div class="kt">${(() => { const K = kindOf(t, SET); return `<span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>`; })()}${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}</div>
-          <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${usesQual(t.subject) && t.type === "mission" ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${usesQual(t.subject) && t.type === "mission" ? "квалификативы" : "ср. оценка"}</div></div>
-        </a>`;
-      }).join("")}</div>` + (soon ? `<p class="muted" style="font-size:14px;margin:8px 2px 0">🔒 Ещё в разработке: ${soon}</p>` : "");
+    // ---- всё, что сейчас открыто, — в одном месте: где именно и для кого ----
+    const opened = ITEMS.filter(isOpen);
+    $("#hubOpen").innerHTML = opened.length ? `<div class="hub-open"><div class="l">🟢 Открыто для учеников · ${opened.length}</div>
+      ${opened.map((t) => `<div class="ho-row"><span class="ho-w">${where(t)}</span><a href="${t.href}" class="ho-t">${esc(t.title)}</a>
+        <button class="btn small ghost" data-close="${esc(t.id)}">Закрыть</button></div>`).join("")}</div>` : "";
+    document.querySelectorAll("[data-close]").forEach((b) => b.onclick = async () => {
+      const id = b.dataset.close;
+      await set(ref(db, `settings/${id}/open`), false);
+      if (SET.current?.id === id) await remove(ref(db, "settings/current"));
+    });
+
+    // ---- инструменты (действуют для выбранного предмета и класса) ----
+    $("#hubTools").innerHTML = `<div class="hub-tools"><a class="btn small" href="builder.html">🧩 Конструктор тестов</a> <a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
+      <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
+      <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`;
+    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
+
+    // ---- выбор: предмет → класс ----
+    const sub = subjOf(WS.s);
+    const cnt = (f) => ITEMS.filter(f).length;
+    const dot = (f) => ITEMS.some((t) => f(t) && isOpen(t)) ? '<i class="ws-dot" title="есть открытые"></i>' : "";
+    $("#hubSel").innerHTML = `<div class="ws-bar">
+      <div class="ws-l">1 · Предмет</div>
+      <div class="ws-row">
+        <button class="ws-b${!WS.s ? " on" : ""}" data-ws-s="">Все предметы <b>${ITEMS.length}</b>${dot(() => true)}</button>
+        ${SUBJECTS.map((x) => `<button class="ws-b${WS.s === x.id ? " on" : ""}" data-ws-s="${x.id}">${x.icon} ${esc(x.name)} <b>${cnt((t) => t.subject === x.id)}</b>${dot((t) => t.subject === x.id)}</button>`).join("")}
+      </div>
+      ${sub ? `<div class="ws-l">2 · Класс</div><div class="ws-row">
+        <button class="ws-b${!WS.g ? " on" : ""}" data-ws-g="">Все классы <b>${cnt((t) => t.subject === sub.id)}</b></button>
+        ${sub.grades.map((g) => `<button class="ws-b${WS.g === g ? " on" : ""}" data-ws-g="${g}">${esc(g)} класс <b>${cnt((t) => t.subject === sub.id && t.grade === g)}</b>${dot((t) => t.subject === sub.id && t.grade === g)}</button>`).join("")}
+      </div>` : ""}
+      ${sub ? `<div class="ws-now">Вы работаете: <b>${sub.icon} ${esc(sub.name)}${WS.g ? " · " + esc(WS.g) + " класс" : ""}</b> — план недели, материалы и новые тесты будут сразу для этого ${WS.g ? "класса" : "предмета"}.</div>` : ""}
+    </div>`;
+    document.querySelectorAll("[data-ws-s]").forEach((b) => b.onclick = () => { WS = { s: b.dataset.wsS, g: "" }; const x = subjOf(WS.s); if (x && x.grades.length === 1) WS.g = x.grades[0]; saveWS(WS); draw(); });
+    document.querySelectorAll("[data-ws-g]").forEach((b) => b.onclick = () => { WS = { ...WS, g: b.dataset.wsG }; saveWS(WS); draw(); });
+
+    // ---- карточки: предмет → класс → работы ----
+    const card = (t) => {
+      const list = Object.values(RES[t.id] || {});
+      const run = list.filter((r) => r.status === "in_progress").length;
+      const done = list.filter((r) => r.status === "submitted").length;
+      const q = usesQual(t.subject) && t.type === "mission";
+      const K = kindOf(t, SET);
+      return `<a class="hub-card${isOpen(t) ? " is-open" : ""}" href="${t.href}">
+        <span class="live">${isOpen(t) ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
+        <div class="k">${esc(t.grade)} класс · ${kindLine(t)}</div>
+        <div class="n">${esc(t.title)}</div>
+        <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}</div>
+        <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${q ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${q ? "квалификативы" : "ср. оценка"}</div></div>
+      </a>`;
+    };
+    const order = (a, b) => (Number(isOpen(b)) - Number(isOpen(a))) || String(a.n || 0).localeCompare(String(b.n || 0), undefined, { numeric: true }) || a.title.localeCompare(b.title);
+    $("#hub").innerHTML = SUBJECTS.filter((x) => !WS.s || x.id === WS.s).map((sb) => {
+      const grades = sb.grades.filter((g) => !WS.g || g === WS.g || WS.s !== sb.id);
+      const soon = TESTS.filter((t) => t.subject === sb.id && !t.path && (!WS.g || t.grade === WS.g)).length;
+      const head = `<div class="hub-subj"><span class="ic">${sb.icon}</span>${esc(sb.name)}</div>`;
+      const body = grades.map((g) => {
+        const items = ITEMS.filter((t) => t.subject === sb.id && t.grade === g).sort(order);
+        if (!items.length && !WS.g) return "";
+        return `<div class="hub-grade"><span>${esc(g)} класс</span><small>${items.length ? items.length + " · открыто " + items.filter(isOpen).length : "пусто"}</small></div>` +
+          (items.length ? `<div class="hub-grid">${items.map(card).join("")}</div>`
+            : `<div class="hub-empty">Для ${esc(g)} класса пока нет работ. Создайте тест в <a href="builder.html">🧩 Конструкторе</a> — он сразу попадёт сюда.</div>`);
+      }).join("");
+      return head + (body || `<div class="hub-empty">Пока нет тестов и миссий. Создайте тест в <a href="builder.html">🧩 Конструкторе</a>.</div>`) +
+        (soon ? `<p class="muted" style="font-size:14px;margin:8px 2px 0">🔒 Ещё в разработке: ${soon}</p>` : "");
     }).join("");
   }
   unsub.push(onValue(ref(db, "settings"), (s) => { SET = s.val() || {}; draw(); }));
   unsub.push(onValue(ref(db, "results"), (s) => { RES = s.val() || {}; draw(); }));
+  unsub.push(onValue(ref(db, "pubIndex"), (s) => { PUB = s.val() || {}; draw(); }, () => {}));
+}
+
+// ---------- выбранный предмет и класс учителя (общий для Центра управления, плана, материалов и конструктора) ----------
+function getWS() {
+  try { const w = JSON.parse(localStorage.getItem("techlab_ws") || "{}"); const s = SUBJECTS.find((x) => x.id === w.s);
+    return s ? { s: s.id, g: s.grades.includes(w.g) ? w.g : "" } : { s: "", g: "" }; } catch (e) { return { s: "", g: "" }; }
+}
+function saveWS(w) { try { localStorage.setItem("techlab_ws", JSON.stringify(w)); } catch (e) {} }
+function wsOptions(sep) {        // список «предмет · класс» для диалогов; выбранный в Центре управления — первым и отмеченным
+  const w = getWS();
+  return SUBJECTS.flatMap((sub) => sub.grades.map((g) => {
+    const v = sub.id + sep + g, on = w.s === sub.id && (w.g === g || (!w.g && g === sub.grades[0]));
+    return `<option value="${v}"${on ? " selected" : ""}>${esc(sub.icon + " " + sub.name + " · " + g + " класс")}</option>`;
+  })).join("");
 }
 
 

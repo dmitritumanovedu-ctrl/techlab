@@ -146,3 +146,13 @@ h1 { font-family: Unbounded, sans-serif; font-size: 24px; margin: 0 0 4px; }
 }
 #app input:not([type]), .bd-dlg input:not([type]) { border: 1px solid #C9D4EA; border-radius: 10px; padding: 9px 11px; background: #fff; color: var(--ink); }
 #app input:disabled { background: #EEF2F8; color: var(--muted); }
+
+/* выбор «предмет → класс» (как в Центре управления) */
+.ws-bar { background: #fff; border: 1px solid #DCE4F2; border-radius: 18px; padding: 12px 14px; }
+.ws-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ws-b { font: inherit; font-weight: 800; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; padding: 7px 13px; border-radius: 999px;
+  border: 2px solid #DCE4F2; background: #fff; color: #0B1A3B; cursor: pointer; }
+.ws-b b { background: #EEF2F8; color: #556A92; border-radius: 999px; padding: 0 8px; font-size: 12px; }
+.ws-b:hover { border-color: #2E4BFF; }
+.ws-b.on { border-color: #2E4BFF; background: #2E4BFF; color: #fff; }
+.ws-b.on b { background: rgba(255,255,255,.25); color: #fff; }

@@ -18,6 +18,36 @@ export function getSession() {
 export function setSession(s) { try { localStorage.setItem(SKEY, JSON.stringify(s)); } catch (e) {} }
 export function clearSession() { try { localStorage.removeItem(SKEY); } catch (e) {} }
 
+// Вход/выход с оповещением: стартовая страница сразу перерисовывается без перезагрузки,
+// а другие открытые вкладки узнают об этом через событие "storage".
+export const SESSION_EVENT = "techlab:session";
+const notify = () => { try { window.dispatchEvent(new CustomEvent(SESSION_EVENT)); } catch (e) {} };
+export function signInStudent(s) { setSession(s); rememberCode(s); notify(); }
+export function signOutStudent() {
+  clearSession();
+  try { Object.keys(localStorage).filter((k) => k.startsWith("techlab_cache_me_")).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+  notify();
+}
+
+// Коды, которые уже входили на этом компьютере: при медленном интернете вход проходит сразу,
+// а проверка в базе идёт следом. Храним не больше 40 кодов и не дольше 60 дней.
+const KKEY = "techlab_known";
+export function knownCode(code) {
+  try { const m = JSON.parse(localStorage.getItem(KKEY) || "{}"), x = m[code];
+    return x && Date.now() - x.at < 60 * 864e5 ? { code, name: x.name, cls: x.cls } : null; } catch (e) { return null; }
+}
+export function rememberCode(s) {
+  try {
+    const m = JSON.parse(localStorage.getItem(KKEY) || "{}");
+    m[s.code] = { name: s.name, cls: s.cls, at: Date.now() };
+    const keep = Object.entries(m).sort((a, b) => b[1].at - a[1].at).slice(0, 40);
+    localStorage.setItem(KKEY, JSON.stringify(Object.fromEntries(keep)));
+  } catch (e) {}
+}
+export function forgetCode(code) {
+  try { const m = JSON.parse(localStorage.getItem(KKEY) || "{}"); delete m[code]; localStorage.setItem(KKEY, JSON.stringify(m)); } catch (e) {}
+}
+
 // ---------- коды ----------
 const ALPH = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";          // без похожих символов O/0, I/1, L
 export function makeCode(prefix = "") {

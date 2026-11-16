@@ -1,10 +1,8 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
 import { SUBJECTS, TESTS as TESTS_RAW, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
 let TESTS = TESTS_RAW;   // + тесты из конструктора (pubIndex)
 import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE, LANG } from "./engine/i18n.js?v=1";
-import { getSession, clsKey } from "./engine/people.js?v=2";
+import { getSession, clsKey, SESSION_EVENT } from "./engine/people.js?v=3";
 const kindOf = (x, S) => kindT(kindOfRaw(x, S));
 const KINDS = KINDS_RAW.map(kindT);
 
@@ -15,9 +13,19 @@ const subj = (id) => SUBJECTS.find((s) => s.id === id);
 let CURRENT = null, LINKS = {}, OPEN = {}, SET = {}, PLAN = {}, FILTER = "all", LASTGRADE = "";
 
 // ---------- ученик вошёл по личному коду: показываем только его предметы и его класс ----------
-const ME = getSession();
-const MYGRADE = ME ? String(ME.cls).split(" ")[0] : "";
+let ME = getSession();
+let MYGRADE = ME ? String(ME.cls).split(" ")[0] : "";
 let MYSUBJ = null;                                   // null = учитель не выбрал предметы → видно всё
+// Вход или выход ученика: сразу пересчитываем «Мои предметы», чтобы не оставалось следов прошлого ученика
+function onSession() {
+  ME = getSession();
+  MYGRADE = ME ? String(ME.cls).split(" ")[0] : "";
+  MYSUBJ = ME ? classSubjects(SET) : null;
+  renderNow(); render();
+  refresh();
+}
+const classSubjects = (s) => { const cs = ME && s?.classSubjects?.[clsKey(ME.cls)]; return cs ? Object.keys(cs) : null; };
+window.addEventListener(SESSION_EVENT, onSession);
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG] || ru;
 const mySubjects = () => MYSUBJ ? SUBJECTS.filter((s) => MYSUBJ.includes(s.id)) : SUBJECTS;
 const mine = () => !!(ME && MYSUBJ);
@@ -37,25 +45,31 @@ function tick() {
 tick(); setInterval(tick, 15000);
 
 // ---------- данные из базы ----------
-// Стартовая страница не держит постоянное подключение к базе: читает настройки,
-// сразу отключается и обновляет их раз в 20 секунд. Так подключения остаются для тестов и миссий.
-let db = null;
-try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { console.warn(e); }
+// Стартовая страница не держит постоянное подключение к базе: раз в 20 секунд
+// делает короткий HTTPS-запрос (с таймаутом и повтором). Последние данные хранятся
+// на компьютере — при медленном интернете страница показывается сразу.
+function apply(s, pi) {
+  s = s || {};
+  const BT = Object.entries(pi || {}).map(([id, x]) => ({ id, type: "test", kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title,
+    note: [pl(x.n || 0, "pl_task"), x.minutes ? x.minutes + (LANG === "ru" ? " мин" : " min") : ""].filter(Boolean).join(" · "), path: `b/?t=${id}` }));
+  TESTS = TESTS_RAW.concat(BT);
+  SET = s; CURRENT = s.current || null;
+  MYSUBJ = classSubjects(s);
+  LINKS = s.links || {}; PLAN = s.plan || {}; OPEN = {};
+  for (const t of TESTS) OPEN[t.id] = !!(s[t.id] && s[t.id].open);
+}
+const cached = cacheGet("start", 3 * 864e5);
+if (cached) apply(cached.s, cached.pi);
+let busy = false;
 async function refresh() {
-  if (!db || document.hidden) return;
+  if (document.hidden || busy) return;
+  busy = true;
   try {
-    goOnline(db);
-    const [ss, pi] = await Promise.all([get(ref(db, "settings")), get(ref(db, "pubIndex")).catch(() => null)]);
-    const s = ss.val() || {};
-    const BT = Object.entries(pi?.val() || {}).map(([id, x]) => ({ id, type: "test", kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title,
-      note: [pl(x.n || 0, "pl_task"), x.minutes ? x.minutes + (LANG === "ru" ? " мин" : " min") : ""].filter(Boolean).join(" · "), path: `b/?t=${id}` }));
-    TESTS = TESTS_RAW.concat(BT);
-    SET = s; CURRENT = s.current || null;
-    if (ME) { const cs = s.classSubjects?.[clsKey(ME.cls)]; MYSUBJ = cs ? Object.keys(cs) : null; } LINKS = s.links || {}; PLAN = s.plan || {}; OPEN = {};
-    for (const t of TESTS) OPEN[t.id] = !!(s[t.id] && s[t.id].open);
-    renderNow(); render();
-  } catch (e) { renderNow(); }
-  finally { try { goOffline(db); } catch (e) {} }
+    const [s, pi] = await Promise.all([readDb("settings", { tries: 2 }), readDb("pubIndex", { tries: 2 }).catch(() => null)]);
+    cachePut("start", { s, pi });
+    apply(s, pi);
+  } catch (e) { console.warn(e); }
+  finally { busy = false; renderNow(); render(); }
 }
 refresh();
 setInterval(refresh, 20000);
@@ -83,10 +97,9 @@ function renderNow() {
 
 // ---------- страницы ----------
 addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
-render();
 
 function renderTabs(active) {
-  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>${t("tab_home")}</small><b>${mine() ? L3("Мои предметы", "Disciplinele mele", "My subjects") : t("tab_all")}</b></a>` +
+  $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><small>${t("tab_home")}</small><b>🏠 ${mine() ? L3("Мои предметы", "Disciplinele mele", "My subjects") : t("tab_all")}</b></a>` +
     mySubjects().map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" href="#${s.id}${mine() ? "-" + MYGRADE : ""}"><small>${t("tab_subj")} ${String(i + 1).padStart(2, "0")}</small><b>${s.icon} ${esc(subjShort(s))}</b></a>`).join("");
 }
 
@@ -241,3 +254,6 @@ if (lt) {
   lt.textContent = LITE ? t("lite_off") : t("lite_on");
   lt.onclick = (e) => { e.preventDefault(); try { localStorage.setItem("techlab_lite", LITE ? "0" : "1"); } catch (x) {} location.reload(); };
 }
+
+// первая отрисовка — сразу (из сохранённых данных), не дожидаясь интернета
+render(); renderNow();

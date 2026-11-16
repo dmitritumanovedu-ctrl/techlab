@@ -25,8 +25,24 @@
     .url { font-family: ui-monospace, Consolas, monospace; font-size: 18px; background: #E8EDFF; color: var(--blue); padding: 10px 14px; border-radius: 12px; word-break: break-all; }
     ol { padding-left: 22px; font-size: 18px; line-height: 1.5; } ol li { margin: 8px 0; }
     .note { color: var(--muted); font-size: 15px; }
-    @media (max-width: 760px) { .poster { grid-template-columns: 1fr; padding: 22px; } h1 { font-size: 38px; } }
-    @media print { body { background: #fff; } .tools { display: none; } .poster { box-shadow: none; margin: 0; padding: 10mm; } @page { size: A4 landscape; margin: 8mm; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    @media screen and (max-width: 760px) { .poster { grid-template-columns: 1fr; padding: 22px; } h1 { font-size: 38px; } }
+    /* Печать / PDF: ровно ОДИН лист A4 (книжный). Размеры в миллиметрах — не зависят от ширины окна. */
+    @page { size: A4 portrait; margin: 12mm; }
+    @media print {
+      html, body { background: #fff; width: auto; height: auto; }
+      .tools { display: none !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .poster { display: block; max-width: none; width: 100%; margin: 0; padding: 0; border-radius: 0; box-shadow: none;
+        text-align: center; page-break-inside: avoid; break-inside: avoid; }
+      .qr { width: 118mm; height: 118mm; margin: 0 auto 8mm; padding: 5mm; border-width: 2mm; border-radius: 8mm; }
+      .qr svg { width: 100%; height: 100%; }
+      h1 { font-size: 34pt; }
+      .sub { font-size: 16pt; margin: 3mm 0 5mm; }
+      ol { display: table; text-align: left; font-size: 13pt; margin: 0 auto 5mm; }
+      ol li { margin: 1.5mm 0; }
+      .url { display: table; margin: 0 auto; font-size: 12pt; padding: 2mm 4mm; }
+      .note { font-size: 10pt; margin: 4mm 0 0; }
+    }
   </style>
 </head>
 <body>
@@ -38,7 +54,7 @@
         <option value="custom">Своя ссылка…</option>
       </select></label>
     <label id="customWrap" hidden>Ссылка<input id="custom" placeholder="https://…"></label>
-    <button type="button" onclick="print()">🖨 Печать / PDF</button>
+    <button type="button" onclick="print()">🖨 Печать / PDF (1 лист A4)</button>
     <a class="a ghost" href="teacher/">← Центр управления</a>
   </div>
   <section class="poster">

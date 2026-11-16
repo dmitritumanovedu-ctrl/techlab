@@ -210,5 +210,6 @@
   document.querySelectorAll("[data-l]").forEach((b) => b.onclick = () => { setLang(b.dataset.l); history.replaceState(null, "", "#" + b.dataset.l); });
   setLang(location.hash === "#ro" || (navigator.language || "").startsWith("ro") && location.hash !== "#ru" ? "ro" : "ru");
 </script>
+<script type="module" src="engine/nav.js?v=1"></script>
 </body>
 </html>

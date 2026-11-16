@@ -77,14 +77,28 @@ function statusOf(t) {
   return ["pub", tb("st_pub")];
 }
 const subjOf = (id) => SUBJECTS.find((s) => s.id === id);
+// выбранный предмет и класс — общий с Центром управления (localStorage "techlab_ws")
+function getWS() {
+  try { const w = JSON.parse(localStorage.getItem("techlab_ws") || "{}"); const s = subjOf(w.s);
+    return s ? { s: s.id, g: s.grades.includes(w.g) ? w.g : "" } : { s: "", g: "" }; } catch (e) { return { s: "", g: "" }; }
+}
+function saveWS(w) { try { localStorage.setItem("techlab_ws", JSON.stringify(w)); } catch (e) {} }
 
 async function showList() {
   try { SET = (await get(ref(db, "settings"))).val() || {}; } catch (e) {}
-  const list = Object.values(ALL).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const W = getWS();
+  const all = Object.values(ALL).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const list = all.filter((t) => (!W.s || t.subject === W.s) && (!W.g || String(t.grade) === W.g));
   const cur = SET.current?.id;
+  const ws = subjOf(W.s);
+  const chip = (on, attr, label, n) => `<button type="button" class="ws-b${on ? " on" : ""}" ${attr}>${label} <b>${n}</b></button>`;
   app.innerHTML = `<div class="bd-list">
     <div class="bd-list-head"><div><h1>${esc(tb("b_myTests"))}</h1><p class="muted">${esc(tb("b_myTestsP"))}</p></div>
-      <button class="btn" id="bNew" type="button">${esc(tb("b_new"))}</button></div>
+      <button class="btn" id="bNew" type="button">${esc(tb("b_new"))}${ws ? ` · ${ws.icon} ${W.g ? esc(gradeLabel(W.g)) : esc(subjName(ws))}` : ""}</button></div>
+    <div class="ws-bar" style="position:static;margin-bottom:16px">
+      <div class="ws-row">${chip(!W.s, 'data-ws-s=""', "Все предметы", all.length)}${SUBJECTS.map((x) => chip(W.s === x.id, `data-ws-s="${x.id}"`, `${x.icon} ${esc(subjName(x))}`, all.filter((t) => t.subject === x.id).length)).join("")}</div>
+      ${ws ? `<div class="ws-row" style="margin:0">${chip(!W.g, 'data-ws-g=""', "Все классы", all.filter((t) => t.subject === ws.id).length)}${ws.grades.map((g) => chip(W.g === g, `data-ws-g="${g}"`, esc(gradeLabel(g)), all.filter((t) => t.subject === ws.id && String(t.grade) === g).length)).join("")}</div>` : ""}
+    </div>
     ${list.length ? `<div class="bd-cards">${list.map((t) => {
       const [st, stT] = statusOf(t), open = !!SET[t.id]?.open, s = subjOf(t.subject);
       return `<article class="bd-card">
@@ -103,13 +117,15 @@ async function showList() {
         </div></article>`; }).join("")}</div>`
       : `<div class="card center"><h2>${esc(tb("b_emptyH"))}</h2><p class="muted">${esc(tb("b_emptyP"))}</p></div>`}</div>`;
   $("#bNew").onclick = createTest;
+  $$("[data-ws-s]").forEach((b) => b.onclick = () => { const x = subjOf(b.dataset.wsS); saveWS({ s: b.dataset.wsS, g: x && x.grades.length === 1 ? x.grades[0] : "" }); showList(); });
+  $$("[data-ws-g]").forEach((b) => b.onclick = () => { saveWS({ ...getWS(), g: b.dataset.wsG }); showList(); });
   $$("[data-act]").forEach((b) => b.onclick = () => listAction(b.dataset.act, b.dataset.id, b));
 }
 
 async function createTest() {
   const id = "b" + Date.now().toString(36);
-  const s = SUBJECTS[0];
-  const t = { id, title: tb("b_newTitle"), subject: s.id, grade: s.grades[0], kind: "to", minutes: 30, variants: 10, scale: s.id === "tech" ? "qual" : "10",
+  const W = getWS(), s = subjOf(W.s) || SUBJECTS[0];          // новый тест — сразу в выбранный предмет и класс
+  const t = { id, title: tb("b_newTitle"), subject: s.id, grade: W.g || s.grades[0], kind: "to", minutes: 30, variants: 10, scale: s.id === "tech" ? "qual" : "10",
     shuffle: false, protect: { fullscreen: true, autosubmit: true }, items: [newItem("choice")], createdAt: Date.now(), updatedAt: Date.now() };
   await set(ref(db, `builder/${id}`), t);
   ALL[id] = t; location.hash = `#/e/${id}`;
