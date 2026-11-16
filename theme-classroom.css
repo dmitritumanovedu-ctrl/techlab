@@ -261,3 +261,124 @@ body .tl-pop { border-radius: 8px; border-color: var(--line); box-shadow: 0 2px 
 body .tl-pop button, body .tl-pop a { font-weight: 500; border-radius: 4px; }
 body .tl-pop .tl-go { background: var(--blue); }
 body .tl-pop .tl-out { background: #fff; color: var(--red); border: 1px solid #f4c7c3; }
+
+/* =====================================================================
+   РАМКА СТРАНИЦ (engine/shell.js): меню слева, панель «Сегодня» справа
+   ===================================================================== */
+.bar-in { max-width: 1640px; }
+.sh { display: grid; grid-template-columns: 220px minmax(0, 1fr) 290px; gap: 24px; max-width: 1640px; margin: 0 auto; padding: 20px 16px 0; align-items: start; }
+.sh-m { min-width: 0; }
+.sh .wrap { max-width: none; margin: 0; padding: 0; }
+.sh-m > main { max-width: none !important; margin: 0 !important; padding: 0 0 60px; }
+.sh-l, .sh-r { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 12px; }
+.sh-parent .sh-l, .sh-parent .sh-r { top: 20px; }
+.sh-nav { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 8px 8px 0; display: flex; flex-direction: column; }
+.sh-i { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-radius: 0 20px 20px 0; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; }
+.sh-i svg { color: var(--muted); flex: none; }
+.sh-i:hover { background: #f1f3f4; }
+.sh-i.on { background: var(--blue-l); color: var(--blue-d); }
+.sh-i.on svg { color: var(--blue); }
+.sh-nav hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0 6px 14px; }
+.sh-store ms-store-badge { display: block; margin: 0; }
+.sh-store ms-store-badge::part(img) { width: 100%; max-width: 220px; height: auto; }
+@media (display-mode: standalone) { .sh-store { display: none; } }
+
+.sh-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.sh-card h3 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 0 0 10px; color: var(--text); }
+.sh-card h3 svg { color: var(--blue); flex: none; }
+.sh-week { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; }
+.sh-day { text-decoration: none; color: var(--muted); padding: 4px 0 6px; border-radius: 8px; }
+.sh-day:hover { background: #f1f3f4; }
+.sh-day small { display: block; font-size: 12px; }
+.sh-day b { display: grid; place-items: center; width: 30px; height: 30px; margin: 2px auto 3px; border-radius: 50%; color: var(--text); font-weight: 500; font-size: 14px; }
+.sh-day.today b { background: var(--blue); color: #fff; }
+.sh-day span { display: flex; gap: 3px; justify-content: center; min-height: 6px; }
+.sh-day i { width: 6px; height: 6px; border-radius: 50%; }
+.sh-dl { border-left: 3px solid var(--c); padding: 2px 0 2px 10px; margin: 0 0 10px; }
+.sh-dl:last-child { margin-bottom: 0; }
+.sh-dl b { display: block; font-size: 14px; font-weight: 500; line-height: 1.35; }
+.sh-dl small { color: var(--muted); font-size: 12.5px; }
+.sh-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.sh-ann { background: #fef7e0; border-color: #f9e3a3; color: #7a4a00; }
+.sh-ann h3, .sh-ann h3 svg { color: #7a4a00; }
+.sh-ann p { margin: 0 0 6px; font-size: 14px; line-height: 1.45; }
+.sh-ann small { font-size: 12px; opacity: .85; }
+.sh-fact { border-style: dashed; border-color: #c6dafc; }
+.sh-fact h3, .sh-fact h3 svg { color: var(--blue-d); }
+.sh-fact p { margin: 0 0 6px; font-size: 14px; line-height: 1.45; color: #3c4043; }
+.sh-fact small { color: var(--c); font-size: 12px; font-weight: 500; }
+@media (min-width: 861px) { body.has-shell .tl-nav { display: none; } }
+
+/* шапка учителя: ссылка «выйти» была белой под синюю шапку */
+header.top .who a { color: var(--blue) !important; }
+
+/* средние экраны: «Сегодня» уходит под основную часть */
+@media (max-width: 1280px) {
+  .sh { grid-template-columns: 210px minmax(0, 1fr); }
+  .sh-r { grid-column: 2; position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); align-items: start; }
+}
+/* телефон: меню — строкой сверху, всё в одну колонку */
+@media (max-width: 860px) {
+  .sh { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 12px; }
+  .sh-l { position: static; }
+  .sh-nav { flex-direction: row; overflow-x: auto; padding: 4px; }
+  .sh-i { border-radius: 8px; white-space: nowrap; padding: 8px 10px; }
+  .sh-nav hr, .sh-store { display: none; }
+  .sh-r { grid-column: auto; }
+}
+
+/* ===================== приветствие с иллюстрацией ===================== */
+.portal { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(200px, 1fr); gap: 0; padding: 0; overflow: hidden; }
+.p-text { padding: 24px 26px; }
+.portal h1 { font-size: 28px; }
+.p-art { background: var(--blue-l); display: flex; align-items: center; justify-content: center; padding: 18px; min-height: 210px; }
+.p-art svg { max-height: 200px; }
+.portal .roles { flex-direction: row; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.portal .role { width: auto; padding: 8px 14px; border-radius: 4px; gap: 8px; }
+.portal .role .ri { width: auto; height: auto; background: none !important; border-radius: 0; color: var(--blue); }
+.portal .role .rt b { font-size: 14px; }
+.portal .role.main { background: var(--blue); border-color: var(--blue); color: #fff; }
+.portal .role.main .ri { color: #fff; }
+.portal .role.main:hover { background: var(--blue-d); }
+.p-demo { margin: 14px 0 0 !important; }
+.p-demo a { color: var(--blue); font-weight: 500; font-size: 14px; }
+@media (max-width: 700px) { .portal { grid-template-columns: minmax(0, 1fr); } .p-art { display: none; } }
+
+/* ===================== «Сейчас на уроке» в цвете предмета ===================== */
+.now[data-s] { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 0 8px 8px 0; align-items: center; }
+.now-ic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: #e8f0fe; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
+.now[data-s] .lbl { color: var(--c); font-weight: 500; }
+.now[data-s] .lbl .pulse { display: inline-block !important; background: var(--c); }
+.now[data-s] .now-k { background: #f1f3f4; color: var(--text); }
+.now[data-s] .go { background: var(--c); color: #fff; border-color: var(--c); }
+
+/* ===================== обложки предметов с рисунком ===================== */
+.tile .nm { background: var(--c) var(--ic, none) no-repeat right 12px bottom 8px / 48px 48px; padding-right: 66px; }
+[data-s="geo"] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-opacity='.5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18'/%3E%3C/svg%3E"); }
+[data-s="inf"] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-opacity='.5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='5' width='14' height='10' rx='1.5'/%3E%3Cpath d='M3 19h18M10 9l-2 1.5 2 1.5M14 9l2 1.5-2 1.5'/%3E%3C/svg%3E"); }
+[data-s="tech"] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-opacity='.5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 5.5a4 4 0 0 0 4 4l-8.5 8.5a2.1 2.1 0 0 1-3-3z'/%3E%3Cpath d='M4 4l5 5M3 7l4-4'/%3E%3C/svg%3E"); }
+[data-s="math"] { --ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-opacity='.5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20L20 4v16z'/%3E%3Cpath d='M9 20v-2M13 20v-3M17 20v-2'/%3E%3C/svg%3E"); }
+.t-st { display: inline-block; margin: 8px 16px 0; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; background: var(--blue-l); color: var(--blue-d); }
+.t-st.live { background: #e6f4ea; color: #137333; }
+.tile .t-st + .cls { margin-top: 8px; }
+
+/* ===================== разделы меню: календарь, задания, материалы, помощь ===================== */
+body[data-view="calendar"] #home, body[data-view="tasks"] #home, body[data-view="materials"] #home, body[data-view="help"] #home { display: none; }
+.row[style*="--c"] .ri { background: #e8f0fe; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
+.ev-row { border-left: 3px solid var(--c); border-radius: 0 8px 8px 0; }
+.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.help-c { display: flex; gap: 14px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.help-c .ri { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-l); color: var(--blue); display: grid; place-items: center; flex: none; }
+.help-c b { font-weight: 500; font-size: 16px; }
+.help-c p { margin: 4px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+/* бледные «тетрадные» рисунки на полях (только на широких экранах) */
+@media (min-width: 1500px) {
+  body.has-shell { background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='60'%3E%3Ctext x='4' y='36' font-family='Georgia,serif' font-style='italic' font-size='20' fill='%23c9d3e6'%3Ea%C2%B2+b%C2%B2=c%C2%B2%3C/text%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Ctext x='4' y='36' font-family='Georgia,serif' font-style='italic' font-size='20' fill='%23c9d3e6'%3E%CF%80%E2%89%883,14%3C/text%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='none' stroke='%23c9d3e6' stroke-width='1.2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important; background-attachment: fixed !important;
+    background-position: left 24px bottom 40px, right 30px bottom 60px, right 60px top 140px !important; }
+}

@@ -660,6 +660,36 @@ function showPlan() {
   dlg.addEventListener("close", () => off(), { once: true });
 }
 
+// Объявление от учителя: показывается в правой панели «Сегодня» на всех страницах (3 недели)
+async function showAnnounce() {
+  openId = null;
+  let cur = null;
+  try { cur = (await get(ref(db, "settings/announce"))).val(); } catch (e) {}
+  const grades = [...new Set(SUBJECTS.flatMap((x) => x.grades))].sort((a, b) => a - b);
+  dlg.innerHTML = `<div class="dlg-head"><b>📢 Объявление для учеников и родителей</b>
+      <button class="btn small ghost" id="aClose">Закрыть ✕</button></div>
+    <div class="dlg-body">
+      <p class="muted">Короткая заметка в правой панели «Сегодня» на стартовой странице, у учеников и родителей. Держится 3 недели, потом скрывается сама.</p>
+      <label class="f">Текст (до 200 знаков)</label>
+      <textarea id="aText" maxlength="200" style="min-height:90px" placeholder="Например: 11 классы — в пятницу пробная сессия, повторите §15–17.">${esc(cur?.text || "")}</textarea>
+      <label class="f">Для кого</label>
+      <select id="aG"><option value="">Для всех</option>${grades.map((g) => `<option value="${g}"${cur?.g === g ? " selected" : ""}>${g} классы</option>`).join("")}</select>
+      <div class="err" id="aErr"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="aSave">Опубликовать</button>
+        ${cur ? '<button class="btn red" id="aDel">Убрать объявление</button>' : ""}</div>
+    </div>`;
+  if (!dlg.open) dlg.showModal();
+  $("#aClose").onclick = () => dlg.close();
+  $("#aSave").onclick = async () => {
+    const text = $("#aText").value.trim();
+    if (!text) return ($("#aErr").textContent = "Напишите текст объявления.");
+    try { await set(ref(db, "settings/announce"), { text, g: $("#aG").value || null, at: Date.now() }); dlg.close(); }
+    catch (e) { $("#aErr").textContent = "Не удалось сохранить: " + e.message; }
+  };
+  const del = $("#aDel");
+  if (del) del.onclick = async () => { await remove(ref(db, "settings/announce")); dlg.close(); };
+}
+
 function showLinks() {
   openId = null;
   const gradeOpts = wsOptions("|");
@@ -970,8 +1000,9 @@ async function showOverview() {
     // ---- инструменты (действуют для выбранного предмета и класса) ----
     $("#hubTools").innerHTML = `<div class="hub-tools"><a class="btn small" href="builder.html">🧩 Конструктор тестов</a> <a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
       <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
+      <button class="btn small ghost" id="hAnn">📢 Объявление</button>
       <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`;
-    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
+    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks; $("#hAnn").onclick = showAnnounce;
 
     // ---- выбор: предмет → класс ----
     const sub = subjOf(WS.s);

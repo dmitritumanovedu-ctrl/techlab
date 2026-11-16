@@ -12,10 +12,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
   <link rel="stylesheet" href="../style-e2.css?v=8">
   <link rel="stylesheet" href="parent.css?v=1">
-  <link rel="stylesheet" href="../theme-classroom.css?v=1">
+  <link rel="stylesheet" href="../theme-classroom.css?v=2">
 </head>
-<body>
-  <div class="wrap">
+<body data-shell="parent">
+  <div class="wrap" data-shell-main>
     <header class="hero p-hero">
       <div>
         <a class="logo" href="../">TechLab</a>
@@ -27,11 +27,12 @@
     <footer><a href="../" data-i18n="f_start">стартовая страница</a> · <a href="../privacy.html" data-i18n="f_privacy">конфиденциальность</a></footer>
   </div>
   <script type="module">
-    import { applyI18n, mountLangSwitch } from "../engine/i18n.js?v=2";
+    import { applyI18n, mountLangSwitch } from "../engine/i18n.js?v=1";
     applyI18n(); mountLangSwitch(document.getElementById("langSw"));
   </script>
   <script type="module" src="parent.js?v=6"></script>
   <script type="module" src="../engine/consent.js?v=2"></script>
 <script type="module" src="../engine/nav.js?v=1"></script>
+  <script type="module" src="../engine/shell.js?v=1"></script>
 </body>
 </html>

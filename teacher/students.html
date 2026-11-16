@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
   <link rel="stylesheet" href="../engine/test-e2.css?v=4">
   <link rel="stylesheet" href="teacher-e2.css?v=7">
-  <link rel="stylesheet" href="../theme-classroom.css?v=1">
+  <link rel="stylesheet" href="../theme-classroom.css?v=2">
   <style>
     .plan-box { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
     .plan-bar { flex: 1 1 260px; height: 12px; background: #E8EDFF; border-radius: 999px; overflow: hidden; }
@@ -24,7 +24,7 @@
     .subj-pick .sp.on { border-color: var(--blue); background: #E8EDFF; }
   </style>
 </head>
-<body>
+<body data-shell="teacher">
   <header class="top">
     <div>
       <h1>Ученики и родители · TechLab</h1>
@@ -32,7 +32,8 @@
     </div>
     <div class="who" id="who"></div>
   </header>
-  <main id="app" style="max-width:1200px"><div class="card center"><p class="muted">Загрузка…</p></div></main>
+  <main data-shell-main id="app" style="max-width:1200px"><div class="card center"><p class="muted">Загрузка…</p></div></main>
   <script type="module" src="students.js?v=6"></script>
+  <script type="module" src="../engine/shell.js?v=1"></script>
 </body>
 </html>

@@ -69,24 +69,34 @@ async function render(quiet = false) {
 
 // ---------------- портал ----------------
 function portal() {
+  const h = new Date().getHours();
+  const hello = h >= 5 && h < 12 ? L3("Доброе утро!", "Bună dimineața!", "Good morning!")
+    : h >= 12 && h < 17 ? L3("Добрый день!", "Bună ziua!", "Good afternoon!") : L3("Добрый вечер!", "Bună seara!", "Good evening!");
+  const sv = (d) => `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   box.innerHTML = `<section class="portal">
     <div class="p-text">
       <span class="p-tag">${t("p_tag")}</span>
-      <h1>${t("p_h1")}</h1>
+      <h1>${hello}</h1>
       <p>${t("p_text")}</p>
-      <p style="margin-top:12px"><a href="demo/" style="color:var(--blue);font-weight:800">${t("p_demo")}</a></p>
+      <div class="roles">
+        <button type="button" class="role main" id="rStudent" title="${esc(t("r_student_s"))}"><span class="ri">${sv('<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')}</span><span class="rt"><b>${t("r_student")}</b></span></button>
+        <a class="role" href="parent/" title="${esc(t("r_parent_s"))}"><span class="ri">${sv('<circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M15 20c0-2 1-4 3-4.5"/>')}</span><span class="rt"><b>${t("r_parent")}</b></span></a>
+        <a class="role" href="teacher/" title="${esc(t("r_teacher_s"))}"><span class="ri">${sv('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>')}</span><span class="rt"><b>${t("r_teacher")}</b></span></a>
+      </div>
+      <p class="p-demo"><a href="demo/">${t("p_demo")}</a></p>
     </div>
-    <div class="roles">
-      <button type="button" class="role main" id="rStudent">
-        <span class="ri"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></span>
-        <span class="rt"><b>${t("r_student")}</b><small>${t("r_student_s")}</small></span><span class="ra">→</span></button>
-      <a class="role" href="parent/">
-        <span class="ri par"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M15 20c0-2 1-4 3-4.5"/></svg></span>
-        <span class="rt"><b>${t("r_parent")}</b><small>${t("r_parent_s")}</small></span><span class="ra">→</span></a>
-      <a class="role" href="teacher/">
-        <span class="ri tch"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
-        <span class="rt"><b>${t("r_teacher")}</b><small>${t("r_teacher_s")}</small></span><span class="ra">→</span></a>
-    </div>
+    <div class="p-art" aria-hidden="true"><svg viewBox="0 0 240 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+      <rect x="40" y="112" width="160" height="8" rx="3" fill="#aecbfa"/>
+      <rect x="72" y="46" width="96" height="66" rx="5" fill="#fff" stroke="#1a73e8" stroke-width="2.5"/>
+      <rect x="81" y="56" width="42" height="7" rx="3" fill="#1a73e8"/>
+      <rect x="81" y="70" width="76" height="5" rx="2.5" fill="#d2e3fc"/><rect x="81" y="80" width="62" height="5" rx="2.5" fill="#d2e3fc"/><rect x="81" y="90" width="50" height="5" rx="2.5" fill="#d2e3fc"/>
+      <circle cx="153" cy="98" r="9" fill="#34a853"/><path d="M148.5 98l3 3 5.5-6" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <circle cx="44" cy="74" r="17" fill="#34a853"/><path d="M27 74h34M44 57c6 5 6 29 0 34M44 57c-6 5-6 29 0 34" stroke="#fff" stroke-width="1.6" fill="none"/>
+      <rect x="184" y="70" width="22" height="42" rx="3" fill="#fbbc04"/><rect x="188" y="77" width="14" height="3" fill="#fff"/><rect x="188" y="84" width="14" height="3" fill="#fff"/>
+      <path d="M200 30l12 0M206 24l0 12" stroke="#9334e6" stroke-width="3" stroke-linecap="round"/>
+      <path d="M30 28l8 8M38 28l-8 8" stroke="#ea4335" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="118" cy="24" r="5" fill="#fbbc04"/>
+    </svg></div>
   </section>`;
   document.getElementById("rStudent").onclick = askCode;
 }

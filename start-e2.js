@@ -41,7 +41,12 @@ const IC = {
   play: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/>',
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   slides: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/>',
+  geo: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  inf: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>',
+  tech: '<path d="M14.5 5.5a4 4 0 0 0 4 4l-8.5 8.5a2.1 2.1 0 0 1-3-3z"/><path d="M4 4l5 5"/>',
+  math: '<path d="M4 20L20 4v16z"/><path d="M9 20v-2M13 20v-3M17 20v-2"/>',
 };
+const subjIcon = (id) => SV(IC[id] || IC.doc);
 
 // ---------- лёгкий режим для слабых компьютеров ----------
 const LITE = (() => { try { const v = localStorage.getItem("techlab_lite"); if (v) return v === "1"; } catch (e) {}
@@ -95,7 +100,8 @@ function renderNow() {
     const T = TESTS.find((t) => t.id === CURRENT.id);
     const mission = T?.type === "mission";
     const K = T ? kindOf(T, SET) : null;
-    box.innerHTML = `<a class="now" href="${esc(CURRENT.path)}">
+    box.innerHTML = `<a class="now" data-s="${esc(CURRENT.subject || "")}" href="${esc(CURRENT.path)}">
+      <span class="now-ic">${subjIcon(CURRENT.subject)}</span>
       <div><div class="lbl"><span class="pulse"></span>${t("now")}${K ? ` <span class="now-k">${esc(K.name)}</span>` : ""}</div>
         <div class="ttl">${esc(CURRENT.title)}</div>
         <div class="sub">${s ? esc(subjName(s)) : ""}${CURRENT.grade ? " · " + esc(gradeLabel(CURRENT.grade)) : ""}</div></div>
@@ -116,6 +122,8 @@ function renderTabs(active) {
 
 function render() {
   const [sid, grade] = decodeURIComponent(location.hash.slice(1)).split("-");
+  document.body.dataset.view = SPECIAL.includes(sid) ? sid : "";
+  if (SPECIAL.includes(sid)) { renderTabs(""); return renderSpecial(sid); }
   let s = subj(sid);
   if (s && mine() && !MYSUBJ.includes(s.id)) s = null;          // чужой предмет — на главную
   renderTabs(s ? s.id : "");
@@ -145,7 +153,7 @@ function renderHome() {
     $("#view").innerHTML = `<h2>${L3("Мои предметы", "Disciplinele mele", "My subjects")} · ${esc(ME.cls)}</h2>
       ${mySubjects().length ? `<div class="tiles">${mySubjects().map((s) => `<a class="tile" data-s="${s.id}" href="#${s.id}-${MYGRADE}">
         <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
-        <div class="ds">${statLine(stats(s.id, MYGRADE))}</div>
+        <div class="ds">${statLine(stats(s.id, MYGRADE))}</div>${tileState(s.id, MYGRADE)}
         <div class="cls"><b>${esc(ME.cls)}</b></div></a>`).join("")}</div>`
       : `<div class="empty-note">${L3("Учитель ещё не добавил предметы для твоего класса.", "Profesorul încă nu a adăugat disciplinele pentru clasa ta.", "Your teacher has not added subjects for your class yet.")}</div>`}`;
     return;
@@ -156,10 +164,87 @@ function renderHome() {
     const on = Math.max(1, Math.round(pr / 25));
     return `<a class="tile" data-s="${s.id}" href="#${s.id}">
       <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
-      <div class="ds">${statLine(st)}</div>
+      <div class="ds">${statLine(st)}</div>${tileState(s.id)}
       <div class="cls">${s.grades.map((g) => `<b>${esc(gradeLabel(g))}</b>`).join("")}</div>
       <div class="seg">${[0, 1, 2, 3].map((i) => `<span${i < on ? ' class="on"' : ""}></span>`).join("")}</div></a>`;
   }).join("")}</div>`;
+}
+
+// ---------- разделы левого меню: календарь, мои задания, материалы, помощь ----------
+const SPECIAL = ["calendar", "tasks", "materials", "help"];
+const COLOR = { geo: "#188038", inf: "#1967d2", tech: "#e37400", math: "#9334e6" };
+const seeable = (sid, g) => !ME || ((!g || g === MYGRADE) && (!MYSUBJ || MYSUBJ.includes(sid)));
+function tileState(sid, g) {
+  if (CURRENT && CURRENT.subject === sid && (!g || !CURRENT.grade || CURRENT.grade === g))
+    return `<div class="t-st live">${L3("идёт урок", "lecție în curs", "in class now")}</div>`;
+  const n = TESTS.filter((t) => t.subject === sid && (!g || t.grade === g) && OPEN[t.id]).length;
+  return n ? `<div class="t-st">${L3("открыто", "deschise", "open")}: ${n}</div>` : "";
+}
+function planEvents() {
+  const out = [];
+  for (const [key, list] of Object.entries(PLAN || {})) {
+    const [s, g] = key.split("-");
+    if (!seeable(s, g)) continue;
+    for (const e of Object.values(list || {})) if (e && e.d) out.push({ ...e, s, g });
+  }
+  return out.sort((a, b) => (a.d + (a.at || 0)).localeCompare(b.d + (b.at || 0)));
+}
+const where = (sid, g) => `${esc(subjName(subj(sid)) || sid)}${g ? ", " + esc(gradeLabel(g)) : ""}`;
+const evRow = (e) => { const k = KINDS.find((x) => x.id === e.k);
+  return `<div class="row ev-row" style="--c:${COLOR[e.s] || "#1a73e8"}"><span class="ri">${subjIcon(e.s)}</span>
+    <span><div class="rt">${esc(e.t)}</div><div class="rs">${where(e.s, e.g)}</div></span><span class="rb">${k ? ktag(k) : ""}</span></div>`; };
+
+function renderSpecial(id) {
+  const crumbs = `<div class="crumbs"><a href="#">${t("nav_home")}</a> › `;
+  const today = iso(new Date());
+  let html = "";
+  if (id === "calendar") {
+    const ev = planEvents().filter((e) => e.d >= today);
+    const days = [...new Set(ev.map((e) => e.d))].slice(0, 15);
+    html = `${crumbs}${L3("Календарь", "Calendar", "Calendar")}</div><h2>${L3("Календарь работ", "Calendarul lucrărilor", "Work calendar")}</h2>` +
+      (days.length ? days.map((d) => `<h3>${esc(new Date(d + "T12:00").toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long" }))}${d === today ? " · " + L3("сегодня", "astăzi", "today") : ""}</h3>
+        <div class="list">${ev.filter((e) => e.d === d).map(evRow).join("")}</div>`).join("")
+        : `<div class="empty-note">${L3("В плане пока ничего нет. Учитель добавляет работы в «План недели».", "Deocamdată planul este gol.", "Nothing planned yet.")}</div>`);
+  } else if (id === "tasks") {
+    const open = TESTS.filter((x) => x.path && OPEN[x.id] && seeable(x.subject, x.grade));
+    const soon = planEvents().filter((e) => e.d >= today).slice(0, 8);
+    html = `${crumbs}${L3("Мои задания", "Sarcinile mele", "My tasks")}</div><h2>${L3("Мои задания", "Sarcinile mele", "My tasks")}</h2>
+      <h3>${L3("Открыто сейчас", "Deschise acum", "Open now")}</h3>` +
+      (open.length ? `<div class="list">${open.map((x) => { const k = kindOf(x, SET); return `<a class="row" href="${esc(x.path)}" style="--c:${COLOR[x.subject] || "#1a73e8"}">
+        <span class="ri">${subjIcon(x.subject)}</span><span><div class="rt">${esc(x.title)}</div><div class="rs">${where(x.subject, x.grade)}</div></span>
+        <span class="rb">${ktag(k)} <span class="badge open">${t("b_open_m")}</span></span></a>`; }).join("")}</div>`
+        : `<div class="empty-note">${L3("Сейчас ничего не открыто. Работу открывает учитель на уроке.", "Acum nu este nimic deschis.", "Nothing is open right now.")}</div>`) +
+      `<h3>${L3("Скоро по плану", "În curând", "Coming up")}</h3>` +
+      (soon.length ? `<div class="list">${soon.map((e) => evRow({ ...e, t: new Date(e.d + "T12:00").toLocaleDateString(LOCALE, { weekday: "short", day: "2-digit", month: "2-digit" }) + " · " + e.t })).join("")}</div>`
+        : `<div class="empty-note">${L3("В плане пока ничего нет.", "Planul este gol.", "Nothing planned yet.")}</div>`);
+  } else if (id === "materials") {
+    const L = Object.values(LINKS).filter((l) => seeable(l.subject, l.grade)).sort((a, b) => (b.at || 0) - (a.at || 0));
+    const groups = SUBJECTS.map((s) => [s, L.filter((l) => l.subject === s.id)]).filter(([, l]) => l.length);
+    html = `${crumbs}${L3("Материалы", "Materiale", "Materials")}</div><h2>${t("materials_h")}</h2>` +
+      (groups.length ? groups.map(([s, l]) => `<h3>${esc(subjName(s))}</h3><div class="list">${l.map((x) => `<a class="row" href="${esc(x.url)}" target="_blank" rel="noopener">
+        <span class="ri">${icon(x.url)}</span><span><div class="rt">${esc(x.title)}</div><div class="rs">${esc(gradeLabel(x.grade))} · ${esc(host(x.url))}</div></span><span class="rb">↗</span></a>`).join("")}</div>`).join("")
+        : `<div class="empty-note">${t("no_materials")}</div>`);
+  } else {
+    const card = (ic, h, p) => `<div class="help-c"><span class="ri">${SV(ic)}</span><div><b>${h}</b><p>${p}</p></div></div>`;
+    html = `${crumbs}${L3("Как войти", "Cum intru", "How to sign in")}</div><h2>${L3("Как пользоваться TechLab", "Cum folosești TechLab", "How to use TechLab")}</h2><div class="help">` +
+      card('<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>', L3("Ученику", "Elevului", "Students"),
+        L3("Учитель выдаёт личный код вида SXXX-XXXX. Нажми «Я ученик» на главной и введи код — увидишь свои предметы, задания и оценки. Код никому не показывай.",
+           "Profesorul îți dă un cod personal de forma SXXX-XXXX. Apasă „Sunt elev” pe pagina principală și introdu codul. Nu arăta codul nimănui.",
+           "Your teacher gives you a personal code like SXXX-XXXX. Press “I’m a student” on the home page and enter it. Keep it private.")) +
+      card('<circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>', L3("Родителю", "Părintelui", "Parents"),
+        L3("Код родителя выдаёт учитель. Откройте «Кабинет родителя» и введите его — увидите оценки ребёнка и советы, что повторить.",
+           "Codul de părinte îl dă profesorul. Deschideți „Cabinetul părintelui” și introduceți-l.",
+           "The teacher gives you a parent code. Open the parent dashboard and enter it.")) +
+      card('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>', L3("Установить приложение", "Instalează aplicația", "Install the app"),
+        L3("На компьютере с Windows — кнопка «Скачать из Microsoft Store» в меню слева. На телефоне — «Установить приложение» вверху страницы.",
+           "Pe Windows — butonul Microsoft Store din meniul din stânga. Pe telefon — „Instalează aplicația” sus.",
+           "On Windows use the Microsoft Store button on the left. On a phone use “Install the app” at the top.")) +
+      card('<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>', L3("Слабый компьютер или интернет", "Calculator sau internet lent", "Slow computer or internet"),
+        L3("Внизу страницы включите «лёгкий режим» — без анимаций, всё работает быстрее. Если страница не открывается, обновите её или спросите учителя.",
+           "Jos pe pagină porniți „modul ușor”. Dacă pagina nu se deschide, reîncărcați-o sau întrebați profesorul.",
+           "Turn on “lite mode” at the bottom of the page. If something does not load, refresh or ask your teacher.")) + `</div>`;
+  }
+  $("#view").innerHTML = html;
 }
 
 function renderSubject(s) {
