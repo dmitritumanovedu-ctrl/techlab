@@ -2,7 +2,7 @@ import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
 import { SUBJECTS, TESTS as TESTS_RAW, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
 let TESTS = TESTS_RAW;   // + тесты из конструктора (pubIndex)
 import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE, LANG } from "./engine/i18n.js?v=1";
-import { getSession, clsKey, SESSION_EVENT } from "./engine/people.js?v=3";
+import { getSession, clsKey, SESSION_EVENT, mySubjects as mergeSubj } from "./engine/people.js?v=4";
 const kindOf = (x, S) => kindT(kindOfRaw(x, S));
 const KINDS = KINDS_RAW.map(kindT);
 
@@ -24,7 +24,8 @@ function onSession() {
   renderNow(); render();
   refresh();
 }
-const classSubjects = (s) => { const cs = ME && s?.classSubjects?.[clsKey(ME.cls)]; return cs ? Object.keys(cs) : null; };
+// предметы класса + личные предметы ученика (например, технология у половины класса)
+const classSubjects = (s) => ME ? mergeSubj(s?.classSubjects?.[clsKey(ME.cls)], ME.plus) : null;
 window.addEventListener(SESSION_EVENT, onSession);
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG] || ru;
 const mySubjects = () => MYSUBJ ? SUBJECTS.filter((s) => MYSUBJ.includes(s.id)) : SUBJECTS;

@@ -22,6 +22,9 @@
     .subj-pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
     .subj-pick .sp { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border: 2px solid #DCE4F2; border-radius: 999px; cursor: pointer; font-weight: 700; }
     .subj-pick .sp.on { border-color: var(--blue); background: #E8EDFF; }
+    .plus-b { font: inherit; font-size: 13px; font-weight: 700; padding: 5px 10px; border: 2px solid #DCE4F2; border-radius: 999px; background: #fff; color: #5B6372; cursor: pointer; }
+    .plus-b.on { border-color: var(--blue); background: #E8EDFF; color: var(--blue); }
+    .plus-b:disabled { opacity: .5; }
   </style>
 </head>
 <body data-shell="teacher">
@@ -33,7 +36,7 @@
     <div class="who" id="who"></div>
   </header>
   <main data-shell-main id="app" style="max-width:1200px"><div class="card center"><p class="muted">Загрузка…</p></div></main>
-  <script type="module" src="students.js?v=7"></script>
+  <script type="module" src="students.js?v=8"></script>
   <script type="module" src="../engine/shell.js?v=2"></script>
 </body>
 </html>

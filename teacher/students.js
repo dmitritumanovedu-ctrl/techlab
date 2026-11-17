@@ -6,7 +6,7 @@ import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, TESTS } from "../tests.js?v=8";
 import { roleOf, pendingHtml } from "../engine/staff.js?v=1";
 import { syncProgress, startAutoSync, autoSyncOn, setAutoSync, getClassSubjects, setClassSubjects } from "../engine/sync.js?v=2";
-import { CLASSES, PLAN, makeCode, prettyCode, nameKey, clsKey, xpOf, levelOf, fmt1, esc } from "../engine/people.js?v=1";
+import { plusOf, CLASSES, PLAN, makeCode, prettyCode, nameKey, clsKey, xpOf, levelOf, fmt1, esc } from "../engine/people.js?v=4";
 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
@@ -54,6 +54,10 @@ function render() {
   const used = Math.min(works, PLAN.limit);
   const inCls = Object.entries(ROSTER).filter(([, s]) => s.cls === CUR).sort((a, b) => a[1].name.localeCompare(b[1].name, "ru"));
   const total = Object.keys(ROSTER).length;
+  // предметы, которых нет у всего класса, — их можно включить отдельным ученикам (группа, полкласса)
+  const clsS = CSUBJ[clsKey(CUR)] || {};
+  const extra = Object.keys(clsS).length ? SUBJECTS.filter((x) => !clsS[x.id] && (!x.grades || x.grades.includes(String(CUR).split(" ")[0]))) : [];
+  const grp = (id) => inCls.filter(([, st]) => plusOf(st).includes(id));
   app.innerHTML = `<a class="backlink" href="./">← Центр управления</a>
   <div class="card plan-box">
     <div><div class="muted" style="font-size:13px;font-family:var(--mono);letter-spacing:.06em">ТАРИФ УЧИТЕЛЯ</div>
@@ -71,7 +75,7 @@ function render() {
       <p class="muted" style="font-size:14px">Всего учеников со своими кодами: <b>${total}</b>.</p>
       ${CUR ? `<h2 style="margin-top:18px">Предметы, которые я веду в ${esc(CUR)}</h2>
       <div class="subj-pick">${SUBJECTS.map((s) => `<label class="sp${CSUBJ[clsKey(CUR)]?.[s.id] ? " on" : ""}"><input type="checkbox" data-subj="${s.id}" ${CSUBJ[clsKey(CUR)]?.[s.id] ? "checked" : ""}> ${s.icon} ${esc(s.name)}</label>`).join("")}</div>
-      <p class="muted" style="font-size:14px" id="subjInfo">${Object.keys(CSUBJ[clsKey(CUR)] || {}).length ? "Ученики этого класса и их родители видят только эти предметы." : "Предметы не выбраны — ученики видят все предметы сайта."}</p>` : ""}
+      <p class="muted" style="font-size:14px" id="subjInfo">${Object.keys(CSUBJ[clsKey(CUR)] || {}).length ? "Ученики этого класса и их родители видят только эти предметы. Если предмет у вас только у части класса (например, технология у половины), не отмечайте его здесь — включите его этим ученикам в таблице ниже, в столбце «+ предмет». Код и кабинет у ученика остаются прежними." : "Предметы не выбраны — ученики видят все предметы сайта."}</p>` : ""}
       <h2 style="margin-top:18px">2. Добавить учеников</h2>
       <label class="f" for="names">Вставьте список класса — каждый ученик с новой строки: «Фамилия Имя»</label>
       <textarea id="names" placeholder="Попеску Андрей&#10;Руссу Анна&#10;…" ${CUR ? "" : "disabled"}></textarea>
@@ -96,12 +100,17 @@ function render() {
 
   <div class="card">
     <h2>${CUR ? esc(CUR) + " · " + inCls.length + " уч." : "Выберите класс"}</h2>
+    ${extra.filter((x) => grp(x.id).length).map((x) => `<p class="muted" style="font-size:14px;margin-top:-6px">${x.icon} <b>${esc(x.name)}</b> — группа: ${grp(x.id).length} уч.
+      <button class="btn small ghost" data-gcards="${x.id}">🖨 Карточки только этой группы</button></p>`).join("")}
     ${inCls.length ? `<div class="table-wrap"><table class="res"><thead><tr><th>№</th><th>Ученик</th><th>Код ученика</th><th>Код родителя</th>
+      <th>${extra.length ? "+ предмет<br><span class=\"muted\" style=\"font-weight:400;font-size:12px\">только этому ученику</span>" : ""}</th>
       <th>Уровень</th><th>XP</th><th>Работ</th><th>Ср. оценка</th><th></th></tr></thead><tbody>
       ${inCls.map(([code, s], i) => {
         const p = PROGRESS[code] || {}; const ws = Object.values(p.works || {}); const done = ws.filter((w) => w.complete && !w.qual);
         const L = levelOf(p.xp || 0);
         return `<tr><td>${i + 1}</td><td><b>${esc(s.name)}</b></td><td class="code">${prettyCode(code)}</td><td class="code">${prettyCode(s.pcode)}</td>
+          <td style="white-space:nowrap">${extra.map((x) => { const on = plusOf(s).includes(x.id);
+            return `<button class="plus-b${on ? " on" : ""}" data-plus="${code}" data-ps="${x.id}" title="${on ? "Убрать" : "Добавить"} предмет «${esc(x.name)}» этому ученику">${x.icon} ${esc(x.name.split(" ")[0])}${on ? " ✓" : ""}</button>`; }).join(" ")}</td>
           <td><span class="lvl">${L.n}</span> ${esc(L.name)}</td><td>${p.xp || 0}</td><td>${ws.length}</td>
           <td>${done.length ? fmt1(done.reduce((a, w) => a + w.grade, 0) / done.length) : "—"}</td>
           <td style="white-space:nowrap"><button class="btn small ghost" data-new="${code}" title="Выдать новый код родителя">↻ код родителя</button>
@@ -121,6 +130,13 @@ function render() {
     try { await setClassSubjects(db, CUR, ids); await load(); render(); }
     catch (e) { $("#subjInfo").textContent = "Не удалось сохранить: " + (e.code || e.message); }
   });
+  app.querySelectorAll("[data-plus]").forEach((b) => b.onclick = async () => {
+    const code = b.dataset.plus, id = b.dataset.ps, on = plusOf(ROSTER[code]).includes(id);
+    b.disabled = true;
+    try { await update(ref(db), { [`roster/${code}/plus/${id}`]: on ? null : true }); await load(); render(); }
+    catch (e) { b.disabled = false; alert("Не удалось сохранить: " + (e.code || e.message)); }
+  });
+  app.querySelectorAll("[data-gcards]").forEach((b) => b.onclick = () => printCards(grp(b.dataset.gcards)));
   app.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
     const s = ROSTER[b.dataset.del];
     if (!confirm(`Удалить ученика «${s.name}» и его коды? Результаты тестов останутся.`)) return;

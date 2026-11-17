@@ -3,7 +3,7 @@
 // последние данные хранятся на компьютере — страница открывается сразу даже при медленном интернете.
 import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
 import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=8";
-import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT } from "./engine/people.js?v=3";
+import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT, plusOf, samePlus, mySubjects } from "./engine/people.js?v=4";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=2";
 import { reviewBtn, openReview } from "./engine/review.js?v=1";
@@ -99,10 +99,13 @@ async function render(quiet = false) {
   const cached = cacheGet(ck);
   if (!quiet) center(S, cached?.P || { xp: 0, works: {} }, cached?.B || {}, cached?.CS ?? null, cached ? "" : t("loading_progress"));
   try {
-    const [P, B, CS] = await Promise.all([readDb(`progress/${S.code}`), readDb("board").catch(() => ({})),
-      readDb(`settings/classSubjects/${clsKey(S.cls)}`).catch(() => null)]);
+    const [P, B, CS, PL] = await Promise.all([readDb(`progress/${S.code}`), readDb("board").catch(() => ({})),
+      readDb(`settings/classSubjects/${clsKey(S.cls)}`).catch(() => null),
+      readDb(`roster/${S.code}/plus`).catch(() => undefined)]);
     if (my !== renderNo || getSession()?.code !== S.code) return;          // ученик уже сменился
-    const data = { P: P || { xp: 0, works: {} }, B: B || {}, CS: CS ? Object.keys(CS) : null };
+    const plus = PL === undefined ? (S.plus || []) : plusOf({ plus: PL });
+    if (PL !== undefined && !samePlus(plus, S.plus)) signInStudent({ ...S, plus });   // учитель добавил/убрал предмет
+    const data = { P: P || { xp: 0, works: {} }, B: B || {}, CS: mySubjects(CS, plus) };
     cachePut(ck, data);
     center(S, data.P, data.B, data.CS);
   } catch (e) {
@@ -188,7 +191,7 @@ function askCode(prefill = "") {
       done(known);
       readDb(`roster/${code}`, { tries: 2 }).then((s) => {
         if (s === null && getSession()?.code === code) { forgetCode(code); signOutStudent(); }   // учитель удалил код
-        else if (s && getSession()?.code === code && (s.name !== known.name || s.cls !== known.cls)) signInStudent({ code, name: s.name, cls: s.cls });
+        else if (s && getSession()?.code === code && (s.name !== known.name || s.cls !== known.cls || !samePlus(plusOf(s), known.plus))) signInStudent({ code, name: s.name, cls: s.cls, plus: plusOf(s) });
       }).catch(() => {});
       return;
     }
@@ -198,7 +201,7 @@ function askCode(prefill = "") {
       const s = await readDb(`roster/${code}`, { tries: 3, timeout: 5000,
         onTry: (n, of) => { err.textContent = n === 1 ? t("checking") : L3(`Интернет медленный… попытка ${n} из ${of}`, `Internet lent… încercarea ${n} din ${of}`, `Slow internet… attempt ${n} of ${of}`); } });
       if (!s) { err.textContent = t("err_nocode"); return; }
-      done({ code, name: s.name, cls: s.cls });
+      done({ code, name: s.name, cls: s.cls, plus: plusOf(s) });
     } catch (x) {
       console.warn(x);
       err.innerHTML = `${esc(L3("Нет связи с сервером.", "Nu există conexiune cu serverul.", "No connection to the server."))} <button type="button" class="retry" id="codeRetry">${esc(L3("Попробовать ещё раз", "Încearcă din nou", "Try again"))}</button>`;

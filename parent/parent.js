@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS } from "../tests.js?v=8";
-import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc, clsKey } from "../engine/people.js?v=2";
+import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc, clsKey, plusOf, mySubjects } from "../engine/people.js?v=4";
 import { t, plw, subjName, kindShortById, qualShow, LOCALE } from "../engine/i18n.js?v=1";
 import { reviewBtn, openReview } from "../engine/review.js?v=1";
 
@@ -66,7 +66,7 @@ async function show(pcode, quiet = false) {
     if (!scode) { saveCodes(codes().filter((x) => x !== pcode)); return login(t("pe_expired")); }
     const [r, p] = await Promise.all([get(ref(db, `roster/${scode}`)), get(ref(db, `progress/${scode}`))]);
     R = r.val(); P = p.val() || { xp: 0, works: {} };
-    if (R) { try { const cs = (await get(ref(db, `settings/classSubjects/${clsKey(R.cls)}`))).val(); CS = cs ? Object.keys(cs) : null; } catch (e) {} }
+    if (R) { try { const cs = (await get(ref(db, `settings/classSubjects/${clsKey(R.cls)}`))).val(); CS = mySubjects(cs, plusOf(R)); } catch (e) {} }
   } catch (e) { app.innerHTML = `<div class="pc"><h2>${t("p_nonet_h")}</h2><p>${t("p_nonet_p")}</p></div>`; return; }
   if (!R) { saveCodes(codes().filter((x) => x !== pcode)); return login(t("pe_nostudent")); }
 

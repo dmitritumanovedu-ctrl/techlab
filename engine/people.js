@@ -34,18 +34,30 @@ export function signOutStudent() {
 const KKEY = "techlab_known";
 export function knownCode(code) {
   try { const m = JSON.parse(localStorage.getItem(KKEY) || "{}"), x = m[code];
-    return x && Date.now() - x.at < 60 * 864e5 ? { code, name: x.name, cls: x.cls } : null; } catch (e) { return null; }
+    return x && Date.now() - x.at < 60 * 864e5 ? { code, name: x.name, cls: x.cls, plus: x.plus || [] } : null; } catch (e) { return null; }
 }
 export function rememberCode(s) {
   try {
     const m = JSON.parse(localStorage.getItem(KKEY) || "{}");
-    m[s.code] = { name: s.name, cls: s.cls, at: Date.now() };
+    m[s.code] = { name: s.name, cls: s.cls, plus: s.plus || [], at: Date.now() };
     const keep = Object.entries(m).sort((a, b) => b[1].at - a[1].at).slice(0, 40);
     localStorage.setItem(KKEY, JSON.stringify(Object.fromEntries(keep)));
   } catch (e) {}
 }
 export function forgetCode(code) {
   try { const m = JSON.parse(localStorage.getItem(KKEY) || "{}"); delete m[code]; localStorage.setItem(KKEY, JSON.stringify(m)); } catch (e) {}
+}
+
+// ---------- предметы ученика ----------
+// settings/classSubjects/<класс> — предметы всего класса (например, математика у всего 5 «Б»);
+// roster/<код>/plus — дополнительные предметы конкретного ученика (например, технология у половины класса).
+// Код и кабинет у ученика один, он просто видит оба предмета.
+export const plusOf = (r) => (r && r.plus ? Object.keys(r.plus).filter((k) => r.plus[k]) : []);
+export const samePlus = (a, b) => [...(a || [])].sort().join() === [...(b || [])].sort().join();
+export function mySubjects(classObj, plus) {
+  const base = classObj ? (Array.isArray(classObj) ? classObj : Object.keys(classObj)) : null;
+  if (!base) return null;                       // учитель не выбрал предметы класса → видно всё
+  return [...new Set([...base, ...(plus || [])])];
 }
 
 // ---------- коды ----------
