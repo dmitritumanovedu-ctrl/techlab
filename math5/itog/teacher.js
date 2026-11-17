@@ -287,15 +287,21 @@ function aiMissing() {
 
 // Итог сохраняется в базе — его видят Центр управления, прогресс учеников и сам ученик
 const lastSync = {};
+// Разбор для ученика: задания, ответ ученика, правильный ответ, баллы, комментарий ИИ.
+// Ученик увидит его, только если в Центре управления включён «🔍 Разбор» для этой работы.
+const cutR = (x, n = 400) => { const t = String(x ?? "").trim(); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+const reviewItems = (items) => (items || []).slice(0, 80).map((x) => ({ l: cutR((x.n ? x.n + ". " : "") + (x.label || ""), 300),
+  s: x.score === null || x.score === undefined ? null : Math.round(x.score * 10) / 10, m: x.max, a: cutR(x.answer || "—"), k: cutR(x.key || x.model || ""),
+  c: cutR(x.aiData ? [x.aiData.comment, x.aiData.advice ? "Совет: " + x.aiData.advice : ""].filter(Boolean).join(" ") : "") }));
 function syncResults() {
   for (const [id, r] of Object.entries(RESULTS)) {
     if (r.status !== "submitted") continue;
     const e = evaluate(r);
     const res = { total: e.total, max: e.max, grade: e.grade, complete: e.complete, pct: Math.round(e.total / e.max * 100) };
-    const s = JSON.stringify(res);
-    const old = r.result ? JSON.stringify({ total: r.result.total, max: r.result.max, grade: r.result.grade, complete: r.result.complete, pct: r.result.pct }) : "";
-    if (lastSync[id] === s || old === s) { lastSync[id] = s; continue; }
-    lastSync[id] = s;
+    res.items = reviewItems(e.items);
+    res.sig = JSON.stringify([res.total, res.max, res.grade, res.complete, res.items.map((x) => [x.s, x.c.length])]);
+    if (lastSync[id] === res.sig || r.result?.sig === res.sig) { lastSync[id] = res.sig; continue; }
+    lastSync[id] = res.sig;
     update(ref(db, `${P}/${id}`), { result: res }).catch(() => {});
   }
 }

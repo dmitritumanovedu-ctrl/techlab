@@ -6,6 +6,7 @@ import { SUBJECTS } from "./tests.js?v=8";
 import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT } from "./engine/people.js?v=3";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=1";
+import { reviewBtn, openReview } from "./engine/review.js?v=1";
 
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG_] || ru;
 // стили блока «Мои работы» по предметам и кнопки выхода в шапке
@@ -23,6 +24,13 @@ document.head.insertAdjacentHTML("beforeend", `<style>
 </style>`);
 const box = document.getElementById("home");
 const chip = document.getElementById("meChip");
+// «🔍 Разбор работы» — кнопка в списке «Мои работы» (если учитель включил разбор)
+let CUR_WORKS = {};
+box.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-review]"); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  openReview(CUR_WORKS[b.dataset.review]);
+});
 const subjName = (id) => subjNameT(SUBJECTS.find((s) => s.id === id));
 let renderNo = 0;
 
@@ -157,7 +165,8 @@ function askCode() {
 
 // ---------------- игровой центр ----------------
 function center(S, P, B, CS = null, note = "") {
-  const works = Object.values(P.works || {}).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
+  CUR_WORKS = P.works || {};
+  const works = Object.entries(P.works || {}).map(([id, w]) => ({ ...w, id })).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
   const done = works.filter((w) => w.complete && !w.qual);
   const avg = done.length ? done.reduce((a, w) => a + w.grade, 0) / done.length : null;
   const xp = P.xp || 0, L = levelOf(xp);
@@ -195,7 +204,7 @@ function center(S, P, B, CS = null, note = "") {
           return `<div class="ws-h"><span>${sj ? esc(sj.icon + " " + subjName(sid)) : ""}</span>${av !== null ? `<b>${fmt1(av)}</b>` : ""}</div>` +
             list.map((w) => `<${w.path ? `a href="${esc(w.path)}"` : "div"} class="wk">
             <span class="wg ${w.complete ? gColor(w.qual ? ({ "ОХ": 10, "Х": 8, "У": 6, "Н": 4 })[w.qual] : w.grade) : "g-wait"}" title="${esc(w.qualName || "")}">${w.complete ? (w.qual ? qualShow(w.qual) : w.grade) : "…"}</span>
-            <div><div class="wt">${esc(w.title)}</div><div class="ws">${esc(kindShortById(w.kind, w.kindName || ""))}${w.complete ? ` · ${fmt1(w.total)} / ${w.max} · +${20 + w.grade * 10 + (w.viol ? 0 : 10)} XP` : " · " + t("waiting_check")}${w.date ? " · " + new Date(w.date).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }) : ""}</div></div></${w.path ? "a" : "div"}>`).join("");
+            <div><div class="wt">${esc(w.title)}</div><div class="ws">${esc(kindShortById(w.kind, w.kindName || ""))}${w.complete ? ` · ${fmt1(w.total)} / ${w.max} · +${20 + w.grade * 10 + (w.viol ? 0 : 10)} XP` : " · " + t("waiting_check")}${w.date ? " · " + new Date(w.date).toLocaleDateString(LOCALE, { day: "numeric", month: "short" }) : ""}</div>${w.review ? reviewBtn(w.id) : ""}</div></${w.path ? "a" : "div"}>`).join("");
         }).join("") : `<p class="muted">${t("no_works_student")}</p>`}
         ${works.find((w) => w.summary) ? `<div class="tip"><b>${t("tip_last")}</b> ${esc(works.find((w) => w.summary).summary.advice)}</div>` : ""}
         <p class="muted small">${({ ru: "Твои оценки видишь только ты, твои родители и учитель.", ro: "Notele tale le vezi doar tu, părinții tăi și profesorul.", en: "Only you, your parents and your teacher can see your grades." })[LANG_] || ""}</p>

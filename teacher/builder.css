@@ -156,3 +156,8 @@ h1 { font-family: Unbounded, sans-serif; font-size: 24px; margin: 0 0 4px; }
 .ws-b:hover { border-color: #2E4BFF; }
 .ws-b.on { border-color: #2E4BFF; background: #2E4BFF; color: #fff; }
 .ws-b.on b { background: rgba(255,255,255,.25); color: #fff; }
+
+/* вкладки «Мои тесты / Общая папка» и метки владельца */
+.bd-tabs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 12px; }
+.bd-tabs .muted { flex: 1 1 260px; }
+.chip-st.st-share { background: #EDE9FF; color: #5B3FD6; }

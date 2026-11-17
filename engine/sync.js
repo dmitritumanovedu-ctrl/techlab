@@ -8,6 +8,40 @@ import { ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10
 import { grade, toGrade, usesQual, qualOf } from "./grading.js?v=5";
 import { TESTS, kindOf } from "../tests.js?v=8";
 import { nameKey, clsKey, xpOf } from "./people.js?v=2";
+import { gradeAttempt } from "./btest.js?v=1";
+
+// ---------- разбор работы для ученика ----------
+// settings/<id>/review: 0 (или нет) — выключен; 1 — баллы по заданиям и ответы ученика; 2 — ещё и правильные ответы.
+// Разбор кладётся в progress/<код>/works/<id>/review — его видят только сам ученик и его родитель (по коду).
+const cut = (x, n = 400) => { const t = String(x ?? "").trim(); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+const rnd = (x) => x === null || x === undefined ? null : Math.round(Number(x) * 10) / 10;
+function reviewOf(level, items) {
+  return { lv: level, at: Date.now(), items: items.slice(0, 80).map((x) => {
+    const o = { l: cut(x.l, 300), s: rnd(x.s), m: rnd(x.m) };
+    if (x.a) o.a = cut(x.a);
+    if (level >= 2 && x.k) o.k = cut(x.k);
+    if (x.c) o.c = cut(x.c);
+    return o;
+  }) };
+}
+const aiText = (a) => a ? [a.comment, a.missing ? "Не хватает: " + a.missing : "", a.advice ? "Совет: " + a.advice : ""].filter(Boolean).join(" ") : "";
+function missionReview(r, t) {
+  const out = [];
+  for (const p of t.parts || []) {
+    if (p.open) continue;
+    out.push({ l: p.name, s: Number(r.score?.[p.k]) || 0, m: p.max });
+  }
+  for (const q of t.openQs || []) {
+    const ans = String(r.open?.[q.k] || "").trim();
+    const tch = Number.isFinite(r.manual?.[q.k]) ? r.manual[q.k] : null;
+    const ai = r.ai?.[q.k] && Number.isFinite(r.ai[q.k].score) ? r.ai[q.k].score : null;
+    out.push({ l: (q.title ? q.title + ": " : "") + q.q, s: !ans ? 0 : (tch ?? ai), m: q.max, a: ans || "—", k: q.model, c: aiText(r.ai?.[q.k]) });
+  }
+  return out;
+}
+const testReview = (g) => g.items.map((x) => ({ l: x.label, s: x.score, m: x.max,
+  a: typeof x.answer === "string" ? x.answer : "", k: typeof x.model === "string" ? x.model : "", c: x.aiComment || aiText(x.aiAdvice ? { advice: x.aiAdvice } : null) }));
+const builderReview = (g) => g.items.map((x) => ({ l: (x.n ? x.n + ". " : "") + x.label, s: x.score, m: x.max, a: x.answer || "—", k: x.key || "", c: aiText(x.aiData) }));
 
 const READY = TESTS.filter((t) => t.path);
 const MSCALE = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2], [0, 1]];
@@ -52,23 +86,29 @@ export async function syncProgress(db, ROSTER = null, RES = null) {
   const works = {};
   let matched = 0, unmatched = 0;
   let BT = [];
-  try { BT = Object.entries((await get(ref(db, "pubIndex"))).val() || {}).map(([id, x]) => ({ id, type: "test", teacher: true, kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title, path: `b/?t=${id}` })); } catch (e) {}
+  try { BT = Object.entries((await get(ref(db, "pubIndex"))).val() || {}).map(([id, x]) => ({ id, type: "test", teacher: true, bt: true, kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title, path: `b/?t=${id}` })); } catch (e) {}
   for (const t of READY.concat(BT)) {
     const list = RES[t.id]; if (!list) continue;
-    const KEYS = (t.type !== "mission" && !t.teacher) ? await keysOf(db, t.id) : null;
+    const RV = Number(SET[t.id]?.review) || 0;                 // разбор для учеников включён?
+    const KEYS = (t.type !== "mission" && (!t.teacher || (RV && t.bt))) ? await keysOf(db, t.id) : null;
     const K = kindOf(t, SET);
     for (const r of Object.values(list)) {
       if (!r || r.status !== "submitted") continue;
       const code = byName[clsKey(r.cls) + "|" + nameKey(r.name)];
       if (!code) { unmatched++; continue; }
-      let e = null;
+      let e = null, rv = null;
       try {
-        if (t.type === "mission") e = missionEval(r, t);
-        else if (t.teacher) e = r.result ? { total: r.result.total, max: r.result.max, pct: Math.round(r.result.total / r.result.max * 100), grade: r.result.grade, complete: !!r.result.complete } : null;
+        if (t.type === "mission") { e = missionEval(r, t); if (RV) rv = missionReview(r, t); }
+        else if (t.teacher) {
+          e = r.result ? { total: r.result.total, max: r.result.max, pct: Math.round(r.result.total / r.result.max * 100), grade: r.result.grade, complete: !!r.result.complete } : null;
+          if (RV && t.bt && KEYS) rv = builderReview(gradeAttempt(KEYS, r));
+          else if (RV && Array.isArray(r.result?.items)) rv = r.result.items.map((x) => ({ l: x.l, s: x.s, m: x.m, a: x.a, k: x.k, c: x.c }));
+        }
         else if (KEYS) {
           const k = KEYS.variants?.[String(r.variant)];
           if (k) { const g = grade({ ...k, points: KEYS.points }, r.answers || {}, r.manual || {}, r.ai || {});
-            e = { total: g.total, max: g.max, pct: Math.round(g.total / g.max * 100), grade: g.complete ? g.grade : toGrade(g.total, g.max), complete: g.complete }; }
+            e = { total: g.total, max: g.max, pct: Math.round(g.total / g.max * 100), grade: g.complete ? g.grade : toGrade(g.total, g.max), complete: g.complete };
+            if (RV) rv = testReview(g); }
         }
       } catch (err) { console.warn(t.id, err); }
       if (!e) e = { complete: false, total: 0, max: 0, pct: 0, grade: 0 };
@@ -80,6 +120,7 @@ export async function syncProgress(db, ROSTER = null, RES = null) {
         viol: r.violations || 0, date };
       if (t.path) w.path = t.path;
       if (usesQual(t.subject)) { const q = qualOf(w.pct); w.qual = q[1]; w.qualName = q[2]; }
+      if (rv && rv.length) w.review = reviewOf(RV, rv);
       if (r.aiSummary) w.summary = { strengths: r.aiSummary.strengths || "", gaps: r.aiSummary.gaps || "", advice: r.aiSummary.advice || "" };
       (works[code] = works[code] || {})[t.id] = w;
       matched++;

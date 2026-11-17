@@ -5,7 +5,8 @@
 //  #/r/<id>      — результаты: автопроверка, ИИ, ручные баллы, CSV, PDF
 // =====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, get, set, update, remove, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, get, set, update, remove, onValue, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { roleOf, pendingHtml } from "../engine/staff.js?v=1";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, KINDS } from "../tests.js?v=8";
@@ -27,6 +28,7 @@ const KINDS_T = KINDS.map(kindT);
 
 let ALL = {}, SET = {}, T = null, SEL = null, TAB = "set", PV = 1, saveTimer = null, unsub = [];
 let RES = {}, KEY = null, AICFG = null, filterCls = "", USER = null;
+let ROLE = "admin", SHARED = {}, LTAB = "mine";   // роль учителя, общая папка, вкладка списка
 const aiQueue = []; let aiBusy = false;
 
 $("#hSub").textContent = tb("b_title");
@@ -39,9 +41,15 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) return showLogin();
   $("#who").innerHTML = `${esc(user.email)} · <a href="#" id="logout">${esc(tb("b_logout"))}</a>`;
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
+  ROLE = await roleOf(db, user);
+  if (ROLE === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
   try {
-    const [b, s] = await Promise.all([get(ref(db, "builder")), get(ref(db, "settings"))]);
+    // владелец видит все тесты; коллега — только свои (+ общая папка)
+    const mine = ROLE === "admin" ? ref(db, "builder") : query(ref(db, "builder"), orderByChild("owner"), equalTo(user.uid));
+    const [b, s, sh] = await Promise.all([get(mine), get(ref(db, "settings")),
+      get(query(ref(db, "builder"), orderByChild("shared"), equalTo(true))).catch(() => null)]);
     ALL = b.val() || {}; SET = s.val() || {};
+    SHARED = Object.fromEntries(Object.entries(sh?.val() || {}).filter(([, t]) => t.owner !== user.uid));
   } catch (e) {
     console.warn(e);
     app.innerHTML = `<div class="card center" style="max-width:640px"><h2>${esc(tb("b_noAccess"))}</h2><p>${tb("b_noAccessP")}</p></div>`;
@@ -87,7 +95,8 @@ function saveWS(w) { try { localStorage.setItem("techlab_ws", JSON.stringify(w))
 async function showList() {
   try { SET = (await get(ref(db, "settings"))).val() || {}; } catch (e) {}
   const W = getWS();
-  const all = Object.values(ALL).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const src = LTAB === "shared" ? (ROLE === "admin" ? Object.fromEntries(Object.entries(ALL).filter(([, t]) => t.shared)) : SHARED) : ALL;
+  const all = Object.values(src).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const list = all.filter((t) => (!W.s || t.subject === W.s) && (!W.g || String(t.grade) === W.g));
   const cur = SET.current?.id;
   const ws = subjOf(W.s);
@@ -95,14 +104,26 @@ async function showList() {
   app.innerHTML = `<div class="bd-list">
     <div class="bd-list-head"><div><h1>${esc(tb("b_myTests"))}</h1><p class="muted">${esc(tb("b_myTestsP"))}</p></div>
       <button class="btn" id="bNew" type="button">${esc(tb("b_new"))}${ws ? ` · ${ws.icon} ${W.g ? esc(gradeLabel(W.g)) : esc(subjName(ws))}` : ""}</button></div>
+    <div class="bd-tabs">
+      <button type="button" class="ws-b${LTAB === "mine" ? " on" : ""}" data-ltab="mine">${ROLE === "admin" ? "📚 Все тесты" : "📚 Мои тесты"} <b>${Object.keys(ALL).length}</b></button>
+      <button type="button" class="ws-b${LTAB === "shared" ? " on" : ""}" data-ltab="shared">📂 Общая папка <b>${Object.keys(ROLE === "admin" ? Object.fromEntries(Object.entries(ALL).filter(([, t]) => t.shared)) : SHARED).length}</b></button>
+      <span class="muted small">${ROLE === "admin" ? "В общей папке — тесты, которыми вы поделились с коллегами (кнопка «🤝 Поделиться»)." : "Общая папка — тесты коллег, которыми с вами поделились. Скопируйте тест к себе, чтобы изменить и провести его."}</span>
+    </div>
     <div class="ws-bar" style="position:static;margin-bottom:16px">
       <div class="ws-row">${chip(!W.s, 'data-ws-s=""', "Все предметы", all.length)}${SUBJECTS.map((x) => chip(W.s === x.id, `data-ws-s="${x.id}"`, `${x.icon} ${esc(subjName(x))}`, all.filter((t) => t.subject === x.id).length)).join("")}</div>
       ${ws ? `<div class="ws-row" style="margin:0">${chip(!W.g, 'data-ws-g=""', "Все классы", all.filter((t) => t.subject === ws.id).length)}${ws.grades.map((g) => chip(W.g === g, `data-ws-g="${g}"`, esc(gradeLabel(g)), all.filter((t) => t.subject === ws.id && String(t.grade) === g).length)).join("")}</div>` : ""}
     </div>
     ${list.length ? `<div class="bd-cards">${list.map((t) => {
       const [st, stT] = statusOf(t), open = !!SET[t.id]?.open, s = subjOf(t.subject);
+      const foreign = t.owner && t.owner !== USER.uid;     // тест коллеги
+      if (LTAB === "shared" && ROLE !== "admin") return `<article class="bd-card">
+        <div class="bd-chips"><span class="chip-st st-share">📂 ${esc(t.ownerName || "коллега")}</span></div>
+        <h2>${esc(t.title || tb("b_untitled"))}</h2>
+        <p class="muted">${esc([s ? subjName(s) : "", t.grade ? gradeLabel(t.grade) : ""].filter(Boolean).join(" · "))}</p>
+        <p class="muted small">${esc(tb("b_cardMeta", { n: (t.items || []).length, max: fmt(maxOf(t)), min: t.minutes || 0, d: fmtDT(t.updatedAt) }))}</p>
+        <div class="bd-actions"><button class="btn small" type="button" data-act="take" data-id="${t.id}">📥 Скопировать к себе</button></div></article>`;
       return `<article class="bd-card">
-        <div class="bd-chips"><span class="chip-st st-${st}">${esc(stT)}</span>${open ? `<span class="chip-st st-open">${esc(tb("st_open"))}</span>` : ""}${cur === t.id ? `<span class="chip-st st-now">${esc(tb("st_now"))}</span>` : ""}</div>
+        <div class="bd-chips"><span class="chip-st st-${st}">${esc(stT)}</span>${open ? `<span class="chip-st st-open">${esc(tb("st_open"))}</span>` : ""}${cur === t.id ? `<span class="chip-st st-now">${esc(tb("st_now"))}</span>` : ""}${t.shared ? '<span class="chip-st st-share">🤝 в общей папке</span>' : ""}${foreign ? `<span class="chip-st st-share">👤 ${esc(t.ownerName || "коллега")}</span>` : ""}</div>
         <h2>${esc(t.title || tb("b_untitled"))}</h2>
         <p class="muted">${esc([s ? subjName(s) : "", t.grade ? gradeLabel(t.grade) : "", kindT(KINDS.find((k) => k.id === t.kind))?.short || ""].filter(Boolean).join(" · "))}</p>
         <p class="muted small">${esc(tb("b_cardMeta", { n: (t.items || []).length, max: fmt(maxOf(t)), min: t.minutes || 0, d: fmtDT(t.updatedAt) }))}</p>
@@ -113,10 +134,13 @@ async function showList() {
           <button class="btn small ghost" type="button" data-act="now" data-id="${t.id}">${esc(tb("b_setNow"))}</button>
           <button class="btn small ghost" type="button" data-act="link" data-id="${t.id}">${esc(tb("b_link"))}</button>` : ""}
           <button class="btn small ghost" type="button" data-act="dup" data-id="${t.id}">${esc(tb("b_dup"))}</button>
+          ${!foreign ? `<button class="btn small ghost" type="button" data-act="share" data-id="${t.id}" title="Коллеги увидят тест в «Общей папке» и смогут скопировать его к себе. Результаты ваших учеников они не видят.">${t.shared ? "🤝 Не делиться" : "🤝 Поделиться"}</button>` : ""}
           <button class="btn small ghost danger" type="button" data-act="del" data-id="${t.id}">${esc(tb("b_del"))}</button>
         </div></article>`; }).join("")}</div>`
+      : LTAB === "shared" ? `<div class="card center"><h2>📂 Общая папка пуста</h2><p class="muted">${ROLE === "admin" ? "Нажмите «🤝 Поделиться» на карточке теста — он появится здесь и у коллег." : "Когда коллеги поделятся тестами, они появятся здесь."}</p></div>`
       : `<div class="card center"><h2>${esc(tb("b_emptyH"))}</h2><p class="muted">${esc(tb("b_emptyP"))}</p></div>`}</div>`;
   $("#bNew").onclick = createTest;
+  $$("[data-ltab]").forEach((b) => b.onclick = () => { LTAB = b.dataset.ltab; showList(); });
   $$("[data-ws-s]").forEach((b) => b.onclick = () => { const x = subjOf(b.dataset.wsS); saveWS({ s: b.dataset.wsS, g: x && x.grades.length === 1 ? x.grades[0] : "" }); showList(); });
   $$("[data-ws-g]").forEach((b) => b.onclick = () => { saveWS({ ...getWS(), g: b.dataset.wsG }); showList(); });
   $$("[data-act]").forEach((b) => b.onclick = () => listAction(b.dataset.act, b.dataset.id, b));
@@ -126,7 +150,8 @@ async function createTest() {
   const id = "b" + Date.now().toString(36);
   const W = getWS(), s = subjOf(W.s) || SUBJECTS[0];          // новый тест — сразу в выбранный предмет и класс
   const t = { id, title: tb("b_newTitle"), subject: s.id, grade: W.g || s.grades[0], kind: "to", minutes: 30, variants: 10, scale: s.id === "tech" ? "qual" : "10",
-    shuffle: false, protect: { fullscreen: true, autosubmit: true }, items: [newItem("choice")], createdAt: Date.now(), updatedAt: Date.now() };
+    shuffle: false, protect: { fullscreen: true, autosubmit: true }, items: [newItem("choice")], createdAt: Date.now(), updatedAt: Date.now(),
+    owner: USER.uid, ownerName: USER.displayName || USER.email || "" };
   await set(ref(db, `builder/${id}`), t);
   ALL[id] = t; location.hash = `#/e/${id}`;
 }
@@ -143,12 +168,28 @@ async function listAction(act, id, btn) {
   if (act === "dup") {
     const nid = "b" + Date.now().toString(36);
     const c = JSON.parse(JSON.stringify(t)); c.id = nid; c.title = t.title + " · " + tb("b_copy"); delete c.pubAt; c.createdAt = c.updatedAt = Date.now();
+    c.owner = USER.uid; c.ownerName = USER.displayName || USER.email || ""; c.shared = false;
     await set(ref(db, `builder/${nid}`), c); ALL[nid] = c; return showList();
+  }
+  if (act === "take") {                     // из общей папки — себе в «Мои тесты»
+    const src = SHARED[id]; if (!src) return;
+    const nid = "b" + Date.now().toString(36);
+    const c = JSON.parse(JSON.stringify(src)); c.id = nid; delete c.pubAt; c.createdAt = c.updatedAt = Date.now();
+    c.owner = USER.uid; c.ownerName = USER.displayName || USER.email || ""; c.shared = false; c.from = src.ownerName || "";
+    try { await set(ref(db, `builder/${nid}`), c); } catch (e) { return alert(e.message); }
+    ALL[nid] = c; LTAB = "mine"; btn.textContent = "✓ Скопировано"; location.hash = `#/e/${nid}`; return;
+  }
+  if (act === "share") {
+    const v = !t.shared;
+    await update(ref(db, `builder/${id}`), { shared: v, owner: t.owner || USER.uid, ownerName: t.ownerName || USER.displayName || USER.email || "" }).catch((e) => alert(e.message));
+    t.shared = v; t.owner = t.owner || USER.uid; return showList();
   }
   if (act === "del") {
     if (!confirm(tb("b_delAsk", { t: t.title }))) return;
-    await Promise.all([remove(ref(db, `builder/${id}`)), remove(ref(db, `pub/${id}`)), remove(ref(db, `pubIndex/${id}`)), remove(ref(db, `keys/${id}`)),
-      remove(ref(db, `settings/${id}`)), SET.current?.id === id ? remove(ref(db, "settings/current")) : null].filter(Boolean)).catch((e) => alert(e.message));
+    // сначала всё, что связано с тестом, и только потом сам тест (правила базы проверяют, чей он)
+    await Promise.all([remove(ref(db, `pub/${id}`)), remove(ref(db, `pubIndex/${id}`)), remove(ref(db, `keys/${id}`)), remove(ref(db, `results/${id}`)),
+      remove(ref(db, `settings/${id}`)), SET.current?.id === id ? remove(ref(db, "settings/current")) : null].filter(Boolean)).catch((e) => console.warn(e));
+    await remove(ref(db, `builder/${id}`)).catch((e) => alert(e.message));
     delete ALL[id]; return showList();
   }
 }

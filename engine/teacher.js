@@ -4,7 +4,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
-import { startAutoSync } from "./sync.js?v=1";
+import { startAutoSync, syncProgress } from "./sync.js?v=2";
+import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=1";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -37,6 +38,10 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) return showLogin();
   $("#who").innerHTML = `${esc(user.email)} · <a href="#" id="logout" style="color:#fff">выйти</a>`;
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
+  // коллега работает в своём кабинете (Конструктор), владелец — здесь
+  const role = await roleOf(db, user);
+  if (role === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
+  if (role === "colleague") { location.replace(new URL("teacher/builder.html", new URL("../", import.meta.url)).href); return; }
   startAutoSync(db);   // оценки сразу уходят на страницы учеников и родителей
   if (OVERVIEW) return showOverview();
   if (IS_MISSION) return showMissionDashboard();
@@ -597,7 +602,12 @@ function kindRowHtml() {
   return `<div class="kindrow"><span>Тип работы:</span><select id="selKind" style="width:auto">${KINDS.map((k) =>
     `<option value="${k.id}">${k.icon} ${esc(k.name)}</option>`).join("")}</select>
     ${ENTRY.retake ? '<span class="ktag k-retake">🔁 Пересдача</span>' : ""}
-    <span class="muted" style="font-size:13px">ярлык виден ученикам на сайте</span></div>`;
+    <span class="muted" style="font-size:13px">ярлык виден ученикам на сайте</span></div>
+  <div class="kindrow"><span>🔍 Разбор для учеников:</span><select id="selReview" style="width:auto">
+      <option value="0">Выключен — ученик видит только оценку</option>
+      <option value="1">Баллы по заданиям и свои ответы (где ошибся)</option>
+      <option value="2">Всё + правильные ответы</option></select>
+    <span class="muted" style="font-size:13px" id="reviewSt">разбор появится на страничке ученика и у родителя после сдачи</span></div>`;
 }
 function bindKind() {
   const sel = $("#selKind"); if (!sel) return;
@@ -606,6 +616,15 @@ function bindKind() {
     sel.value = kindOf(ENTRY, SETTINGS).id;
   }));
   sel.onchange = () => set(ref(db, `settings/${ENTRY.id}/kind`), sel.value);
+  const rs = $("#selReview"); if (!rs) return;
+  unsub.push(onValue(ref(db, `settings/${ENTRY.id}/review`), (s) => { rs.value = String(Number(s.val()) || 0); }));
+  rs.onchange = async () => {
+    const st = $("#reviewSt");
+    await set(ref(db, `settings/${ENTRY.id}/review`), Number(rs.value) || null);
+    st.textContent = "Обновляю странички учеников…";
+    try { await syncProgress(db); st.textContent = Number(rs.value) ? "✓ Разбор открыт ученикам и родителям" : "✓ Разбор скрыт"; }
+    catch (e) { st.textContent = "Сохранено. Странички обновятся в течение минуты."; }
+  };
 }
 
 // ---------- план недели ----------
@@ -1000,9 +1019,13 @@ async function showOverview() {
     // ---- инструменты (действуют для выбранного предмета и класса) ----
     $("#hubTools").innerHTML = `<div class="hub-tools"><a class="btn small" href="builder.html">🧩 Конструктор тестов</a> <a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
       <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
+      <button class="btn small ghost" id="hReview">🔍 Разбор для учеников</button>
+      <button class="btn small ghost" id="hStaff">👥 Коллеги</button>
       <button class="btn small ghost" id="hAnn">📢 Объявление</button>
       <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`;
-    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks; $("#hAnn").onclick = showAnnounce;
+    $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
+    $("#hStaff").onclick = showStaffDlg;
+    $("#hReview").onclick = () => showReviewDlg(ITEMS.filter((t) => (!WS.s || t.subject === WS.s) && (!WS.g || t.grade === WS.g)), SET); $("#hAnn").onclick = showAnnounce;
 
     // ---- выбор: предмет → класс ----
     const sub = subjOf(WS.s);
@@ -1034,7 +1057,7 @@ async function showOverview() {
         <span class="live">${isOpen(t) ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
         <div class="k">${esc(t.grade)} класс · ${kindLine(t)}</div>
         <div class="n">${esc(t.title)}</div>
-        <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}</div>
+        <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}${Number(SET[t.id]?.review) ? ' <span class="ktag" title="Ученики видят разбор своей работы">🔍 Разбор</span>' : ""}</div>
         <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${q ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${q ? "квалификативы" : "ср. оценка"}</div></div>
       </a>`;
     };
@@ -1057,6 +1080,65 @@ async function showOverview() {
   unsub.push(onValue(ref(db, "settings"), (s) => { SET = s.val() || {}; draw(); }));
   unsub.push(onValue(ref(db, "results"), (s) => { RES = s.val() || {}; draw(); }));
   unsub.push(onValue(ref(db, "pubIndex"), (s) => { PUB = s.val() || {}; draw(); }, () => {}));
+}
+
+// ---------- разбор работ для учеников: что показывать после сдачи ----------
+const REVIEW_LV = ["Выключен", "Баллы и ответы ученика", "Всё + правильные ответы"];
+function showReviewDlg(items, SET) {
+  openId = null;
+  const ws = getWS(), sb = SUBJECTS.find((x) => x.id === ws.s);
+  dlg.innerHTML = `<div class="dlg-head"><b>🔍 Разбор для учеников</b>
+      <button class="btn small ghost" style="background:#fff" id="rvClose">Закрыть ✕</button></div>
+    <div class="dlg-body">
+      <p class="muted">После сдачи ученик (и родитель в своём кабинете) видит на своей страничке кнопку «🔍 Разбор»: каждое задание,
+        сколько баллов получено, его ответ и комментарий ИИ. Правильные ответы — только если выбрать «Всё + правильные ответы».
+        Удобно включать после того, как все классы написали работу.</p>
+      <p><b>${sb ? sb.icon + " " + esc(sb.name) + (ws.g ? " · " + esc(ws.g) + " класс" : "") : "Все предметы"}</b> <span class="muted">(выбор предмета и класса — в Центре управления)</span></p>
+      <div class="rv-list">${items.length ? items.map((t) => `<div class="rv-row"><div><b>${esc(t.title)}</b>
+          <div class="muted" style="font-size:13px">${esc(t.grade)} класс · ${t.type === "mission" ? "миссия" : t.bt ? "тест · конструктор" : "тест"}</div></div>
+          <select data-rv="${esc(t.id)}" style="width:auto">${REVIEW_LV.map((n, i) => `<option value="${i}"${(Number(SET[t.id]?.review) || 0) === i ? " selected" : ""}>${n}</option>`).join("")}</select></div>`).join("")
+        : '<p class="muted">Здесь пока нет работ.</p>'}</div>
+      <p class="muted" id="rvSt" style="font-size:14px"></p>
+      <p class="muted" style="font-size:13px">Для тестов со своей страницей результатов (сессия, практические, итоговые) разбор появится после того, как вы хотя бы раз откроете страницу результатов этого теста.</p>
+    </div>`;
+  dlg.showModal();
+  $("#rvClose").onclick = () => dlg.close();
+  dlg.querySelectorAll("[data-rv]").forEach((sel) => sel.onchange = async () => {
+    const st = $("#rvSt");
+    st.textContent = "Сохраняю…";
+    await set(ref(db, `settings/${sel.dataset.rv}/review`), Number(sel.value) || null);
+    st.textContent = "Обновляю странички учеников…";
+    try { await syncProgress(db); st.textContent = "✓ Готово. Ученики увидят изменения при следующем обновлении странички (до минуты)."; }
+    catch (e) { st.textContent = "Сохранено. Странички обновятся в течение минуты."; }
+  });
+}
+
+// ---------- коллеги: заявки и доступ ----------
+async function showStaffDlg() {
+  openId = null;
+  dlg.innerHTML = `<div class="dlg-head"><b>👥 Коллеги</b><button class="btn small ghost" style="background:#fff" id="sfClose">Закрыть ✕</button></div>
+    <div class="dlg-body" id="sfBody"><p class="muted">Загружаю…</p></div>`;
+  if (!dlg.open) dlg.showModal();
+  $("#sfClose").onclick = () => dlg.close();
+  const { staff, requests } = await loadStaff(db);
+  const site = new URL("../teacher/builder.html", import.meta.url).href;
+  const req = Object.entries(requests), st = Object.entries(staff).filter(([, x]) => x.role !== "admin");
+  $("#sfBody").innerHTML = `
+    <p>Коллега получает <b>свой кабинет</b>: Конструктор тестов, результаты своих тестов и проверку ИИ.
+      Ваши тесты она видит только в «📂 Общей папке» — те, где вы нажали «🤝 Поделиться», и может скопировать их к себе.
+      Ваших учеников, их коды и результаты коллега не видит.</p>
+    <div class="chk-item"><b>Как подключить коллегу:</b> отправьте ей ссылку <span class="mono">${esc(site)}</span> — пусть войдёт через Google.
+      Её заявка появится ниже — нажмите «Принять».</div>
+    <h3 style="margin:18px 0 8px">Заявки ${req.length ? "· " + req.length : ""}</h3>
+    ${req.length ? req.map(([uid, x]) => `<div class="rv-row"><div><b>${esc(x.name || x.email)}</b><div class="muted" style="font-size:13px">${esc(x.email)} · ${new Date(x.at || 0).toLocaleString("ru-RU")}</div></div>
+      <div style="display:flex;gap:8px"><button class="btn small" data-acc="${esc(uid)}">✓ Принять</button><button class="btn small ghost" data-dec="${esc(uid)}">Отклонить</button></div></div>`).join("")
+      : '<p class="muted">Новых заявок нет.</p>'}
+    <h3 style="margin:18px 0 8px">Коллеги с доступом ${st.length ? "· " + st.length : ""}</h3>
+    ${st.length ? st.map(([uid, x]) => `<div class="rv-row"><div><b>${esc(x.name || x.email)}</b><div class="muted" style="font-size:13px">${esc(x.email)}</div></div>
+      <button class="btn small red" data-rm="${esc(uid)}">Закрыть доступ</button></div>`).join("") : '<p class="muted">Пока никого.</p>'}`;
+  dlg.querySelectorAll("[data-acc]").forEach((b) => b.onclick = async () => { await acceptStaff(db, b.dataset.acc, requests[b.dataset.acc]).catch((e) => alert(e.message)); showStaffDlg(); });
+  dlg.querySelectorAll("[data-dec]").forEach((b) => b.onclick = async () => { await declineStaff(db, b.dataset.dec).catch((e) => alert(e.message)); showStaffDlg(); });
+  dlg.querySelectorAll("[data-rm]").forEach((b) => b.onclick = async () => { if (!confirm("Закрыть доступ этому учителю? Его тесты останутся в базе.")) return; await removeStaff(db, b.dataset.rm).catch((e) => alert(e.message)); showStaffDlg(); });
 }
 
 // ---------- выбранный предмет и класс учителя (общий для Центра управления, плана, материалов и конструктора) ----------
