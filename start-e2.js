@@ -83,6 +83,7 @@ async function refresh() {
   try {
     const [s, pi] = await Promise.all([readDb("settings", { tries: 2 }), readDb("pubIndex", { tries: 2 }).catch(() => null)]);
     cachePut("start", { s, pi });
+    try { window.dispatchEvent(new CustomEvent("techlab:data")); } catch (e) {}
     apply(s, pi);
   } catch (e) { console.warn(e); }
   finally { busy = false; renderNow(); render(); }

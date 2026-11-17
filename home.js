@@ -2,7 +2,7 @@
 // Данные читаются быстрым HTTPS-запросом с таймаутом и повтором (engine/fbrest.js),
 // последние данные хранятся на компьютере — страница открывается сразу даже при медленном интернете.
 import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
-import { SUBJECTS } from "./tests.js?v=8";
+import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=8";
 import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT } from "./engine/people.js?v=3";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=1";
@@ -20,6 +20,20 @@ document.head.insertAdjacentHTML("beforeend", `<style>
   .me-out:hover{background:#FBD9DE}
   .gc-sync{font-size:12px;color:var(--muted);margin-top:6px}
   .code-box .btn-p[disabled]{opacity:.6;cursor:wait}
+  .gc-tasks{grid-column:1/-1}
+  .tk-now{display:flex;align-items:center;gap:14px;background:#E8F0FE;border:1px solid #AECBFA;border-radius:12px;padding:12px 14px;margin:8px 0;text-decoration:none;color:inherit}
+  .tk-now:hover{background:#D2E3FC}
+  .tk-now .tk-go{margin-left:auto;background:#1A73E8;color:#fff;font-weight:700;border-radius:8px;padding:8px 14px;white-space:nowrap}
+  .tk-h{font-weight:700;font-size:14px;color:var(--muted);margin:16px 2px 6px;text-transform:none}
+  .tk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+  .tk{display:flex;gap:10px;align-items:center;border:1px solid #DADCE0;border-radius:10px;padding:10px 12px;text-decoration:none;color:inherit;background:#fff}
+  a.tk:hover{border-color:#1A73E8}
+  .tk .tt{font-weight:600;font-size:14px;line-height:1.3}.tk .ts{font-size:12px;color:var(--muted);margin-top:2px}
+  .tk .st{margin-left:auto;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .st-open{background:#E6F4EA;color:#137333}.st-done{background:#E8F0FE;color:#1967D2}.st-closed{background:#F1F3F4;color:#5F6368}
+  .tk-exp{border:1px solid #DADCE0;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff}
+  .tk-exp b{font-size:14px}.tk-route{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tk-route .tk{padding:8px 10px;flex:1 1 200px}
   .code-box .retry{font:inherit;font-weight:800;background:none;border:0;color:var(--blue);text-decoration:underline;cursor:pointer;padding:0}
 </style>`);
 const box = document.getElementById("home");
@@ -33,6 +47,7 @@ box.addEventListener("click", (e) => {
 });
 const subjName = (id) => subjNameT(SUBJECTS.find((s) => s.id === id));
 let renderNo = 0;
+let LAST = null;                 // последние данные кабинета — для перерисовки «Моих заданий»
 
 render();
 // Оценки появляются сами: страница ученика перечитывает прогресс раз в минуту
@@ -41,6 +56,18 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && ge
 // вход/выход (в т. ч. кнопкой 🏠 или в другой вкладке) — сразу перерисовываем
 window.addEventListener(SESSION_EVENT, () => render());
 window.addEventListener("storage", (e) => { if (e.key === "techlab_student") window.dispatchEvent(new CustomEvent(SESSION_EVENT)); });
+
+// Пришли со страницы задания без кода (?next=…#login): открываем вход, после входа — обратно к заданию
+const NEXT = (() => {
+  try { const n = new URLSearchParams(location.search).get("next") || "";
+    const root = new URL("./", location.href).pathname;
+    return n.startsWith(root) && !n.includes("//") ? n : ""; } catch (e) { return ""; }
+})();
+function goNext() { if (NEXT) { location.replace(NEXT); return true; } return false; }
+if (getSession() && NEXT) goNext();
+else if (!getSession() && (NEXT || location.hash === "#login")) setTimeout(askCode, 50);
+// стартовая страница обновила список открытых заданий — перерисуем «Мои задания»
+window.addEventListener("techlab:data", () => { if (LAST && getSession()?.code === LAST[0].code && !document.querySelector(".code-ov,.rv-ov")) center(...LAST); });
 
 function logout() {
   signOutStudent();
@@ -129,7 +156,7 @@ function askCode() {
   o.querySelector("#codeX").onclick = close;
   o.addEventListener("click", (e) => { if (e.target === o && !busy) close(); });
   inp.oninput = () => { if (!busy) err.textContent = ""; };
-  const done = (s) => { close(); signInStudent(s); history.replaceState(null, "", location.pathname); window.dispatchEvent(new HashChangeEvent("hashchange")); scrollTo(0, 0); };
+  const done = (s) => { close(); signInStudent(s); if (goNext()) return; history.replaceState(null, "", location.pathname); window.dispatchEvent(new HashChangeEvent("hashchange")); scrollTo(0, 0); };
 
   o.querySelector("#codeForm").onsubmit = async (e) => {
     e.preventDefault();
@@ -165,6 +192,7 @@ function askCode() {
 
 // ---------------- игровой центр ----------------
 function center(S, P, B, CS = null, note = "") {
+  LAST = [S, P, B, CS, note];
   CUR_WORKS = P.works || {};
   const works = Object.entries(P.works || {}).map(([id, w]) => ({ ...w, id })).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
   const done = works.filter((w) => w.complete && !w.qual);
@@ -196,6 +224,7 @@ function center(S, P, B, CS = null, note = "") {
     </div>
 
     <div class="gc-grid">
+      ${tasksHtml(S, P, CS)}
       <div class="gc-card">
         <h2>${t("my_works")}</h2>
         ${works.length ? bySubject(works).map(([sid, list]) => {
@@ -227,6 +256,40 @@ function center(S, P, B, CS = null, note = "") {
     </div>
   </section>`;
   document.getElementById("logout").onclick = logout;
+}
+
+// ---------------- «Мои задания»: тесты, миссии и квесты моего класса ----------------
+function tasksHtml(S, P, CS) {
+  const st = cacheGet("start", 3 * 864e5) || {};
+  const SET = st.s || {}, PI = st.pi || {};
+  const grade = String(S.cls).split(" ")[0];
+  const okSubj = (sid) => !CS || CS.includes(sid);
+  const builder = Object.entries(PI).map(([id, x]) => ({ id, type: "test", kind: x.kind || "to", subject: x.subject, grade: String(x.grade || ""), title: x.title, path: `b/?t=${id}` }));
+  const items = TESTS.filter((x) => x.path).concat(builder).filter((x) => x.grade === grade && okSubj(x.subject));
+  if (!items.length) return "";
+  const works = P.works || {};
+  const state = (x) => works[x.id] ? "done" : SET[x.id]?.open ? "open" : "closed";
+  const sj = (id) => SUBJECTS.find((q) => q.id === id);
+  const label = { open: L3("открыто", "deschis", "open"), done: L3("сдано", "predat", "done"), closed: L3("закрыто", "închis", "closed") };
+  const mark = (x) => { const w = works[x.id]; return w && w.complete ? (w.qual ? qualShow(w.qual) : w.grade) : ""; };
+  const row = (x, short = false) => { const k = state(x);
+    return `<a class="tk" href="${esc(x.path)}"><span><div class="tt">${esc(short && x.type === "mission" ? L3("Миссия", "Misiunea", "Mission") + " " + x.n : x.title)}</div>
+      <div class="ts">${esc(short ? x.title : (sj(x.subject) ? subjName(x.subject) : "") + " · " + (KINDS.find((q) => q.id === kindOf(x, SET).id)?.short || ""))}</div></span>
+      <span class="st st-${k}">${label[k]}${k === "done" && mark(x) !== "" ? " · " + esc(mark(x)) : ""}</span></a>`; };
+  const open = items.filter((x) => state(x) === "open");
+  const exps = EXPEDITIONS.filter((e) => e.grade === grade && okSubj(e.subject))
+    .map((e) => [e, items.filter((x) => x.expedition === e.id).sort((a, b) => a.n - b.n)]).filter(([, l]) => l.length);
+  const tests = items.filter((x) => x.type !== "mission").sort((a, b) => ["open", "closed", "done"].indexOf(state(a)) - ["open", "closed", "done"].indexOf(state(b)));
+  return `<div class="gc-card gc-tasks">
+    <h2>${L3("Мои задания", "Sarcinile mele", "My tasks")}</h2>
+    ${open.length ? open.map((x) => `<a class="tk-now" href="${esc(x.path)}"><span><div class="tt" style="font-weight:700">${esc(x.title)}</div>
+        <div class="ts" style="font-size:13px;color:var(--muted)">${esc(sj(x.subject) ? subjName(x.subject) : "")} · ${L3("открыто учителем", "deschis de profesor", "opened by the teacher")}</div></span>
+        <span class="tk-go">${x.type === "mission" ? L3("Начать миссию", "Începe misiunea", "Start mission") : L3("Начать", "Începe", "Start")}</span></a>`).join("")
+      : `<p class="muted" style="margin:6px 2px">${L3("Сейчас открытых заданий нет — учитель откроет их на уроке.", "Acum nu sunt sarcini deschise.", "No open tasks right now.")}</p>`}
+    ${exps.length ? `<div class="tk-h">${L3("Квесты и миссии", "Misiuni", "Quests and missions")}</div>` + exps.map(([e, l]) => `<div class="tk-exp"><b>${esc(e.title)}</b>
+        <div class="tk-route">${l.map((x) => row(x, true)).join("")}</div></div>`).join("") : ""}
+    ${tests.length ? `<div class="tk-h">${L3("Тесты и работы", "Teste", "Tests")}</div><div class="tk-list">${tests.map((x) => row(x)).join("")}</div>` : ""}
+  </div>`;
 }
 
 function bySubject(works) {

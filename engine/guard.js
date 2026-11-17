@@ -14,6 +14,12 @@
    ===================================================================== */
 (function () {
   var OWN = "techlab_owner", SKEY = "techlab_student";
+  // корень сайта = папка, где лежит engine/
+  var ROOT = (function () {
+    var s = document.currentScript && document.currentScript.src;
+    return s ? s.replace(/engine\/guard\.js.*$/, "") : "/";
+  })();
+
   // какие ключи — это черновики работ (а не настройки сайта)
   var DRAFT = /^techlab_(attempt_|tech\d|inf\d|geo\d|math\d|work_|game_)/;
   function ls() { try { return window.localStorage; } catch (e) { return null; } }
@@ -54,11 +60,57 @@
       location.replace(ROOT);
     }
   };
-  // корень сайта = папка, где лежит engine/
-  var ROOT = (function () {
-    var s = document.currentScript && document.currentScript.src;
-    return s ? s.replace(/engine\/guard\.js.*$/, "") : "/";
-  })();
+
+  // ---------- вход только по коду ----------
+  // Тест, миссию или квест можно открыть, только войдя по своему коду: учитель видит, кто работал.
+  // Без кода страница закрыта экраном «Войди по своему коду» → стартовая страница → вход → назад сюда.
+  // Учитель на своём компьютере (вошёл в панель учителя через Google) видит страницу в режиме просмотра.
+  if (!S) {
+    var lockCss = document.createElement("style");
+    lockCss.id = "tl-lock";
+    lockCss.textContent = "html.tl-locked body>*:not(.tl-gate){display:none!important}" +
+      ".tl-gate{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:20px;background:#F4F6FB;font-family:Roboto,Manrope,'Segoe UI',Arial,sans-serif;color:#0B1A3B}" +
+      ".tl-gate .b{background:#fff;border:1px solid #DCE4F2;border-radius:16px;padding:28px 30px;max-width:440px;width:100%;box-sizing:border-box;text-align:center}" +
+      ".tl-gate h1{font-size:24px;margin:0 0 8px}.tl-gate p{margin:0 0 18px;color:#556A92;font-size:15px;line-height:1.5}" +
+      ".tl-gate a.go{display:block;background:#1A73E8;color:#fff;text-decoration:none;font-weight:700;font-size:17px;padding:14px;border-radius:10px}" +
+      ".tl-gate a.go:hover{background:#1557B0}.tl-gate small{display:block;margin-top:14px;color:#6B7A99;font-size:13px}" +
+      ".tl-gate small a{color:#1A73E8}.tl-teach{position:fixed;top:0;left:0;right:0;z-index:2147483000;background:#FFF4DC;color:#5A4300;font:600 13px Arial,sans-serif;text-align:center;padding:6px}";
+    document.head.appendChild(lockCss);
+    document.documentElement.classList.add("tl-locked");
+    var showGate = function () {
+      if (!document.documentElement.classList.contains("tl-locked") || document.querySelector(".tl-gate")) return;
+      var next = location.pathname + location.search;
+      var g = document.createElement("div");
+      g.className = "tl-gate";
+      g.innerHTML = '<div class="b" role="dialog" aria-labelledby="tlg-h"><h1 id="tlg-h">Войди по своему коду</h1>' +
+        '<p>Задания открываются только после входа. Код — на карточке, которую выдал учитель.</p>' +
+        '<a class="go" href="' + ROOT + '?next=' + encodeURIComponent(next) + '#login">Ввести код</a>' +
+        '<small>Нет карточки? Спроси у учителя. · <a href="' + ROOT + '">На стартовую</a></small></div>';
+      document.body.appendChild(g);
+    };
+    var unlock = function () {
+      document.documentElement.classList.remove("tl-locked");
+      var g = document.querySelector(".tl-gate"); if (g) g.remove();
+      var bn = document.createElement("div"); bn.className = "tl-teach";
+      bn.textContent = "Режим учителя: просмотр без кода ученика";
+      document.body.appendChild(bn);
+    };
+    if (document.body) showGate(); else document.addEventListener("DOMContentLoaded", showGate);
+    // учитель вошёл на этом компьютере в панель учителя? (Firebase хранит вход в IndexedDB)
+    try {
+      var rq = indexedDB.open("firebaseLocalStorageDb");
+      rq.onsuccess = function () {
+        var db = rq.result;
+        if (!db.objectStoreNames.contains("firebaseLocalStorage")) { db.close(); return; }
+        var all = db.transaction("firebaseLocalStorage", "readonly").objectStore("firebaseLocalStorage").getAll();
+        all.onsuccess = function () {
+          var ok = (all.result || []).some(function (x) { return x && String(x.fbase_key || "").indexOf("firebase:authUser:") === 0 && x.value && x.value.email; });
+          db.close();
+          if (ok) { if (document.body) unlock(); else document.addEventListener("DOMContentLoaded", unlock); }
+        };
+      };
+    } catch (e) {}
+  }
 
   // «сменить ученика» / «выйти» внутри миссий и игр → полный выход на стартовую
   document.addEventListener("click", function (e) {
