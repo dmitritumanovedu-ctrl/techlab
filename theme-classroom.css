@@ -382,3 +382,4 @@ body[data-view="calendar"] #home, body[data-view="tasks"] #home, body[data-view=
     background-repeat: no-repeat !important; background-attachment: fixed !important;
     background-position: left 24px bottom 40px, right 30px bottom 60px, right 60px top 140px !important; }
 }
+.sh-news + .sh-news { border-top: 1px solid #f3dfa0; padding-top: 8px; margin-top: 8px; }

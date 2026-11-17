@@ -46,18 +46,22 @@ const FACTS = [
   ["tech", "Формат PNG сжимает картинку без потерь, а JPEG — с небольшой потерей качества.", "Formatul PNG comprimă imaginea fără pierderi, iar JPEG — cu o mică pierdere de calitate.", "PNG compresses images without loss, while JPEG loses a little quality."],
   ["inf", "1 байт = 8 бит. Одна буква в простом тексте занимает примерно 1 байт.", "1 octet = 8 biți. O literă într-un text simplu ocupă cam 1 octet.", "1 byte = 8 bits. One letter of plain text takes about 1 byte."],
   ["geo", "Население Земли превысило 8 миллиардов человек в ноябре 2022 года.", "Populația Pământului a depășit 8 miliarde de oameni în noiembrie 2022.", "The world’s population passed 8 billion in November 2022."],
+  ["inf", "Первый жёсткий диск IBM (1956) весил около тонны и хранил всего 5 МБ.", "Primul hard disk IBM (1956) cântărea circa o tonă și stoca doar 5 MB.", "IBM’s first hard drive (1956) weighed about a ton and held just 5 MB."],
+  ["tech", "Первый струйный принтер для дома появился в 1980-х — до этого печатали в основном матричные.", "Prima imprimantă cu jet de cerneală pentru acasă a apărut în anii 1980.", "The first home inkjet printers appeared in the 1980s."],
+  ["tech", "Наушники и колонки — устройства вывода: они превращают сигнал компьютера в звук.", "Căștile și boxele sunt dispozitive de ieșire: transformă semnalul în sunet.", "Headphones and speakers are output devices: they turn signals into sound."],
   ["math", "Ноль пришёл в европейскую математику из Индии через арабских учёных.", "Zero a ajuns în matematica europeană din India, prin savanții arabi.", "Zero reached European mathematics from India via Arab scholars."],
 ];
 
 // ---------- данные ----------
-let DATA = cacheGet("shell", 3 * 864e5) || { plan: {}, ann: null, cs: null };
+let DATA = cacheGet("shell", 3 * 864e5) || { plan: {}, ann: null, news: null, cs: null };
 async function refresh() {
   if (document.hidden) return;
   try {
-    const [plan, ann, cs] = await Promise.all([
+    const [plan, ann, news, cs] = await Promise.all([
       readDb("settings/plan", { tries: 2 }), readDb("settings/announce", { tries: 2 }).catch(() => null),
+      readDb("settings/news", { tries: 2 }).catch(() => null),
       getSession() ? readDb("settings/classSubjects", { tries: 2 }).catch(() => null) : Promise.resolve(DATA.cs)]);
-    DATA = { plan: plan || {}, ann: ann || null, cs: cs || null };
+    DATA = { plan: plan || {}, ann: ann || null, news: news || null, cs: cs || null };
     cachePut("shell", DATA);
   } catch (e) { /* остаются сохранённые данные */ }
   drawRight();
@@ -118,20 +122,28 @@ function drawRight() {
   const subjN = (id) => subjName(SUBJECTS.find((x) => x.id === id)) || id;
   const nextHtml = next.length ? next.map((e) => `<div class="sh-dl" style="--c:${COLOR[e.s] || "#1a73e8"}">
       <b>${esc(e.t)}</b><small>${esc(fmtD(e.d))} · ${esc(subjN(e.s))}, ${esc(e.g)}</small></div>`).join("")
-    : `<p class="sh-empty">${L3("Ближайших работ в плане нет.", "Nu sunt lucrări planificate în curând.", "No upcoming work planned.")}</p>`;
+    : "";                                   // пусто — блок не показываем
 
-  const a = DATA.ann;
-  const annFresh = a && a.text && (!a.at || Date.now() - a.at < 21 * 864e5);
-  const annHtml = annFresh ? `<section class="sh-card sh-ann"><h3>${SV(IC.mega, 18)}${L3("От учителя", "De la profesor", "From the teacher")}</h3>
-      <p>${esc(a.text)}</p><small>${a.g ? esc(L3(a.g + " классы", "clasele a " + a.g + "-a", "grade " + a.g)) + " · " : ""}${a.at ? esc(new Date(a.at).toLocaleDateString(LOCALE, { day: "numeric", month: "long" })) : ""}</small></section>` : "";
+  // объявления учителя: последние 3 за 3 недели; ученик видит общие и для своих классов
+  const me = getSession(), myG = me ? String(me.cls).split(" ")[0] : "";
+  const fresh = (x) => x && x.text && (!x.at || Date.now() - x.at < 21 * 864e5);
+  const forMe = (x) => !me || !x.g || String(x.g) === myG;
+  const news = Object.values(DATA.news || {}).concat(DATA.ann ? [DATA.ann] : []).filter((x) => fresh(x) && forMe(x))
+    .sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 3);
+  const whom = (x) => x.g ? L3(x.g + " классы", "clasele a " + x.g + "-a", "grade " + x.g) : L3("для всех", "pentru toți", "everyone");
+  const annHtml = news.length ? `<section class="sh-card sh-ann"><h3>${SV(IC.mega, 18)}${L3("Объявления", "Anunțuri", "Announcements")}</h3>
+      ${news.map((x) => `<div class="sh-news"><p>${esc(x.text)}</p><small>${esc(whom(x))}${x.at ? " · " + esc(new Date(x.at).toLocaleDateString(LOCALE, { day: "numeric", month: "long" })) : ""}</small></div>`).join("")}</section>` : "";
 
+  // факт дня меняется каждый день; если идёт урок — факт по его предмету
   const dayNo = Math.floor(Date.now() / 864e5);
-  const f = FACTS[dayNo % FACTS.length];
+  const curS = (cacheGet("start", 864e5)?.s?.current || {}).subject;
+  const pool = FACTS.filter((x) => x[0] === curS);
+  const f = (pool.length ? pool : FACTS)[dayNo % (pool.length || FACTS.length)];
   const fact = { ru: f[1], ro: f[2], en: f[3] }[LANG] || f[1];
 
   box.innerHTML = `<section class="sh-card"><h3>${SV(IC.cal, 18)}${wd >= 5 ? L3("Следующая неделя", "Săptămâna viitoare", "Next week") : L3("Эта неделя", "Săptămâna aceasta", "This week")}</h3>
       <div class="sh-week">${week}</div></section>
-    <section class="sh-card"><h3>${SV(IC.clock, 18)}${L3("Ближайшие сроки", "Termene apropiate", "Coming up")}</h3>${nextHtml}</section>
+    ${nextHtml ? `<section class="sh-card"><h3>${SV(IC.clock, 18)}${L3("Ближайшие сроки", "Termene apropiate", "Coming up")}</h3>${nextHtml}</section>` : ""}
     ${annHtml}
     <section class="sh-card sh-fact" style="--c:${COLOR[f[0]]}"><h3>${SV(IC.bulb, 18)}${L3("Знаете ли вы?", "Știați că?", "Did you know?")}</h3>
       <p>${esc(fact)}</p><small>${esc(subjN(f[0]))}</small></section>`;
@@ -158,6 +170,7 @@ function mount() {
   }
   refresh();
   setInterval(refresh, 60000);
+  window.addEventListener("techlab:data", drawRight);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount); else mount();

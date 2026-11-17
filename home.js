@@ -20,6 +20,17 @@ document.head.insertAdjacentHTML("beforeend", `<style>
   .me-out:hover{background:#FBD9DE}
   .gc-sync{font-size:12px;color:var(--muted);margin-top:6px}
   .code-box .btn-p[disabled]{opacity:.6;cursor:wait}
+  .p-code{background:var(--blue-l,#E8F0FE);padding:24px 26px;display:flex;flex-direction:column;gap:6px;justify-content:center;border-left:1px solid var(--line,#E3E6EB)}
+  .p-code b{font-size:17px}.p-code .pc-sub{color:var(--muted,#5F6368);font-size:13px}
+  .pc-row{display:flex;gap:8px;margin-top:10px}
+  .pc-row input{flex:1;min-width:0;font:inherit;font-family:"Roboto Mono",ui-monospace,monospace;font-size:17px;letter-spacing:.05em;text-transform:uppercase;border:1.5px solid #9AA0A6;border-radius:6px;padding:10px 12px;background:#fff}
+  .pc-row input:focus{outline:2px solid #1A73E8;outline-offset:1px;border-color:#1A73E8}
+  .pc-go{font:inherit;font-weight:600;background:#1A73E8;color:#fff;border:0;border-radius:6px;padding:10px 18px;cursor:pointer;min-height:44px}
+  .pc-go:hover{background:#1557B0}
+  .pc-hint{font-size:12px;color:var(--muted,#5F6368);margin-top:6px;line-height:1.5}
+  .portal .role .rt{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+  .portal .role.main .rt small{color:rgba(255,255,255,.85);font-size:11px;font-weight:400}
+  @media (max-width:720px){.p-code{border-left:0;border-top:1px solid var(--line,#E3E6EB)}}
   .gc-tasks{grid-column:1/-1}
   .tk-now{display:flex;align-items:center;gap:14px;background:#E8F0FE;border:1px solid #AECBFA;border-radius:12px;padding:12px 14px;margin:8px 0;text-decoration:none;color:inherit}
   .tk-now:hover{background:#D2E3FC}
@@ -65,7 +76,7 @@ const NEXT = (() => {
 })();
 function goNext() { if (NEXT) { location.replace(NEXT); return true; } return false; }
 if (getSession() && NEXT) goNext();
-else if (!getSession() && (NEXT || location.hash === "#login")) setTimeout(askCode, 50);
+else if (!getSession() && (NEXT || location.hash === "#login")) setTimeout(() => askCode(), 50);
 // стартовая страница обновила список открытых заданий — перерисуем «Мои задания»
 window.addEventListener("techlab:data", () => { if (LAST && getSession()?.code === LAST[0].code && !document.querySelector(".code-ov,.rv-ov")) center(...LAST); });
 
@@ -79,7 +90,7 @@ function logout() {
 async function render(quiet = false) {
   const my = ++renderNo;
   const S = getSession();
-  if (!S) { chip.innerHTML = `<button type="button" class="me-btn" id="chipIn">${t("sign_in")}</button>`; chip.querySelector("#chipIn").onclick = askCode; return portal(); }
+  if (!S) { chip.innerHTML = `<button type="button" class="me-btn" id="chipIn">${t("sign_in")}</button>`; chip.querySelector("#chipIn").onclick = () => askCode(); return portal(); }
   // Кнопка выхода видна сразу — не ждёт загрузки данных
   chip.innerHTML = `<div class="me-row"><span class="me-chip"><span class="av">${esc(initials(S.name))}</span>${esc(short(S.name))} · ${esc(S.cls)}</span>
     <button type="button" class="me-out" id="chipOut">${esc(L3("Выйти", "Ieși", "Sign out"))}</button></div>`;
@@ -114,29 +125,34 @@ function portal() {
       <h1>${hello}</h1>
       <p>${t("p_text")}</p>
       <div class="roles">
-        <button type="button" class="role main" id="rStudent" title="${esc(t("r_student_s"))}"><span class="ri">${sv('<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')}</span><span class="rt"><b>${t("r_student")}</b></span></button>
+        <button type="button" class="role main" id="rStudent" title="${esc(t("r_student_s"))}"><span class="ri">${sv('<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')}</span><span class="rt"><b>${t("r_student")}</b><small>${esc(L3("код на карточке, начинается с S", "codul de pe cartonaș, începe cu S", "code on your card, starts with S"))}</small></span></button>
         <a class="role" href="parent/" title="${esc(t("r_parent_s"))}"><span class="ri">${sv('<circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M15 20c0-2 1-4 3-4.5"/>')}</span><span class="rt"><b>${t("r_parent")}</b></span></a>
         <a class="role" href="teacher/" title="${esc(t("r_teacher_s"))}"><span class="ri">${sv('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>')}</span><span class="rt"><b>${t("r_teacher")}</b></span></a>
       </div>
       <p class="p-demo"><a href="demo/">${t("p_demo")}</a></p>
     </div>
-    <div class="p-art" aria-hidden="true"><svg viewBox="0 0 240 160" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-      <rect x="40" y="112" width="160" height="8" rx="3" fill="#aecbfa"/>
-      <rect x="72" y="46" width="96" height="66" rx="5" fill="#fff" stroke="#1a73e8" stroke-width="2.5"/>
-      <rect x="81" y="56" width="42" height="7" rx="3" fill="#1a73e8"/>
-      <rect x="81" y="70" width="76" height="5" rx="2.5" fill="#d2e3fc"/><rect x="81" y="80" width="62" height="5" rx="2.5" fill="#d2e3fc"/><rect x="81" y="90" width="50" height="5" rx="2.5" fill="#d2e3fc"/>
-      <circle cx="153" cy="98" r="9" fill="#34a853"/><path d="M148.5 98l3 3 5.5-6" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-      <circle cx="44" cy="74" r="17" fill="#34a853"/><path d="M27 74h34M44 57c6 5 6 29 0 34M44 57c-6 5-6 29 0 34" stroke="#fff" stroke-width="1.6" fill="none"/>
-      <rect x="184" y="70" width="22" height="42" rx="3" fill="#fbbc04"/><rect x="188" y="77" width="14" height="3" fill="#fff"/><rect x="188" y="84" width="14" height="3" fill="#fff"/>
-      <path d="M200 30l12 0M206 24l0 12" stroke="#9334e6" stroke-width="3" stroke-linecap="round"/>
-      <path d="M30 28l8 8M38 28l-8 8" stroke="#ea4335" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="118" cy="24" r="5" fill="#fbbc04"/>
-    </svg></div>
+    <form class="p-code" id="pCode" novalidate>
+      <b>${esc(L3("Войти по коду", "Intră cu codul", "Sign in with your code"))}</b>
+      <span class="pc-sub">${esc(L3("Введи код с карточки, которую выдал учитель", "Introdu codul de pe cartonașul primit de la profesor", "Enter the code from the card your teacher gave you"))}</span>
+      <div class="pc-row"><label for="pcIn" class="sr">${t("code_label")}</label>
+        <input id="pcIn" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="SXXX-XXXX">
+        <button type="submit" class="pc-go">${t("sign_in")}</button></div>
+      <span class="pc-hint">${esc(L3("Родитель? Код начинается с P", "Părinte? Codul începe cu P", "Parent? Your code starts with P"))} · <a href="parent/">${esc(L3("кабинет родителя", "cabinetul părintelui", "parent area"))}</a> · ${esc(L3("забыл код — спроси учителя", "ai uitat codul — întreabă profesorul", "forgot the code? ask your teacher"))}</span>
+    </form>
   </section>`;
-  document.getElementById("rStudent").onclick = askCode;
+  document.getElementById("rStudent").onclick = () => askCode();
+  document.getElementById("pCode").onsubmit = (e) => {
+    e.preventDefault();
+    const v = document.getElementById("pcIn").value.trim();
+    if (!v) return document.getElementById("pcIn").focus();
+    // код родителя — сразу в кабинет родителя
+    if (cleanCode(v)[0] === "P") { location.href = "parent/?code=" + encodeURIComponent(cleanCode(v)); return; }
+    askCode(v);
+  };
 }
 
-function askCode() {
+function askCode(prefill = "") {
+  if (typeof prefill !== "string") prefill = "";
   if (document.querySelector(".code-ov")) return;
   const o = document.createElement("div");
   o.className = "code-ov";
@@ -151,6 +167,7 @@ function askCode() {
   document.body.appendChild(o);
   const inp = o.querySelector("#codeIn"), err = o.querySelector("#codeErr"), go = o.querySelector("#codeGo");
   inp.focus();
+  if (prefill) inp.value = prefill;
   let busy = false;
   const close = () => o.remove();
   o.querySelector("#codeX").onclick = close;
@@ -188,6 +205,7 @@ function askCode() {
       o.querySelector("#codeRetry").onclick = () => o.querySelector("#codeForm").requestSubmit();
     } finally { busy = false; go.disabled = false; inp.readOnly = false; }
   };
+  if (prefill) o.querySelector("#codeForm").requestSubmit();
 }
 
 // ---------------- игровой центр ----------------

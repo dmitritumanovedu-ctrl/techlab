@@ -40,6 +40,9 @@ function login(err = "") {
       <button class="btn-p" type="submit">${t("sign_in")}</button></form>
     <small class="muted">${t("pl_small")}</small></div>`;
   $("#c").focus();
+  // пришли со стартовой страницы с кодом родителя (?code=…) — подставляем и входим
+  const pre = (() => { try { return new URLSearchParams(location.search).get("code") || ""; } catch (e) { return ""; } })();
+  if (pre && !err) { $("#c").value = pre; history.replaceState(null, "", location.pathname); setTimeout(() => $("#f").requestSubmit(), 0); }
   $("#f").onsubmit = async (ev) => {
     ev.preventDefault();
     const c = cleanCode($("#c").value);

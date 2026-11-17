@@ -93,6 +93,23 @@ setInterval(refresh, 20000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 
 // ---------- «Сейчас на уроке» ----------
+// Сколько осталось до конца урока: от момента, когда учитель открыл задание (settings/current.at),
+// длина урока — settings/lessonMin (учитель выбирает в Центре управления), по умолчанию 45 минут
+function timerHtml() {
+  if (!CURRENT || !CURRENT.at) return "";
+  const len = (Number(SET.lessonMin) || 45) * 60000, left = CURRENT.at + len - Date.now();
+  if (left <= 0 || left > len) return "";
+  const pct = Math.round((1 - left / len) * 100), min = Math.ceil(left / 60000);
+  return ` · <span class="now-timer">${L3("до конца урока", "până la sfârșitul lecției", "lesson ends in")} <b>${min} ${L3("мин", "min", "min")}</b>
+    <span class="now-bar"><i style="width:${pct}%"></i></span></span>`;
+}
+setInterval(() => { if (CURRENT && CURRENT.at && !document.hidden) renderNow(); }, 30000);
+document.head.insertAdjacentHTML("beforeend", `<style>
+  .now-timer{white-space:nowrap}.now-timer b{color:var(--text,#202124)}
+  .now-bar{display:inline-block;vertical-align:middle;width:140px;height:6px;border-radius:3px;background:rgba(0,0,0,.08);margin-left:8px}
+  .now-bar i{display:block;height:6px;border-radius:3px;background:#188038}
+</style>`);
+
 function renderNow() {
   const box = $("#now");
   const forMe = !mine() || !CURRENT || (MYSUBJ.includes(CURRENT.subject) && (!CURRENT.grade || CURRENT.grade === MYGRADE));
@@ -105,7 +122,7 @@ function renderNow() {
       <span class="now-ic">${subjIcon(CURRENT.subject)}</span>
       <div><div class="lbl"><span class="pulse"></span>${t("now")}${K ? ` <span class="now-k">${esc(K.name)}</span>` : ""}</div>
         <div class="ttl">${esc(CURRENT.title)}</div>
-        <div class="sub">${s ? esc(subjName(s)) : ""}${CURRENT.grade ? " · " + esc(gradeLabel(CURRENT.grade)) : ""}</div></div>
+        <div class="sub">${s ? esc(subjName(s)) : ""}${CURRENT.grade ? " · " + esc(gradeLabel(CURRENT.grade)) : ""}${timerHtml()}</div></div>
       <span class="go">${mission ? t("start_mission") : t("start")}</span></a>`;
   } else {
     box.innerHTML = `<div class="now empty"><div><div class="lbl">${t("now")}</div>
@@ -160,14 +177,10 @@ function renderHome() {
     return;
   }
   $("#view").innerHTML = `<h2>${t("choose_subject")}</h2><div class="tiles">${SUBJECTS.map((s) => {
-    const st = stats(s.id);
-    const pr = st.total ? Math.round(st.ready / st.total * 100) : 0;
-    const on = Math.max(1, Math.round(pr / 25));
     return `<a class="tile" data-s="${s.id}" href="#${s.id}">
       <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
-      <div class="ds">${statLine(st)}</div>${tileState(s.id)}
-      <div class="cls">${s.grades.map((g) => `<b>${esc(gradeLabel(g))}</b>`).join("")}</div>
-      <div class="seg">${[0, 1, 2, 3].map((i) => `<span${i < on ? ' class="on"' : ""}></span>`).join("")}</div></a>`;
+      ${tileState(s.id)}
+      <div class="cls">${s.grades.map((g) => `<b>${esc(gradeLabel(g))}</b>`).join("")}</div></a>`;
   }).join("")}</div>`;
 }
 

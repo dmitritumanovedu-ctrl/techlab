@@ -679,34 +679,47 @@ function showPlan() {
   dlg.addEventListener("close", () => off(), { once: true });
 }
 
-// Объявление от учителя: показывается в правой панели «Сегодня» на всех страницах (3 недели)
+// Объявления учителя: список в правой панели «Сегодня» на стартовой, у учеников и родителей.
+// Показываются последние 3, каждое — 3 недели. Ученик видит общие и для своих классов.
 async function showAnnounce() {
   openId = null;
-  let cur = null;
-  try { cur = (await get(ref(db, "settings/announce"))).val(); } catch (e) {}
   const grades = [...new Set(SUBJECTS.flatMap((x) => x.grades))].sort((a, b) => a - b);
-  dlg.innerHTML = `<div class="dlg-head"><b>📢 Объявление для учеников и родителей</b>
-      <button class="btn small ghost" id="aClose">Закрыть ✕</button></div>
-    <div class="dlg-body">
-      <p class="muted">Короткая заметка в правой панели «Сегодня» на стартовой странице, у учеников и родителей. Держится 3 недели, потом скрывается сама.</p>
-      <label class="f">Текст (до 200 знаков)</label>
-      <textarea id="aText" maxlength="200" style="min-height:90px" placeholder="Например: 11 классы — в пятницу пробная сессия, повторите §15–17.">${esc(cur?.text || "")}</textarea>
-      <label class="f">Для кого</label>
-      <select id="aG"><option value="">Для всех</option>${grades.map((g) => `<option value="${g}"${cur?.g === g ? " selected" : ""}>${g} классы</option>`).join("")}</select>
-      <div class="err" id="aErr"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="aSave">Опубликовать</button>
-        ${cur ? '<button class="btn red" id="aDel">Убрать объявление</button>' : ""}</div>
-    </div>`;
-  if (!dlg.open) dlg.showModal();
-  $("#aClose").onclick = () => dlg.close();
-  $("#aSave").onclick = async () => {
-    const text = $("#aText").value.trim();
-    if (!text) return ($("#aErr").textContent = "Напишите текст объявления.");
-    try { await set(ref(db, "settings/announce"), { text, g: $("#aG").value || null, at: Date.now() }); dlg.close(); }
-    catch (e) { $("#aErr").textContent = "Не удалось сохранить: " + e.message; }
+  const draw = async () => {
+    let news = {}, old = null;
+    try { news = (await get(ref(db, "settings/news"))).val() || {}; old = (await get(ref(db, "settings/announce"))).val(); } catch (e) {}
+    const list = Object.entries(news).sort((x, y) => (y[1].at || 0) - (x[1].at || 0));
+    if (old && old.text) list.push(["_old", old]);
+    const live = (x) => !x.at || Date.now() - x.at < 21 * 864e5;
+    dlg.innerHTML = `<div class="dlg-head"><b>📢 Объявления для учеников и родителей</b>
+        <button class="btn small ghost" id="aClose">Закрыть ✕</button></div>
+      <div class="dlg-body">
+        <p class="muted">Короткие заметки в правой панели «Сегодня». Видны последние 3 объявления, каждое — 3 недели, потом скрывается само.</p>
+        <label class="f">Новое объявление (до 200 знаков)</label>
+        <textarea id="aText" maxlength="200" style="min-height:80px" placeholder="Например: 7 «В» — завтра самостоятельная по паролям, повторите §4."></textarea>
+        <label class="f">Для кого</label>
+        <select id="aG"><option value="">Для всех</option>${grades.map((g) => `<option value="${g}">${g} классы</option>`).join("")}</select>
+        <div class="err" id="aErr"></div>
+        <button class="btn" id="aSave">Опубликовать</button>
+        <h3 style="margin:20px 0 8px">Опубликованные</h3>
+        ${list.length ? list.map(([id, x]) => `<div class="rv-row"><div><div>${esc(x.text)}</div>
+            <div class="muted" style="font-size:13px">${x.g ? esc(x.g) + " классы" : "для всех"} · ${x.at ? new Date(x.at).toLocaleDateString("ru-RU") : ""}${live(x) ? "" : " · уже скрыто"}</div></div>
+            <button class="btn small red" data-del="${esc(id)}">Удалить</button></div>`).join("") : '<p class="muted">Пока нет объявлений.</p>'}
+      </div>`;
+    if (!dlg.open) dlg.showModal();
+    $("#aClose").onclick = () => dlg.close();
+    $("#aSave").onclick = async () => {
+      const text = $("#aText").value.trim();
+      if (!text) return ($("#aErr").textContent = "Напишите текст объявления.");
+      try { await push(ref(db, "settings/news"), { text, g: $("#aG").value || null, at: Date.now() }); draw(); }
+      catch (e) { $("#aErr").textContent = "Не удалось сохранить: " + e.message; }
+    };
+    dlg.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
+      const id = b.dataset.del;
+      await remove(ref(db, id === "_old" ? "settings/announce" : `settings/news/${id}`)).catch((e) => alert(e.message));
+      draw();
+    });
   };
-  const del = $("#aDel");
-  if (del) del.onclick = async () => { await remove(ref(db, "settings/announce")); dlg.close(); };
+  draw();
 }
 
 function showLinks() {
@@ -994,10 +1007,14 @@ async function showOverview() {
     $("#hubNow").innerHTML = c ? `<div class="hub-now">
         <div><div class="l">📌 Сейчас на стартовой у учеников</div><div class="t">${esc(c.title)}</div>
           <div class="muted" style="margin-top:2px">${where(c)}</div></div>
-        <div class="r"><a class="btn small" href="${ITEMS.find((t) => t.id === c.id)?.href || "?test=" + encodeURIComponent(c.id)}">Открыть результаты</a>
+        <div class="r"><label class="muted" style="font-size:13px;display:flex;align-items:center;gap:6px">Урок
+            <select id="lessonMin" style="width:auto">${[35, 40, 45, 60, 90].map((m) => `<option value="${m}"${(Number(SET.lessonMin) || 45) === m ? " selected" : ""}>${m} мин</option>`).join("")}</select></label>
+          <a class="btn small" href="${ITEMS.find((t) => t.id === c.id)?.href || "?test=" + encodeURIComponent(c.id)}">Открыть результаты</a>
           <button class="btn small ghost" id="unpin">Убрать со стартовой</button></div></div>`
       : `<div class="hub-now"><div><div class="l">📌 Сейчас на стартовой</div>
         <div class="muted" style="margin-top:4px">Ничего не открыто. Откройте тест или миссию — они появятся у учеников в блоке «Сейчас на уроке».</div></div></div>`;
+    const lm = $("#lessonMin");     // длина урока — для таймера «до конца урока» у учеников
+    if (lm) lm.onchange = () => set(ref(db, "settings/lessonMin"), Number(lm.value)).catch((e) => alert(e.message));
     const un = $("#unpin");
     if (un) un.onclick = async () => {
       if (!confirm("Убрать с стартовой и закрыть «" + c.title + "»? Уже начатые работы ученики смогут закончить.")) return;
@@ -1021,7 +1038,7 @@ async function showOverview() {
       <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
       <button class="btn small ghost" id="hReview">🔍 Разбор для учеников</button>
       <button class="btn small ghost" id="hStaff">👥 Коллеги</button>
-      <button class="btn small ghost" id="hAnn">📢 Объявление</button>
+      <button class="btn small ghost" id="hAnn">📢 Объявления</button>
       <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`;
     $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
     $("#hStaff").onclick = showStaffDlg;

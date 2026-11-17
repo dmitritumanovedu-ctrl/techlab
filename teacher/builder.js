@@ -160,7 +160,7 @@ async function listAction(act, id, btn) {
   const t = ALL[id];
   if (act === "open") { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); return showList(); }
   if (act === "now") {
-    await set(ref(db, "settings/current"), { id, title: t.title, path: `b/?t=${id}`, subject: t.subject, grade: t.grade || "" });
+    await set(ref(db, "settings/current"), { id, title: t.title, path: `b/?t=${id}`, subject: t.subject, grade: t.grade || "", at: Date.now() });
     await update(ref(db, `settings/${id}`), { open: true });
     return showList();
   }
