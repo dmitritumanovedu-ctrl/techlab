@@ -5,7 +5,7 @@
 const CACHE = "techlab-v10";
 const NET_WAIT = 4000;
 const SHELL = ["./", "index.html", "style-e2.css?v=9", "theme-classroom.css?v=3", "start-e2.js?v=16", "home.js?v=13", "engine/review.js?v=1", "engine/guard.js?v=2", "engine/shell.js?v=2", "install.js?v=2", "tests.js?v=8",
-  "firebase-config.js", "engine/people.js?v=2", "engine/people.js?v=3", "engine/i18n.js?v=1", "engine/fbrest.js?v=1", "engine/nav.js?v=1",
+  "firebase-config.js", "engine/people.js?v=2", "engine/people.js?v=3", "engine/i18n.js?v=1", "engine/fbrest.js?v=1", "engine/nav.js?v=2",
   "manifest.webmanifest", "offline.html", "privacy.html", "demo/", "engine/consent.js?v=2",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png"];
 

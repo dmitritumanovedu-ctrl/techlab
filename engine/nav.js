@@ -2,7 +2,7 @@
 //  Кнопка-«домик» 🏠 на всех страницах ученика + «Это не я — выйти».
 //  Подключается сама через engine/autofill.js (он уже стоит во всех тестах и миссиях),
 //  а на остальных страницах — одной строкой:
-//     <script type="module" src="ПУТЬ/engine/nav.js?v=1"></script>
+//     <script type="module" src="ПУТЬ/engine/nav.js?v=2"></script>
 //  После выхода ученик всегда попадает на чистую стартовую страницу.
 // =====================================================================
 import { getSession, signOutStudent, SESSION_EVENT } from "./people.js?v=3";
@@ -46,6 +46,7 @@ if (!window.__tlNav) {
     .tl-pop .tl-go{background:#2E4BFF;color:#fff}
     .tl-pop .tl-out{background:#FDECEE;color:#C2253B}
     .tl-pop .tl-warn{font-size:12px;color:#8A5A00;background:#FFF4DC;border-radius:10px;padding:7px 10px}
+    .tl-nav[hidden],.tl-pop[hidden]{display:none!important}
     @media print{.tl-nav{display:none!important}}
   </style>`);
 

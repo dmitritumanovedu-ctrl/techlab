@@ -1,7 +1,7 @@
 // Если ученик вошёл на стартовой странице по своему коду — тест сам подставляет фамилию, имя и класс.
 // Подключается одной строкой в любой тест или миссию:  <script type="module" src="../../engine/autofill.js"></script>
 import "./consent.js?v=2";
-import "./nav.js?v=1";        // кнопка 🏠 «на стартовую» и «Это не я — выйти»
+import "./nav.js?v=2";        // кнопка 🏠 «на стартовую» и «Это не я — выйти»
 import { getSession } from "./people.js";
 
 const S = getSession();

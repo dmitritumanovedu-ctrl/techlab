@@ -5,7 +5,7 @@ import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
 import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=8";
 import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT } from "./engine/people.js?v=3";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
-import "./engine/nav.js?v=1";
+import "./engine/nav.js?v=2";
 import { reviewBtn, openReview } from "./engine/review.js?v=1";
 
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG_] || ru;
