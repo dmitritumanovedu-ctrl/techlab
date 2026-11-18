@@ -4,7 +4,7 @@ import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS } from "../tests.js?v=8";
 import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc, clsKey, plusOf, mySubjects } from "../engine/people.js?v=4";
-import { t, plw, subjName, kindShortById, qualShow, LOCALE } from "../engine/i18n.js?v=1";
+import { t, plw, subjName, kindShortById, qualShow, LOCALE, LANG } from "../engine/i18n.js?v=1";
 import { reviewBtn, openReview } from "../engine/review.js?v=1";
 
 const $ = (s) => document.querySelector(s);
@@ -60,13 +60,14 @@ function login(err = "") {
 
 async function show(pcode, quiet = false) {
   if (!quiet) app.innerHTML = `<div class="pc"><p class="muted">${t("loading")}</p></div>`;
-  let scode, R, P, CS = null;
+  let scode, R, P, CS = null, CT = {};
   try {
     scode = (await get(ref(db, `parentCodes/${pcode}`))).val();
     if (!scode) { saveCodes(codes().filter((x) => x !== pcode)); return login(t("pe_expired")); }
     const [r, p] = await Promise.all([get(ref(db, `roster/${scode}`)), get(ref(db, `progress/${scode}`))]);
     R = r.val(); P = p.val() || { xp: 0, works: {} };
-    if (R) { try { const cs = (await get(ref(db, `settings/classSubjects/${clsKey(R.cls)}`))).val(); CS = mySubjects(cs, plusOf(R)); } catch (e) {} }
+    if (R) { try { const [cs, ct] = await Promise.all([get(ref(db, `settings/classSubjects/${clsKey(R.cls)}`)), get(ref(db, `settings/classTeachers/${clsKey(R.cls)}`)).catch(() => null)]);
+      CS = mySubjects(cs.val(), plusOf(R)); CT = ct?.val() || {}; } catch (e) {} }
   } catch (e) { app.innerHTML = `<div class="pc"><h2>${t("p_nonet_h")}</h2><p>${t("p_nonet_p")}</p></div>`; return; }
   if (!R) { saveCodes(codes().filter((x) => x !== pcode)); return login(t("pe_nostudent")); }
 
@@ -109,6 +110,11 @@ async function show(pcode, quiet = false) {
     <div class="pc ps"><span>${t("ps_level")}</span><b>${L.n}</b><small>${esc(t("ps_level_s", { name: L.name, xp: P.xp || 0, a: aw.length }))}</small></div>
     <div class="pc ps"><span>${t("ps_viol")}</span><b class="${viol ? "red" : "green"}">${viol}</b><small>${viol ? t("ps_viol_y") : t("ps_viol_n")}</small></div>
   </div>
+  ${CS && CS.length ? `<div class="pc p-subj"><h2>${esc(({ ru: "Предметы и учителя", ro: "Discipline și profesori", en: "Subjects and teachers" })[LANG] || "Предметы и учителя")}</h2>
+    <div class="ps-list">${CS.map((sid) => { const sj = SUBJECTS.find((x) => x.id === sid); if (!sj) return "";
+      const tch = Object.values(CT[sid] || {}).map((x) => x && x.name).filter(Boolean).join(", ");
+      const g = bySubj[sid]; const av = g && g.length ? fmt1(g.reduce((a, b) => a + b, 0) / g.length) : (qualSubj[sid]?.length ? qualShow(qualSubj[sid][0]) : "—");
+      return `<div class="ps-it" data-s="${esc(sid)}"><span class="ps-ic">${sj.icon}</span><div><b>${esc(subjName(sj))}</b>${tch ? `<small>👩‍🏫 ${esc(tch)}</small>` : ""}</div><span class="ps-av">${av}</span></div>`; }).join("")}</div></div>` : ""}
 
   <div class="p-grid">
     <div class="pc">

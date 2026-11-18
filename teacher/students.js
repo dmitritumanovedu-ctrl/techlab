@@ -127,7 +127,14 @@ function render() {
   app.querySelectorAll("[data-subj]").forEach((c) => c.onchange = async () => {
     const ids = [...app.querySelectorAll("[data-subj]:checked")].map((x) => x.dataset.subj);
     $("#subjInfo").textContent = "Сохраняю…";
-    try { await setClassSubjects(db, CUR, ids); await load(); render(); }
+    try {
+      await setClassSubjects(db, CUR, ids);
+      // кто ведёт предмет у класса — ученики и родители видят имя учителя на карточке предмета
+      const u = auth.currentUser, nm = String(u?.displayName || u?.email || "").trim().split(/\s+/);
+      const short = nm.length > 1 ? `${nm[1]} ${nm[0][0]}.` : nm[0];
+      if (u) await update(ref(db), Object.fromEntries(SUBJECTS.map((x) => [`settings/classTeachers/${clsKey(CUR)}/${x.id}/${u.uid}`, ids.includes(x.id) ? { name: short } : null])));
+      await load(); render();
+    }
     catch (e) { $("#subjInfo").textContent = "Не удалось сохранить: " + (e.code || e.message); }
   });
   app.querySelectorAll("[data-plus]").forEach((b) => b.onclick = async () => {

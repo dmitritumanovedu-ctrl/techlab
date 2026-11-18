@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
   <link rel="stylesheet" href="style-e2.css?v=9">
   <link rel="stylesheet" href="theme-classroom.css?v=3">
+  <link rel="stylesheet" href="theme-tl2.css?v=1">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
@@ -22,6 +23,7 @@
   <header class="bar">
     <div class="bar-in">
       <a class="logo" href="#" title="Стартовая страница">TechLab</a>
+      <nav class="tl-top" aria-label="Разделы"><a href="#" data-i18n="nav_home">Главная</a><a href="#subjects">📚 Предметы</a><a href="#calendar">Календарь</a><a href="#tasks">Мои задания</a><a href="parent/">Родителям</a><a href="teacher/">Учителям</a></nav>
       <div class="hero-r"><div id="langSw"></div><div id="meChip"></div><button type="button" class="inst-btn" id="installBtn" data-i18n="install_btn" hidden>Установить приложение</button><div class="clock" id="clock"></div></div>
     </div>
   </header>
@@ -40,11 +42,11 @@
     applyI18n(); mountLangSwitch(document.getElementById("langSw"));
   </script>
   <script src="engine/outbox.js?v=1" defer></script>
-  <script type="module" src="start-e2.js?v=17"></script>
-  <script type="module" src="home.js?v=15"></script>
+  <script type="module" src="start-e2.js?v=18"></script>
+  <script type="module" src="home.js?v=16"></script>
   <script type="module" src="install.js?v=2"></script>
   <script type="module" src="engine/consent.js?v=2"></script>
-  <script type="module" src="engine/shell.js?v=2"></script>
+  <script type="module" src="engine/shell.js?v=3"></script>
   <script type="module" src="engine/footer.js?v=1"></script>
 </body>
 </html>

@@ -9,6 +9,13 @@ import "./engine/nav.js?v=2";
 import { reviewBtn, openReview } from "./engine/review.js?v=1";
 import { firebaseConfig } from "./firebase-config.js";
 const DB_URL = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
+var ILL = {
+  st: `<svg viewBox="0 0 220 150" aria-hidden="true"><circle cx="110" cy="80" r="64" fill="#E8EDFF"/><rect x="40" y="104" width="140" height="9" rx="4" fill="#CBD5F0"/><rect x="104" y="66" width="66" height="40" rx="5" fill="#1A2340"/><rect x="108" y="70" width="58" height="30" rx="3" fill="#D7F0E2"/><path d="M120 85l6 6 12-12" stroke="#2E8B57" stroke-width="4" fill="none"/><g transform="translate(78,114) scale(.9)"><circle cx="0" cy="-58" r="17" fill="#E7BC98"/><path d="M-17,-62 q17,-26 34,0 q-4,-14 -17,-15 q-13,1 -17,15z" fill="#3A2A20"/><rect x="-20" y="-40" width="40" height="50" rx="14" fill="#2E4BFF"/><rect x="-15" y="8" width="11" height="34" rx="5" fill="#3A4556"/><rect x="4" y="8" width="11" height="34" rx="5" fill="#3A4556"/></g></svg>`,
+  pa: `<svg viewBox="0 0 220 150" aria-hidden="true"><circle cx="110" cy="80" r="64" fill="#FDEEE3"/><g transform="translate(90,126)"><circle cx="0" cy="-58" r="17" fill="#EBC3A2"/><path d="M-17,-62 q17,-26 34,0 q-4,-14 -17,-15 q-13,1 -17,15z" fill="#5C3B25"/><rect x="-20" y="-40" width="40" height="50" rx="14" fill="#E07B39"/><rect x="-15" y="8" width="11" height="22" rx="5" fill="#3A4556"/><rect x="4" y="8" width="11" height="22" rx="5" fill="#3A4556"/></g><rect x="112" y="44" width="44" height="76" rx="9" fill="#1A2340"/><rect x="117" y="52" width="34" height="58" rx="4" fill="#fff"/><rect x="121" y="58" width="26" height="6" rx="3" fill="#2E4BFF"/><rect x="121" y="70" width="20" height="5" rx="2" fill="#D5DCEB"/><rect x="121" y="80" width="24" height="5" rx="2" fill="#D5DCEB"/><circle cx="134" cy="98" r="7" fill="#2E8B57"/></svg>`,
+  te: `<svg viewBox="0 0 220 150" aria-hidden="true"><circle cx="110" cy="80" r="64" fill="#E3F3EA"/><rect x="88" y="26" width="104" height="66" rx="8" fill="#24453A" stroke="#fff" stroke-width="4"/><text x="100" y="54" fill="#E7EFE9" font-size="16" font-family="sans-serif" font-weight="700">36 ⋮ 4</text><text x="100" y="78" fill="#F2C98F" font-size="14" font-family="sans-serif">a² + b²</text><g transform="translate(62,126)"><circle cx="0" cy="-58" r="17" fill="#EBC3A2"/><path d="M-17,-62 q17,-26 34,0 q-4,-14 -17,-15 q-13,1 -17,15z" fill="#4A3426"/><rect x="-20" y="-40" width="40" height="50" rx="14" fill="#2E8B57"/><rect x="-15" y="8" width="11" height="22" rx="5" fill="#3A4556"/><rect x="4" y="8" width="11" height="22" rx="5" fill="#3A4556"/></g><line x1="78" y1="84" x2="104" y2="64" stroke="#EBC3A2" stroke-width="7" stroke-linecap="round"/></svg>`,
+};
+var GOOGLE = `<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.5z"/></svg>`;
+
 
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG_] || ru;
 // стили блока «Мои работы» по предметам и кнопки выхода в шапке
@@ -119,38 +126,30 @@ async function render(quiet = false) {
   }
 }
 
-// ---------------- портал ----------------
+// ---------------- портал (гость): три входа — ученик, родитель, учитель ----------------
 function portal() {
-  const h = new Date().getHours();
-  const hello = h >= 5 && h < 12 ? L3("Доброе утро!", "Bună dimineața!", "Good morning!")
-    : h >= 12 && h < 17 ? L3("Добрый день!", "Bună ziua!", "Good afternoon!") : L3("Добрый вечер!", "Bună seara!", "Good evening!");
-  const sv = (d) => `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-  box.innerHTML = `<section class="portal">
-    <div class="p-text">
-      <span class="p-tag">${t("p_tag")}</span>
-      <h1>${hello}</h1>
-      <p>${t("p_text")}</p>
-      <div class="roles">
-        <button type="button" class="role main" id="rStudent" title="${esc(t("r_student_s"))}"><span class="ri">${sv('<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>')}</span><span class="rt"><b>${t("r_student")}</b><small>${esc(L3("код на карточке, начинается с S", "codul de pe cartonaș, începe cu S", "code on your card, starts with S"))}</small></span></button>
-        <a class="role" href="parent/" title="${esc(t("r_parent_s"))}"><span class="ri">${sv('<circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M15 20c0-2 1-4 3-4.5"/>')}</span><span class="rt"><b>${t("r_parent")}</b></span></a>
-        <a class="role" href="teacher/" title="${esc(t("r_teacher_s"))}"><span class="ri">${sv('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>')}</span><span class="rt"><b>${t("r_teacher")}</b></span></a>
-      </div>
-      <p class="p-demo"><a href="demo/">${t("p_demo")}</a></p>
+  box.innerHTML = `<section class="tl-hero">
+    <div class="tl-kick">${esc(L3("Цифровой кабинет урока", "Cabinetul digital al lecției", "Digital classroom"))}</div>
+    <h1>${esc(L3("Задания, оценки и прогресс —", "Sarcini, note și progres —", "Tasks, grades and progress —"))} <span>${esc(L3("в одном месте", "într-un singur loc", "in one place"))}</span></h1>
+    <p class="tl-lead">${esc(L3("Ученик выполняет тесты и квесты, родитель видит оценки и советы, учитель создаёт задания и подключает к ним свой класс.",
+      "Elevul rezolvă teste și misiuni, părintele vede notele și sfaturile, profesorul creează sarcini și își conectează clasa.",
+      "Students do tests and quests, parents see grades and advice, teachers create tasks and connect their class."))}</p>
+    <div class="tl-roles">
+      <form class="tl-role r-st" id="pCode" novalidate>${ILL.st}<b>${t("r_student")}</b>
+        <small>${esc(L3("Код на карточке от учителя, начинается с S", "Codul de pe cartonaș, începe cu S", "Code on your card, starts with S"))}</small>
+        <div class="tl-code"><label for="pcIn" class="sr">${t("code_label")}</label><input id="pcIn" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="SXXX-XXXX">
+          <button type="submit" class="pc-go" aria-label="${esc(t("sign_in"))}">→</button></div></form>
+      <div class="tl-role r-pa">${ILL.pa}<b>${t("r_parent")}</b><small>${esc(L3("Код начинается с P — оценки и советы ребёнку", "Codul începe cu P — note și sfaturi", "Code starts with P — grades and advice"))}</small>
+        <a class="tl-btn w" href="parent/">${esc(L3("Кабинет родителя", "Cabinetul părintelui", "Parent area"))}</a></div>
+      <div class="tl-role r-te">${ILL.te}<b>${t("r_teacher")}</b><small>${esc(L3("Свой кабинет, предметы и Конструктор тестов", "Cabinet propriu, discipline și Constructor", "Your own cabinet, subjects and test builder"))}</small>
+        <a class="tl-btn g" href="teacher/">${GOOGLE}${esc(L3("Войти с Google", "Intră cu Google", "Sign in with Google"))}</a></div>
     </div>
-    <form class="p-code" id="pCode" novalidate>
-      <b>${esc(L3("Войти по коду", "Intră cu codul", "Sign in with your code"))}</b>
-      <span class="pc-sub">${esc(L3("Введи код с карточки, которую выдал учитель", "Introdu codul de pe cartonașul primit de la profesor", "Enter the code from the card your teacher gave you"))}</span>
-      <div class="pc-row"><label for="pcIn" class="sr">${t("code_label")}</label>
-        <input id="pcIn" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="SXXX-XXXX">
-        <button type="submit" class="pc-go">${t("sign_in")}</button></div>
-      <span class="pc-hint">${esc(L3("Родитель? Код начинается с P", "Părinte? Codul începe cu P", "Parent? Your code starts with P"))} · <a href="parent/">${esc(L3("кабинет родителя", "cabinetul părintelui", "parent area"))}</a> · ${esc(L3("забыл код — спроси учителя", "ai uitat codul — întreabă profesorul", "forgot the code? ask your teacher"))}</span>
-    </form>
+    <p class="tl-demo"><a href="demo/">${t("p_demo")}</a> · ${esc(L3("забыл код — спроси учителя", "ai uitat codul — întreabă profesorul", "forgot your code? ask your teacher"))}</p>
   </section>`;
-  document.getElementById("rStudent").onclick = () => askCode();
   document.getElementById("pCode").onsubmit = (e) => {
     e.preventDefault();
     const v = document.getElementById("pcIn").value.trim();
-    if (!v) return document.getElementById("pcIn").focus();
+    if (!v) return askCode();
     // код родителя — сразу в кабинет родителя
     if (cleanCode(v)[0] === "P") { location.href = "parent/?code=" + encodeURIComponent(cleanCode(v)); return; }
     askCode(v);

@@ -9,7 +9,7 @@
 import { readDb, cacheGet, cachePut } from "./fbrest.js?v=1";
 import { SUBJECTS } from "../tests.js?v=8";
 import { LANG, LOCALE, subjName } from "./i18n.js?v=1";
-import { getSession, clsKey, SESSION_EVENT } from "./people.js?v=3";
+import { getSession, clsKey, SESSION_EVENT } from "./people.js?v=4";
 
 const ROOT = new URL("../", import.meta.url).href;            // корень сайта
 const PAGE = document.body.dataset.shell || "start";
@@ -141,12 +141,54 @@ function drawRight() {
   const f = (pool.length ? pool : FACTS)[dayNo % (pool.length || FACTS.length)];
   const fact = { ru: f[1], ro: f[2], en: f[3] }[LANG] || f[1];
 
-  box.innerHTML = `<section class="sh-card"><h3>${SV(IC.cal, 18)}${wd >= 5 ? L3("Следующая неделя", "Săptămâna viitoare", "Next week") : L3("Эта неделя", "Săptămâna aceasta", "This week")}</h3>
-      <div class="sh-week">${week}</div></section>
+  // крупная дата: сегодня, день недели, время и сколько учебных дней осталось до выходных
+  const nowT = new Date();
+  const left = wd >= 5 ? 0 : 4 - wd;
+  const leftTxt = wd >= 5 ? L3("выходные 🙂", "weekend 🙂", "weekend 🙂") : left === 0 ? L3("сегодня последний", "azi e ultima zi", "today is the last day")
+    : left + " " + (LANG === "ru" ? (left === 1 ? "учебный день" : "учебных дня") : LANG === "ro" ? (left === 1 ? "zi de școală" : "zile de școală") : (left === 1 ? "school day" : "school days"));
+  box.innerHTML = `<section class="sh-card sh-date"><small>${L3("Сегодня", "Astăzi", "Today")}</small>
+      <div class="sd-d"><b>${nowT.getDate()}</b><span>${esc(nowT.toLocaleDateString(LOCALE, { day: "numeric", month: "long" }).replace(/^\d+\s*/, "").replace(/\s*\d+$/, ""))} ${nowT.getFullYear()}<br>${esc(nowT.toLocaleDateString(LOCALE, { weekday: "long" }))}</span></div>
+      <div class="sh-week">${week}</div>
+      <div class="sd-r"><span>${L3("Сейчас", "Acum", "Now")}</span><b id="sdClock">${esc(nowT.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }))}</b></div>
+      <div class="sd-r"><span>${L3("До конца недели", "Până la sfârșitul săptămânii", "Until the weekend")}</span><b>${esc(leftTxt)}</b></div></section>
     ${nextHtml ? `<section class="sh-card"><h3>${SV(IC.clock, 18)}${L3("Ближайшие сроки", "Termene apropiate", "Coming up")}</h3>${nextHtml}</section>` : ""}
     ${annHtml}
-    <section class="sh-card sh-fact" style="--c:${COLOR[f[0]]}"><h3>${SV(IC.bulb, 18)}${L3("Знаете ли вы?", "Știați că?", "Did you know?")}</h3>
-      <p>${esc(fact)}</p><small>${esc(subjN(f[0]))}</small></section>`;
+    <section class="sh-card sh-fact" style="--c:${COLOR[f[0]]}"><h3>${SV(IC.bulb, 18)}${L3("Факт дня", "Faptul zilei", "Fact of the day")}<span class="sf-tag">${esc(subjN(f[0]))}</span></h3>
+      <p id="sfText">${esc(fact)}</p><button type="button" class="sf-next" id="sfNext">${L3("Следующий факт →", "Următorul fapt →", "Next fact →")}</button></section>
+    <section class="sh-card sh-otd" id="shOtd" hidden></section>`;
+  let fi = FACTS.indexOf(f);
+  document.getElementById("sfNext").onclick = () => {
+    fi = (fi + 1) % FACTS.length; const x = FACTS[fi];
+    document.getElementById("sfText").textContent = { ru: x[1], ro: x[2], en: x[3] }[LANG] || x[1];
+    box.querySelector(".sf-tag").textContent = subjN(x[0]); box.querySelector(".sh-fact").style.setProperty("--c", COLOR[x[0]] || "#2E4BFF");
+  };
+  onThisDay();
+}
+
+setInterval(() => { const c = document.getElementById("sdClock"); if (c) c.textContent = new Date().toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }); }, 15000);
+
+// ---------- «В этот день»: событие из Википедии (только мирные темы — наука, техника, культура) ----------
+const BAD = /войн|битв|сражен|убит|убий|погиб|жертв|атак|теракт|взрыв|катастроф|крушен|казн|расстрел|бомб|штурм|оккупац|геноцид|резн|умер|смерт|аварi|аварий|r[aă]zboi|lupt|ucis|mor[tț]|atac|exploz|bomb|war|battle|kill|dead|death|attack|bomb|massacre|execut|crash|disaster|shoot/i;
+const GOOD = /открыт|изобрет|запущ|основан|впервые|перв|вышел|выпущ|премьер|полёт|полет|спутник|учён|научн|компьютер|интернет|университет|музей|библиотек|открыл|descoper|invent|lansat|fondat|prim|premier|discover|invent|launch|found|first|premiere|flight|university|museum/i;
+async function onThisDay() {
+  const el = document.getElementById("shOtd"); if (!el) return;
+  const d = new Date(), key = "otd_" + LANG + "_" + (d.getMonth() + 1) + "_" + d.getDate();
+  let ev = cacheGet(key, 864e5);
+  if (ev === undefined) {
+    try {
+      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 6000);
+      const r = await fetch(`https://api.wikimedia.org/feed/v1/wikipedia/${LANG}/onthisday/selected/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`, { signal: ctrl.signal });
+      clearTimeout(tm);
+      const j = r.ok ? await r.json() : {};
+      const list = (j.selected || []).filter((x) => x.text && x.year && !BAD.test(x.text) && x.text.length < 220);
+      const best = list.find((x) => GOOD.test(x.text)) || null;
+      ev = best ? { y: best.year, t: best.text } : null;
+    } catch (e) { ev = null; }
+    cachePut(key, ev);
+  }
+  if (!ev || !document.getElementById("shOtd")) return;
+  el.hidden = false;
+  el.innerHTML = `<h3>${SV(IC.cal, 18)}${L3("В этот день", "În această zi", "On this day")}</h3><p><b>${esc(ev.y)}</b> — ${esc(ev.t)}</p><small>${L3("по материалам Википедии", "după Wikipedia", "from Wikipedia")}</small>`;
 }
 
 // ---------- сборка рамки ----------

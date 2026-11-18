@@ -1,0 +1,101 @@
+/* TechLab · палитра «Синий + тёплые акценты» (2026-11). Подключается ПОСЛЕДНЕЙ.
+   Светлый голубоватый фон, фирменный синий как у иконки, мягкие цвета ролей. */
+:root {
+  --blue: #2E4BFF; --blue-d: #2238C2; --blue-l: #E8EDFF; --bg: #F5F7FC; --card: #FFFFFF; --line: #E1E6F0;
+  --text: #1A2340; --muted: #5B6478; --soft: #8A93A6; --ok: #2E8B57; --red: #C2453F;
+  --green: #2E4BFF; --green-2: #E8EDFF; --ink: #1A2340;
+  --orange: #E07B39; --orange-l: #FDEEE3; --mint: #2E8B57; --mint-l: #E3F3EA;
+  --display: Inter, Roboto, system-ui, "Segoe UI", Arial, sans-serif; --body: Inter, Roboto, system-ui, "Segoe UI", Arial, sans-serif;
+}
+h1, h2, h3, b, strong { font-weight: 700; }
+
+/* шапка */
+.bar { background: rgba(255,255,255,.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.bar-in { max-width: 1240px; }
+.logo::before { border-radius: 9px; background: var(--blue); font-weight: 800; }
+.logo { font-weight: 800; color: var(--text); }
+body[data-shell="start"] .bar-in { flex-wrap: nowrap; }
+.tl-top { display: flex; gap: 2px; flex: 0 1 auto; margin: 0 auto 0 12px; min-width: 0; overflow: hidden; flex-wrap: nowrap; white-space: nowrap; }
+.tl-top a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; padding: 8px 10px; border-radius: 10px; }
+.tl-top a:hover { background: var(--blue-l); color: var(--blue); }
+.tl-top a.on { background: var(--blue-l); color: var(--blue); }
+body[data-shell="start"] .clock { display: none; }
+.me-btn, .inst-btn { border-radius: 10px !important; }
+.me-btn { background: var(--blue) !important; color: #fff !important; border: 0 !important; font-weight: 700 !important; padding: 9px 18px !important; }
+
+/* стартовая: без левого меню (оно теперь в шапке), справа — «Сегодня» */
+.sh.sh-start { grid-template-columns: minmax(0, 1fr) 330px; max-width: 1240px; }
+.sh.sh-start .sh-l { display: none; }
+body[data-view="guest"] #tabs { display: none; }
+
+/* герой-блок гостя */
+.tl-hero { background: linear-gradient(135deg, #fff 55%, #EEF2FF); border: 1px solid var(--line); border-radius: 22px; padding: 30px 32px; margin-bottom: 18px; }
+.tl-kick { font-size: 13px; font-weight: 700; color: var(--orange); letter-spacing: .08em; text-transform: uppercase; }
+.tl-hero h1 { font-size: 42px; line-height: 1.08; letter-spacing: -.02em; font-weight: 800; margin: 10px 0 12px; color: var(--text); }
+.tl-hero h1 span { color: var(--blue); }
+.tl-lead { font-size: 17px; color: var(--muted); line-height: 1.55; max-width: 640px; margin: 0; }
+.tl-roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
+.tl-role { border: 1px solid; border-radius: 18px; padding: 12px 16px 16px; display: flex; flex-direction: column; margin: 0; }
+.tl-role > svg { width: 100%; height: 112px; }
+.tl-btn svg { width: 20px; height: 20px; flex: none; }
+.tl-role > b { font-size: 18px; margin-top: 4px; }
+.tl-role > small { color: var(--muted); font-size: 13px; line-height: 1.4; margin: 4px 0 12px; flex: 1; }
+.r-st { background: #EEF2FF; border-color: #D5DEFF; } .r-pa { background: #FFF3EA; border-color: #F9D9C2; } .r-te { background: #EAF6EF; border-color: #CBE8D6; }
+.tl-code { display: flex; gap: 6px; }
+.tl-code input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: 600 15px var(--body); letter-spacing: .06em; background: #fff; color: var(--text); }
+.tl-code input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-l); }
+.tl-code .pc-go { flex: none; width: 46px; border: 0; border-radius: 12px; background: var(--blue); color: #fff; font-size: 20px; font-weight: 800; cursor: pointer; }
+.tl-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 15px; border-radius: 12px; padding: 10px 14px; }
+.tl-btn.w { background: #fff; color: var(--text); border: 1px solid var(--line); }
+.tl-btn.g { background: #fff; color: #1F1F1F; border: 1px solid #DADCE0; font-weight: 600; }
+.tl-btn:hover { border-color: var(--blue); }
+.tl-demo { margin: 14px 0 0; font-size: 14px; color: var(--muted); } .tl-demo a { color: var(--blue); font-weight: 600; }
+
+/* «Сейчас на уроке» */
+.now { border-radius: 18px !important; border: 1px solid var(--line) !important; }
+/* кнопка «Предметы» и шаги */
+.tl-subj { display: flex; align-items: center; gap: 16px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 22px; margin: 16px 0 6px; text-decoration: none; color: var(--text); }
+.tl-subj:hover { border-color: var(--blue); }
+.tl-subj .ic { width: 48px; height: 48px; flex: none; border-radius: 14px; background: var(--blue-l); display: grid; place-items: center; font-size: 24px; }
+.tl-subj b { display: block; font-size: 17px; } .tl-subj small { color: var(--muted); font-size: 14px; }
+.tl-subj > span:nth-child(2) { flex: 1; }
+.tl-subj .tl-btn { white-space: nowrap; }
+.tl-h2 { font-size: 22px !important; font-weight: 800 !important; margin: 26px 0 12px !important; }
+.tl-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tl-step { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+.tl-step i { font-style: normal; width: 32px; height: 32px; border-radius: 10px; background: var(--blue); color: #fff; display: grid; place-items: center; font-weight: 800; }
+.tl-step b { display: block; margin: 12px 0 6px; font-size: 15.5px; } .tl-step p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
+.tl-tch { font-size: 13px; color: var(--muted); margin: 2px 0 6px; }
+.tile { border-radius: 16px !important; }
+
+/* правая колонка */
+.sh-card { border-radius: 18px !important; border: 1px solid var(--line) !important; }
+.sh-date { background: linear-gradient(160deg, #2E4BFF, #2238C2) !important; color: #fff; border: 0 !important; padding: 20px !important; }
+.sh-date > small { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #D9E0FF; }
+.sd-d { display: flex; align-items: flex-end; gap: 12px; margin: 6px 0 12px; }
+.sd-d b { font-size: 60px; line-height: .9; font-weight: 800; }
+.sd-d span { font-size: 15px; line-height: 1.3; color: #E6EBFF; text-transform: lowercase; }
+.sh-date .sh-week { gap: 4px; }
+.sh-date .sh-day { background: rgba(255,255,255,.12); border-radius: 10px; color: #E6EBFF !important; }
+.sh-date .sh-day small, .sh-date .sh-day b { color: inherit !important; }
+.sh-date .sh-day.today { background: #fff !important; color: var(--blue) !important; }
+.sh-date .sh-day b, .sh-date .sh-day.today b { background: none !important; color: inherit !important; font-weight: 700; }
+.sd-r { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; color: #E6EBFF; } .sd-r b { color: #fff; }
+.sh-fact h3, .sh-otd h3 { display: flex; align-items: center; gap: 8px; }
+.sf-tag { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--orange); background: var(--orange-l); border-radius: 999px; padding: 3px 9px; }
+.sh-fact p { font-size: 14.5px; line-height: 1.5; }
+.sf-next { border: 0; background: none; padding: 0; color: var(--blue); font: 700 13px var(--body); cursor: pointer; }
+.sh-otd p { font-size: 14px; line-height: 1.5; margin: 6px 0; } .sh-otd small { color: var(--soft); font-size: 12px; }
+
+@media (max-width: 1100px) { .sh.sh-start { grid-template-columns: 1fr; } .tl-steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px) { .tl-roles { grid-template-columns: 1fr; } .tl-hero h1 { font-size: 30px; } .tl-top { display: none; } .tl-hero { padding: 20px; } }
+
+@media (max-width: 1500px) { body[data-shell="start"] .inst-btn { display: none !important; } }
+
+/* кабинет родителя: предметы и учителя */
+.p-subj h2 { margin-top: 0; }
+.ps-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.ps-it { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: #fff; }
+.ps-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--blue-l); display: grid; place-items: center; font-size: 20px; flex: none; }
+.ps-it b { display: block; font-size: 15px; } .ps-it small { color: var(--muted); font-size: 12.5px; }
+.ps-av { margin-left: auto; font-weight: 800; font-size: 18px; color: var(--blue); }

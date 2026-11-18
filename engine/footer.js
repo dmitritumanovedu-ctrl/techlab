@@ -63,7 +63,7 @@ export function mountFooter(el) {
       <a href="${root}teacher/">вход для учителя</a> · <a href="${root}teacher/builder.html" title="Учителя других предметов могут подать заявку и получить свой кабинет">вы учитель? присоединяйтесь</a>
     </div>
     <div class="tf-copy">© ${YEAR} <b>TechLab</b> · All rights reserved · Все права защищены<br>
-      <span class="tf-a" title="Автор">A</span>Автор и администратор платформы — <b>Туманов Дмитрий</b> · IPLT „Alexandr Pușkin”, Chișinău</div>`;
+      <span class="tf-a" title="Автор">A</span>Автор и администратор платформы — <b>Туманов Дмитрий</b></div>`;
 
   showTeachers();
   if (withForm) bindForm();

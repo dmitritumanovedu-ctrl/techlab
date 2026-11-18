@@ -30,6 +30,8 @@ window.addEventListener(SESSION_EVENT, onSession);
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG] || ru;
 const mySubjects = () => MYSUBJ ? SUBJECTS.filter((s) => MYSUBJ.includes(s.id)) : SUBJECTS;
 const mine = () => !!(ME && MYSUBJ);
+// кто ведёт предмет у класса ученика: settings/classTeachers/<класс>/<предмет>/<uid> = {name}
+const teacherOf = (sid) => ME ? Object.values(SET?.classTeachers?.[clsKey(ME.cls)]?.[sid] || {}).map((x) => x && x.name).filter(Boolean).join(", ") : "";
 const ktag = (k) => `<span class="ktag k-${k.id}">${esc(k.short)}</span>`;
 const rtag = `<span class="ktag k-retake">${t("retake")}</span>`;
 // аккуратные линейные иконки вместо эмодзи (стиль «Строгий сервис»)
@@ -141,7 +143,9 @@ function renderTabs(active) {
 
 function render() {
   const [sid, grade] = decodeURIComponent(location.hash.slice(1)).split("-");
-  document.body.dataset.view = SPECIAL.includes(sid) ? sid : "";
+  const h = decodeURIComponent(location.hash.slice(1));
+  document.querySelectorAll(".tl-top a").forEach((a) => { const k = a.getAttribute("href"); a.classList.toggle("on", k === "#" + h || (k === "#" && !h) || (k === "#subjects" && !!subj(sid))); });
+  document.body.dataset.view = SPECIAL.includes(sid) ? sid : (sid === "subjects" ? "subjects" : "");
   if (SPECIAL.includes(sid)) { renderTabs(""); return renderSpecial(sid); }
   let s = subj(sid);
   if (s && mine() && !MYSUBJ.includes(s.id)) s = null;          // чужой предмет — на главную
@@ -172,9 +176,24 @@ function renderHome() {
     $("#view").innerHTML = `<h2>${L3("Мои предметы", "Disciplinele mele", "My subjects")} · ${esc(ME.cls)}</h2>
       ${mySubjects().length ? `<div class="tiles">${mySubjects().map((s) => `<a class="tile" data-s="${s.id}" href="#${s.id}-${MYGRADE}">
         <div class="ic">${s.icon}</div><div class="nm">${esc(subjName(s))}</div>
+        ${teacherOf(s.id) ? `<div class="tl-tch">👩‍🏫 ${esc(teacherOf(s.id))}</div>` : ""}
         <div class="ds">${statLine(stats(s.id, MYGRADE))}</div>${tileState(s.id, MYGRADE)}
         <div class="cls"><b>${esc(ME.cls)}</b></div></a>`).join("")}</div>`
       : `<div class="empty-note">${L3("Учитель ещё не добавил предметы для твоего класса.", "Profesorul încă nu a adăugat disciplinele pentru clasa ta.", "Your teacher has not added subjects for your class yet.")}</div>`}`;
+    return;
+  }
+  // гость на главной: вместо списка предметов — одна кнопка «Предметы» и «Как это работает»
+  if (!ME && decodeURIComponent(location.hash.slice(1)) !== "subjects") {
+    document.body.dataset.view = "guest";
+    const step = (n, h, p) => `<div class="tl-step"><i>${n}</i><b>${esc(h)}</b><p>${esc(p)}</p></div>`;
+    $("#view").innerHTML = `<a class="tl-subj" href="#subjects"><span class="ic">📚</span><span><b>${esc(L3("Предметы", "Discipline", "Subjects"))}</b>
+        <small>${esc(L3("Ученик и родитель после входа видят только предметы, к которым их подключил учитель", "După conectare, elevul și părintele văd doar disciplinele la care i-a conectat profesorul", "After signing in, students and parents see only the subjects their teacher connected them to"))}</small></span>
+        <span class="tl-btn w">${esc(L3("Открыть →", "Deschide →", "Open →"))}</span></a>
+      <h2 class="tl-h2">${esc(L3("Как это работает", "Cum funcționează", "How it works"))}</h2>
+      <div class="tl-steps">${step(1, L3("Учитель подключает класс", "Profesorul conectează clasa", "Teacher connects a class"), L3("Выбирает свой предмет и класс — у учеников появляется предмет в кабинете.", "Își alege disciplina și clasa — elevii o văd în cabinet.", "Picks a subject and class — students see it in their cabinet."))}
+        ${step(2, L3("Ученик входит по коду", "Elevul intră cu codul", "Student signs in with a code"), L3("Получает свой вариант. Ответы сохраняются даже при плохом интернете.", "Primește varianta sa. Răspunsurile se salvează chiar și cu internet slab.", "Gets their own variant. Answers are saved even on a weak connection."))}
+        ${step(3, L3("Автопроверка и ИИ", "Verificare automată și AI", "Auto-check and AI"), L3("Оценка и разбор ошибок появляются сразу.", "Nota și analiza greșelilor apar imediat.", "The grade and a review of mistakes appear right away."))}
+        ${step(4, L3("Родитель в курсе", "Părintele este la curent", "Parents stay informed"), L3("Видит оценки, советы и что повторить.", "Vede notele, sfaturile și ce trebuie repetat.", "Sees grades, advice and what to review."))}</div>`;
     return;
   }
   $("#view").innerHTML = `<h2>${t("choose_subject")}</h2><div class="tiles">${SUBJECTS.map((s) => {
