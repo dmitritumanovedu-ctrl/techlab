@@ -383,3 +383,22 @@ body[data-view="calendar"] #home, body[data-view="tasks"] #home, body[data-view=
     background-position: left 24px bottom 40px, right 30px bottom 60px, right 60px top 140px !important; }
 }
 .sh-news + .sh-news { border-top: 1px solid #f3dfa0; padding-top: 8px; margin-top: 8px; }
+
+/* правая колонка: «Сегодня», «Факт дня», «В этот день» (2026-11) */
+.sh-date { background: linear-gradient(160deg, #2E4BFF, #2238C2) !important; color: #fff; border: 0 !important; padding: 20px !important; }
+.sh-date > small { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #D9E0FF; }
+.sd-d { display: flex; align-items: flex-end; gap: 12px; margin: 6px 0 12px; }
+.sd-d b { font-size: 60px; line-height: .9; font-weight: 800; }
+.sd-d span { font-size: 15px; line-height: 1.3; color: #E6EBFF; text-transform: lowercase; }
+.sh-date .sh-week { gap: 4px; }
+.sh-date .sh-day { background: rgba(255,255,255,.12); border-radius: 10px; color: #E6EBFF !important; }
+.sh-date .sh-day small, .sh-date .sh-day b { color: inherit !important; }
+.sh-date .sh-day.today { background: #fff !important; color: #2E4BFF !important; }
+.sh-date .sh-day b, .sh-date .sh-day.today b { background: none !important; color: inherit !important; font-weight: 700; }
+.sd-r { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; color: #E6EBFF; } .sd-r b { color: #fff; }
+.sh-fact h3, .sh-otd h3 { display: flex; align-items: center; gap: 8px; }
+.sf-tag { margin-left: auto; font-size: 11px; font-weight: 700; color: #E07B39; background: #FDEEE3; border-radius: 999px; padding: 3px 9px; }
+.sh-fact p { font-size: 14.5px; line-height: 1.5; }
+.sf-next { border: 0; background: none; padding: 0; color: #2E4BFF; font: 700 13px var(--body); cursor: pointer; }
+.sh-otd p { font-size: 14px; line-height: 1.5; margin: 6px 0; } .sh-otd small { color: #8A93A6; font-size: 12px; }
+

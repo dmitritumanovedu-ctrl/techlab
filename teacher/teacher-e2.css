@@ -105,3 +105,12 @@ dialog::backdrop { background: rgba(11,26,59,.6); }
 /* диалог «Разбор для учеников» */
 .rv-list { display: grid; gap: 8px; margin: 10px 0; }
 .rv-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; background: #fff; }
+
+/* материалы: вкладки «Файл / Ссылка» и зона перетаскивания */
+.l-tabs { display: flex; gap: 6px; margin: 12px 0 10px; }
+.l-tabs button { font: inherit; font-weight: 700; font-size: 14px; border: 1.5px solid var(--line, #DCE4F2); background: #fff; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+.l-tabs button.on { background: #2E4BFF; color: #fff; border-color: #2E4BFF; }
+.l-drop { display: block; text-align: center; border: 2px dashed #C9D3FF; background: #F8FAFF; border-radius: 14px; padding: 22px 14px; cursor: pointer; line-height: 1.6; }
+.l-drop.over { border-color: #2E4BFF; background: #EEF2FF; }
+.l-drop u { color: #2E4BFF; }
+.l-setup { background: #FDEEE3; color: #7A4A1F; border-radius: 12px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }

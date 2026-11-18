@@ -358,7 +358,7 @@ function renderGrade(s, g) {
 
   if (FILTER === "all" || FILTER === "links") {
     html += `<h3>${t("materials_h")}</h3>` + (links.length ? `<div class="list">${links.map((l) => `<a class="row" href="${esc(l.url)}" target="_blank" rel="noopener">
-        <span class="ri">${icon(l.url)}</span><span><div class="rt">${esc(l.title)}</div><div class="rs">${esc(host(l.url))}</div></span>
+        <span class="ri">${l.file ? fileIcon(l.file.ext) : icon(l.url)}</span><span><div class="rt">${esc(l.title)}</div><div class="rs">${l.file ? esc(fileKind(l.file.ext) + " · " + fileSize(l.file.size)) : esc(host(l.url))}</div></span>
         <span class="rb">↗</span></a>`).join("")}</div>`
       : `<div class="empty-note">${t("no_materials")}</div>`);
   }
@@ -367,6 +367,14 @@ function renderGrade(s, g) {
   document.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { FILTER = b.dataset.f; renderGrade(s, g); });
 }
 
+// загруженные файлы (презентации, PDF, документы) — открываются в просмотрщике Google Диска
+const fileKind = (e) => ({ ppt: "Презентация", pptx: "Презентация", pps: "Презентация", ppsx: "Презентация", odp: "Презентация", pdf: "PDF", doc: "Документ Word", docx: "Документ Word", odt: "Документ",
+  xls: "Таблица Excel", xlsx: "Таблица Excel", ods: "Таблица", png: "Картинка", jpg: "Картинка", jpeg: "Картинка", gif: "Картинка", webp: "Картинка", mp3: "Аудио", mp4: "Видео", zip: "Архив", txt: "Текст" })[String(e || "").toLowerCase()] || "Файл";
+const fileSize = (n) => !n ? "" : n >= 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " МБ" : Math.max(1, Math.round(n / 1024)) + " КБ";
+function fileIcon(e) {
+  const k = fileKind(e);
+  return k === "Презентация" ? SV(IC.slides) : k.startsWith("Документ") || k === "PDF" || k === "Текст" ? SV(IC.doc) : SV(IC.folder);
+}
 function host(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } }
 function icon(u) {
   const h = host(u);
