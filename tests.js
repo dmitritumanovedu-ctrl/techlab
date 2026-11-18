@@ -13,6 +13,21 @@ export const SUBJECTS = [
   { id: "math", name: "Математика",                 icon: "📐", color: "#FF9F43", grades: ["5"] },
 ];
 
+// Дополнительные предметы учителей-коллег — добавляет администратор на странице admin/ (settings/subjects).
+// Хранятся на компьютере и обновляются в фоне: новый предмет появится на сайте при следующем открытии.
+export function addSubjects(obj) {
+  for (const [id, x] of Object.entries(obj || {})) {
+    if (!x || !x.name || SUBJECTS.some((s) => s.id === id)) continue;
+    SUBJECTS.push({ id, name: String(x.name), icon: x.icon || "📘", color: x.color || "#2E4BFF",
+      grades: (Array.isArray(x.grades) ? x.grades : String(x.grades || "").split(/[ ,;]+/)).map(String).filter(Boolean), extra: true });
+  }
+}
+try { addSubjects(JSON.parse(localStorage.getItem("techlab_xsubj") || "null")); } catch (e) {}
+try {
+  fetch("https://dmitri-bcd33-default-rtdb.europe-west1.firebasedatabase.app/settings/subjects.json", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null)).then((x) => { try { localStorage.setItem("techlab_xsubj", JSON.stringify(x || {})); } catch (e) {} addSubjects(x); }).catch(() => {});
+} catch (e) {}
+
 // Типы работ: ярлык на сайте и в панели учителя. Тип можно поменять в панели учителя (поле «Тип работы»).
 export const KINDS = [
   { id: "so",     icon: "🏁", short: "Суммативное", name: "Суммативное оценивание", note: "итог по единице обучения" },

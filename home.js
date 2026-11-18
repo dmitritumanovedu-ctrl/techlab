@@ -7,6 +7,8 @@ import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, clean
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=2";
 import { reviewBtn, openReview } from "./engine/review.js?v=1";
+import { firebaseConfig } from "./firebase-config.js";
+const DB_URL = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
 
 const L3 = (ru, ro, en) => ({ ru, ro, en })[LANG_] || ru;
 // стили блока «Мои работы» по предметам и кнопки выхода в шапке
@@ -106,6 +108,7 @@ async function render(quiet = false) {
     const plus = PL === undefined ? (S.plus || []) : plusOf({ plus: PL });
     if (PL !== undefined && !samePlus(plus, S.plus)) signInStudent({ ...S, plus });   // учитель добавил/убрал предмет
     const data = { P: P || { xp: 0, works: {} }, B: B || {}, CS: mySubjects(CS, plus) };
+    markVisit(S.code);
     cachePut(ck, data);
     center(S, data.P, data.B, data.CS);
   } catch (e) {
@@ -321,3 +324,14 @@ function bySubject(works) {
 function firstName(n) { const p = String(n).split(" "); return p[1] || p[0]; }
 function short(n) { const p = String(n).split(" "); return p.length > 1 ? `${p[1]} ${p[0][0]}.` : n; }
 function initials(n) { return String(n).split(" ").slice(0, 2).map((x) => x[0] || "").join("").toUpperCase(); }
+
+// ---------- посещаемость для администратора: stats/visits/<день>/<код> (один раз в день) ----------
+function markVisit(code) {
+  try {
+    const d = new Date(), day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const k = "techlab_visit_" + code;
+    if (localStorage.getItem(k) === day) return;
+    fetch(`${DB_URL}/stats/visits/${day}/${encodeURIComponent(code)}.json`, { method: "PUT", body: JSON.stringify({ ".sv": "timestamp" }), keepalive: true })
+      .then((r) => { if (r.ok) localStorage.setItem(k, day); }).catch(() => {});
+  } catch (e) {}
+}
