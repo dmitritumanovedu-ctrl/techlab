@@ -15,6 +15,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const SITE = new URL("../", location.href).href;
 const READY = TESTS.filter((t) => t.path);
 
+let GMSG = "";
 let ROSTER = {}, PROGRESS = {}, CSUBJ = {}, CUR = localStorage.getItem("techlab_roster_cls") || "";
 
 onAuthStateChanged(auth, async (user) => {
@@ -102,6 +103,14 @@ function render() {
     <h2>${CUR ? esc(CUR) + " · " + inCls.length + " уч." : "Выберите класс"}</h2>
     ${extra.filter((x) => grp(x.id).length).map((x) => `<p class="muted" style="font-size:14px;margin-top:-6px">${x.icon} <b>${esc(x.name)}</b> — группа: ${grp(x.id).length} уч.
       <button class="btn small ghost" data-gcards="${x.id}">🖨 Карточки только этой группы</button></p>`).join("")}
+    ${GMSG ? `<p class="muted" style="font-size:14px;color:#1a7f37"><b>${GMSG}</b></p>` : ""}
+    ${extra.length && inCls.length ? `<details style="margin:6px 0 14px"><summary style="cursor:pointer;font-weight:700">👥 Отметить группу списком (полкласса)</summary>
+      <p class="muted" style="font-size:14px">Вставьте фамилии учеников группы — каждый с новой строки (номера в начале можно не убирать).
+        Предмет включится этим ученикам и выключится у остальных учеников ${esc(CUR)}. Коды учеников и родителей не меняются.</p>
+      <select id="gSubj">${extra.map((x) => `<option value="${x.id}">${x.icon} ${esc(x.name)}</option>`).join("")}</select>
+      <textarea id="gNames" style="min-height:160px;margin-top:8px" placeholder="BALAN GLEB&#10;CEBOTARU-POSTICA TAISIA&#10;…"></textarea>
+      <div class="err" id="gErr"></div>
+      <button class="btn" id="gApply">Включить предмет этой группе</button></details>` : ""}
     ${inCls.length ? `<div class="table-wrap"><table class="res"><thead><tr><th>№</th><th>Ученик</th><th>Код ученика</th><th>Код родителя</th>
       <th>${extra.length ? "+ предмет<br><span class=\"muted\" style=\"font-weight:400;font-size:12px\">только этому ученику</span>" : ""}</th>
       <th>Уровень</th><th>XP</th><th>Работ</th><th>Ср. оценка</th><th></th></tr></thead><tbody>
@@ -144,6 +153,8 @@ function render() {
     catch (e) { b.disabled = false; alert("Не удалось сохранить: " + (e.code || e.message)); }
   });
   app.querySelectorAll("[data-gcards]").forEach((b) => b.onclick = () => printCards(grp(b.dataset.gcards)));
+  GMSG = "";
+  if ($("#gApply")) $("#gApply").onclick = () => applyGroup(inCls);
   app.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
     const s = ROSTER[b.dataset.del];
     if (!confirm(`Удалить ученика «${s.name}» и его коды? Результаты тестов останутся.`)) return;
@@ -157,6 +168,36 @@ function render() {
     await update(ref(db), { [`parentCodes/${s.pcode}`]: null, [`parentCodes/${p}`]: code, [`roster/${code}/pcode`]: p });
     await load(); render();
   });
+}
+
+// =====================================================================
+//  Группа списком: предмет (например, технология) — только части класса
+// =====================================================================
+// ş/ţ (с седилью) и ș/ț (с запятой) считаем одной буквой, номер в начале строки убираем
+const gKey = (s) => nameKey(String(s).replace(/^\s*\d+[.)]?\s*/, "").replace(/[şŞ]/g, "ș").replace(/[ţŢ]/g, "ț"));
+
+async function applyGroup(inCls) {
+  const id = $("#gSubj").value, subj = SUBJECTS.find((x) => x.id === id);
+  const lines = $("#gNames").value.split(/\n+/).map((x) => x.trim()).filter(Boolean);
+  if (!lines.length) return ($("#gErr").textContent = "Вставьте фамилии учеников группы.");
+  const byKey = new Map(inCls.map(([code, s]) => [gKey(s.name), code]));
+  const pick = new Set(), miss = [];
+  for (const l of lines) { const c = byKey.get(gKey(l)); if (c) pick.add(c); else miss.push(l); }
+  if (!pick.size) return ($("#gErr").textContent = "Никого из списка не нашлось в " + CUR + ". Проверьте, что выбран нужный класс.");
+  if (miss.length && !confirm(`Не найдены в ${CUR}:\n${miss.join("\n")}\n\nВключить предмет остальным (${pick.size} уч.)?`)) return;
+  if (!confirm(`«${subj?.name || id}» будет у ${pick.size} уч. из ${inCls.length}, у остальных ${inCls.length - pick.size} — выключен. Сохранить?`)) return;
+  const upd = {};
+  for (const [code] of inCls) upd[`roster/${code}/plus/${id}`] = pick.has(code) ? true : null;
+  $("#gApply").disabled = true; $("#gApply").textContent = "Сохраняю…";
+  try {
+    await update(ref(db), upd);
+    await load();
+    GMSG = `✓ ${esc(subj?.name || id)}: включено ${pick.size} уч.` + (miss.length ? ` · не найдено: ${miss.length}` : "");
+    render();
+  } catch (e) {
+    $("#gApply").disabled = false; $("#gApply").textContent = "Включить предмет этой группе";
+    $("#gErr").textContent = "Не удалось сохранить: " + (e.code || e.message);
+  }
 }
 
 async function addStudents() {
