@@ -15,6 +15,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const SITE = new URL("../", location.href).href;
 const READY = TESTS.filter((t) => t.path);
 
+let GMSG = "";
 let ROSTER = {}, PROGRESS = {}, CSUBJ = {}, CUR = localStorage.getItem("techlab_roster_cls") || "";
 
 onAuthStateChanged(auth, async (user) => {
@@ -58,6 +59,7 @@ function render() {
   const clsS = CSUBJ[clsKey(CUR)] || {};
   const extra = Object.keys(clsS).length ? SUBJECTS.filter((x) => !clsS[x.id] && (!x.grades || x.grades.includes(String(CUR).split(" ")[0]))) : [];
   const grp = (id) => inCls.filter(([, st]) => plusOf(st).includes(id));
+  const gradeS = SUBJECTS.filter((x) => !x.grades || x.grades.includes(String(CUR).split(" ")[0]));
   app.innerHTML = `<a class="backlink" href="./">← Центр управления</a>
   <div class="card plan-box">
     <div><div class="muted" style="font-size:13px;font-family:var(--mono);letter-spacing:.06em">ТАРИФ УЧИТЕЛЯ</div>
@@ -102,6 +104,25 @@ function render() {
     <h2>${CUR ? esc(CUR) + " · " + inCls.length + " уч." : "Выберите класс"}</h2>
     ${extra.filter((x) => grp(x.id).length).map((x) => `<p class="muted" style="font-size:14px;margin-top:-6px">${x.icon} <b>${esc(x.name)}</b> — группа: ${grp(x.id).length} уч.
       <button class="btn small ghost" data-gcards="${x.id}">🖨 Карточки только этой группы</button></p>`).join("")}
+    ${GMSG ? `<p class="muted" style="font-size:14px;color:#1a7f37"><b>${GMSG}</b></p>` : ""}
+    ${CUR && inCls.length ? `<div style="border:2px solid #DCE4F2;border-radius:12px;padding:14px 16px;margin:6px 0 16px">
+      <h3 style="margin:0 0 6px">👥 Предметы учеников ${esc(CUR)}</h3>
+      <p class="muted" style="font-size:14px;margin:0 0 10px">Выберите предмет и нажмите: <b>«Всему классу»</b> — его увидят все ученики;
+        <b>«Только группе»</b> — вставьте фамилии группы, предмет увидят только они. Коды не меняются.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${gradeS.map((x) => {
+        const all = !!clsS[x.id], g = grp(x.id).length;
+        const st = all ? "✅ у всего класса" : g ? `👥 у группы: ${g} уч.` : "— нет";
+        return `<label style="display:flex;gap:8px;align-items:center;font-size:15px"><input type="radio" name="gSubj" value="${x.id}"> ${x.icon} <b>${esc(x.name)}</b> <span class="muted">· ${st}</span></label>`; }).join("")}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn" id="gAll">✅ Всему классу</button>
+        <button class="btn ghost" id="gNone">✕ Убрать предмет у класса</button></div>
+      <label class="f" for="gNames">Для группы: фамилии учеников, каждый с новой строки (номера можно не убирать)</label>
+      <textarea id="gNames" style="min-height:140px" placeholder="BALAN GLEB&#10;CEBOTARU-POSTICA TAISIA&#10;…"></textarea>
+      <div class="err" id="gErr"></div>
+      <button class="btn" id="gApply">👥 Только группе по списку</button>
+      ${inCls.some(([, st]) => /^\s*\d+[.)]?\s/.test(st.name)) ? `<p class="muted" style="font-size:14px;margin-top:12px">В именах есть номера («1. BALAN GLEB»).
+        <button class="btn small ghost" id="gNums">🧹 Убрать номера из имён</button></p>` : ""}
+    </div>` : ""}
     ${inCls.length ? `<div class="table-wrap"><table class="res"><thead><tr><th>№</th><th>Ученик</th><th>Код ученика</th><th>Код родителя</th>
       <th>${extra.length ? "+ предмет<br><span class=\"muted\" style=\"font-weight:400;font-size:12px\">только этому ученику</span>" : ""}</th>
       <th>Уровень</th><th>XP</th><th>Работ</th><th>Ср. оценка</th><th></th></tr></thead><tbody>
@@ -127,7 +148,14 @@ function render() {
   app.querySelectorAll("[data-subj]").forEach((c) => c.onchange = async () => {
     const ids = [...app.querySelectorAll("[data-subj]:checked")].map((x) => x.dataset.subj);
     $("#subjInfo").textContent = "Сохраняю…";
-    try { await setClassSubjects(db, CUR, ids); await load(); render(); }
+    try {
+      await setClassSubjects(db, CUR, ids);
+      // кто ведёт предмет у класса — ученики и родители видят имя учителя на карточке предмета
+      const u = auth.currentUser, nm = String(u?.displayName || u?.email || "").trim().split(/\s+/);
+      const short = nm.length > 1 ? `${nm[1]} ${nm[0][0]}.` : nm[0];
+      if (u) await update(ref(db), Object.fromEntries(SUBJECTS.map((x) => [`settings/classTeachers/${clsKey(CUR)}/${x.id}/${u.uid}`, ids.includes(x.id) ? { name: short } : null])));
+      await load(); render();
+    }
     catch (e) { $("#subjInfo").textContent = "Не удалось сохранить: " + (e.code || e.message); }
   });
   app.querySelectorAll("[data-plus]").forEach((b) => b.onclick = async () => {
@@ -137,6 +165,13 @@ function render() {
     catch (e) { b.disabled = false; alert("Не удалось сохранить: " + (e.code || e.message)); }
   });
   app.querySelectorAll("[data-gcards]").forEach((b) => b.onclick = () => printCards(grp(b.dataset.gcards)));
+  GMSG = "";
+  if ($("#gApply")) {
+    $("#gApply").onclick = () => applyGroup(inCls, "group");
+    $("#gAll").onclick = () => applyGroup(inCls, "all");
+    $("#gNone").onclick = () => applyGroup(inCls, "none");
+  }
+  if ($("#gNums")) $("#gNums").onclick = () => stripNumbers(inCls);
   app.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
     const s = ROSTER[b.dataset.del];
     if (!confirm(`Удалить ученика «${s.name}» и его коды? Результаты тестов останутся.`)) return;
@@ -150,6 +185,65 @@ function render() {
     await update(ref(db), { [`parentCodes/${s.pcode}`]: null, [`parentCodes/${p}`]: code, [`roster/${code}/pcode`]: p });
     await load(); render();
   });
+}
+
+// =====================================================================
+//  Группа списком: предмет (например, технология) — только части класса
+// =====================================================================
+// ş/ţ (с седилью) и ș/ț (с запятой) считаем одной буквой, номер в начале строки убираем
+const gKey = (s) => nameKey(String(s).replace(/^\s*\d+[.)]?\s*/, "").replace(/[şŞ]/g, "ș").replace(/[ţŢ]/g, "ț"));
+
+// Сохранить предметы всего класса (+ имя учителя на карточке предмета, как при галочках выше)
+async function saveClassSubj(ids) {
+  await setClassSubjects(db, CUR, ids);
+  const u = auth.currentUser, nm = String(u?.displayName || u?.email || "").trim().split(/\s+/);
+  const short = nm.length > 1 ? `${nm[1]} ${nm[0][0]}.` : nm[0];
+  if (u) await update(ref(db), Object.fromEntries(SUBJECTS.map((x) => [`settings/classTeachers/${clsKey(CUR)}/${x.id}/${u.uid}`, ids.includes(x.id) ? { name: short } : null])));
+}
+
+// mode: "all" — предмет всему классу; "group" — только ученикам из списка; "none" — убрать у всех
+async function applyGroup(inCls, mode) {
+  const err = $("#gErr"); err.textContent = "";
+  const id = app.querySelector('input[name="gSubj"]:checked')?.value;
+  if (!id) return (err.textContent = "Сначала выберите предмет в списке выше.");
+  const subj = SUBJECTS.find((x) => x.id === id), nm = subj?.name || id;
+  const base = Object.keys(CSUBJ[clsKey(CUR)] || {}).filter((k) => k !== id);   // остальные предметы всего класса
+  const upd = {}; let pick = new Set(), miss = [];
+
+  if (mode === "group") {
+    const lines = $("#gNames").value.split(/\n+/).map((x) => x.trim()).filter(Boolean);
+    if (!lines.length) return (err.textContent = "Вставьте фамилии учеников группы в поле выше.");
+    const byKey = new Map(inCls.map(([code, s]) => [gKey(s.name), code]));
+    for (const l of lines) { const c = byKey.get(gKey(l)); if (c) pick.add(c); else miss.push(l); }
+    if (!pick.size) return (err.textContent = "Никого из списка не нашлось в " + CUR + ".");
+    if (!base.length) return (err.textContent = `Сначала выберите предмет, который у вас у ВСЕГО класса (например, Математика), и нажмите «Всему классу». Потом снова выберите «${nm}» → «Только группе».`);
+    if (miss.length && !confirm(`Не найдены в ${CUR}:\n${miss.join("\n")}\n\nПродолжить без них?`)) return;
+    if (!confirm(`«${nm}» увидят ${pick.size} уч. из ${inCls.length}. Сохранить?`)) return;
+  }
+  if (mode === "none" && !base.length) return (err.textContent = "Это единственный предмет класса — если убрать его, ученики увидят все предметы сайта. Сначала добавьте классу другой предмет.");
+  if (mode === "none" && !confirm(`Убрать «${nm}» у всех учеников ${CUR}?`)) return;
+
+  for (const [code] of inCls) upd[`roster/${code}/plus/${id}`] = mode === "group" && pick.has(code) ? true : null;
+  const ids = mode === "all" ? [...base, id] : base;
+  try {
+    // сначала общие предметы класса, потом отметки учеников — чтобы у класса ни на миг не пропали все предметы
+    await saveClassSubj(ids);
+    await update(ref(db), upd);
+    await load();
+    GMSG = mode === "all" ? `✓ ${esc(nm)}: у всего класса` : mode === "none" ? `✓ ${esc(nm)}: убран` :
+      `✓ ${esc(nm)}: только группе — ${pick.size} уч.` + (miss.length ? ` · не найдено: ${miss.length}` : "");
+    render();
+  } catch (e) { err.textContent = "Не удалось сохранить: " + (e.code || e.message); }
+}
+
+// «1. BALAN GLEB» → «BALAN GLEB»
+async function stripNumbers(inCls) {
+  const upd = {};
+  for (const [code, s] of inCls) { const n = s.name.replace(/^\s*\d+[.)]?\s+/, ""); if (n !== s.name) upd[`roster/${code}/name`] = n; }
+  const k = Object.keys(upd).length;
+  if (!k || !confirm(`Убрать номера у ${k} уч.? Коды не меняются.`)) return;
+  try { await update(ref(db), upd); await load(); GMSG = `✓ Номера убраны у ${k} уч.`; render(); }
+  catch (e) { alert("Не удалось сохранить: " + (e.code || e.message)); }
 }
 
 async function addStudents() {
