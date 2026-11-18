@@ -190,7 +190,7 @@ table.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted)}
 <script type="module">
 /* Связь с сайтом TechLab: результаты попадают в панель учителя */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
 import { firebaseConfig } from "../../../firebase-config.js";
 const MISSION_ID = "tech5-media-m2";
 const db = getDatabase(initializeApp(firebaseConfig));

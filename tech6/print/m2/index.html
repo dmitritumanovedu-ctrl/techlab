@@ -508,7 +508,7 @@ h1 em,.grad{background:none;-webkit-text-fill-color:currentColor;color:#2E4BFF}
 <script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
 import { firebaseConfig } from "../../../firebase-config.js";
 const MISSION_ID = "tech6-print-m2";
 const db = getDatabase(initializeApp(firebaseConfig));

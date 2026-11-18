@@ -157,7 +157,7 @@
 <script type="module">
 /* Связь миссии с сайтом TechLab: результаты попадают в «Центр управления» */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set, update, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
 import { firebaseConfig } from "../../../firebase-config.js";
 const MISSION_ID = "inf7-safe-m2";
 const db = getDatabase(initializeApp(firebaseConfig));

@@ -1,7 +1,7 @@
 // Тренировочный итоговый тест · Математика 5 · страница ученика
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push, set, update, get, onValue, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  from "../../engine/rtdb.js?v=1";
 import { firebaseConfig } from "../../firebase-config.js";
 import { TEST, VARIANTS, shopText, stHtml, buyText, exprHtml, mText, lei } from "./questions.js?v=1";
 const WORK = TEST;
@@ -327,6 +327,7 @@ function watchRecord() {
     if (r.status === "in_progress" && !active && !$("#btnCont")) {
       finishing = false; S.deadline = r.deadline; S.answers = r.answers || S.answers; S.viol = r.violations || S.viol; resume(r);
     } else if (r.status === "submitted" && active) {
+      if (S?.answers) update(ref(db, `${P}/${S.id}`), { answers: S.answers }).catch(() => {});   // последние ответы — учителю
       finishing = true; active = false; clearInterval(timerId); showDone(r.reason || "teacher", r);
     } else if (r.status === "submitted" && r.result && $("#resBox")) {
       $("#resBox").innerHTML = resultHtml(r.result);

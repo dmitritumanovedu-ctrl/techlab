@@ -5,7 +5,7 @@ import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
 import { startAutoSync, syncProgress } from "./sync.js?v=2";
-import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=1";
+import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=2";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -1037,7 +1037,7 @@ async function showOverview() {
     $("#hubTools").innerHTML = `<div class="hub-tools"><a class="btn small" href="builder.html">🧩 Конструктор тестов</a> <a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
       <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
       <button class="btn small ghost" id="hReview">🔍 Разбор для учеников</button>
-      <button class="btn small ghost" id="hStaff">👥 Коллеги</button>
+      <a class="btn small" href="../admin/" style="background:#0B1A3B">🛡 Администратор</a> <button class="btn small ghost" id="hStaff">👥 Коллеги</button>
       <button class="btn small ghost" id="hAnn">📢 Объявления</button>
       <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`;
     $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;

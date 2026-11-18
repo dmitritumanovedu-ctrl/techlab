@@ -2,7 +2,7 @@
 // Стратегия «сначала сеть, но не дольше 4 секунд»: ученики получают свежие тесты,
 // а если интернет тормозит — сразу открывается сохранённая копия (и обновляется в фоне).
 // Ответы тестов хранятся в Firebase и через этот файл НЕ проходят.
-const CACHE = "techlab-v12";
+const CACHE = "techlab-v13";
 const NET_WAIT = 4000;
 const SHELL = ["./", "index.html", "style-e2.css?v=9", "theme-classroom.css?v=3", "start-e2.js?v=17", "home.js?v=15", "engine/review.js?v=1", "engine/guard.js?v=2", "engine/shell.js?v=2", "install.js?v=2", "tests.js?v=8",
   "firebase-config.js", "engine/people.js?v=2", "engine/people.js?v=3", "engine/people.js?v=4", "engine/i18n.js?v=1", "engine/fbrest.js?v=1", "engine/nav.js?v=2", "engine/outbox.js?v=1", "engine/footer.js?v=1",
@@ -19,7 +19,8 @@ self.addEventListener("fetch", (e) => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== location.origin) return;   // Firebase, шрифты, CDN — напрямую
   e.respondWith((async () => {
-    const net = fetch(req).then((res) => {
+    // страницы (HTML) всегда спрашиваем у сервера заново, мимо кэша браузера — чтобы обновления сайта приходили сразу
+    const net = fetch(req, req.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname.endsWith("/") ? { cache: "no-cache" } : {}).then((res) => {
       if (res.ok && res.type === "basic") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
       return res;
     });

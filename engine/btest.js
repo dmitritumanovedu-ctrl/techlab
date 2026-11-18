@@ -10,18 +10,52 @@ export const TYPES = ["choice", "tf", "input", "match", "sort", "open"];
 
 // ---------- мелочи ----------
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-export const norm = (s) => String(s ?? "").toLowerCase().replace(/ё/g, "е").replace(/[«»"“”„]/g, "").replace(/\s+/g, " ").trim();
+// Нормализация текстового ответа: регистр, ё/е, кавычки, лишние пробелы, знаки препинания по краям, «Ответ:» в начале
+export const norm = (s) => String(s ?? "").toLowerCase().replace(/ё/g, "е").replace(/[«»"“”„'`]/g, "").replace(/[‐-―−]/g, "-")
+  .replace(/^\s*(ответ|отв|answer|raspuns|răspuns)\s*[:.\-]?\s*/i, "").replace(/\s*([,;:])\s*/g, "$1 ").replace(/\s+/g, " ")
+  .replace(/^[\s.,;:!?()\[\]-]+|[\s.,;:!?()\[\]-]+$/g, "").trim();
+// Расстояние Левенштейна — чтобы засчитать ответ с одной-двумя опечатками в длинном слове
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+// Текстовый ответ: точное совпадение с одним из вариантов (через «;») или небольшая опечатка.
+// Числа внутри ответа должны совпасть точно (опечатка в числе — ошибка).
+export function matchText(list, a) {
+  const x = norm(a); if (!x) return { ok: false };
+  const L = list.map(norm).filter(Boolean);
+  if (L.includes(x)) return { ok: true };
+  const nx = (x.match(/\d+/g) || []).join(" ");
+  for (const k of L) {
+    if ((k.match(/\d+/g) || []).join(" ") !== nx) continue;
+    const lim = k.length >= 9 ? 2 : k.length >= 5 ? 1 : 0;
+    if (lim && lev(x, k) <= lim) return { ok: true, typo: true };
+  }
+  return { ok: false };
+}
 export const fmtNum = (n) => String(Math.round(n * 1000) / 1000).replace(".", ",");
 export const half = (x) => Math.round(x * 2) / 2;
 export function uid(p = "") {
   const a = new Uint32Array(2); crypto.getRandomValues(a);
   return p + a[0].toString(36).slice(0, 5) + a[1].toString(36).slice(0, 3);
 }
+// Число из ответа ученика: «1 000», «2,5», «-3», «25 лей», «3/4», «x = 12». Если в ответе несколько разных чисел — ответ не засчитывается.
 export function parseNum(s) {
-  const t = String(s ?? "").replace(/\s/g, "").replace(",", ".").replace(/[^\d.eE+\-]/g, "");
+  const t = String(s ?? "").replace(/[\u00a0\u202f]/g, " ").replace(/[−–—]/g, "-").trim();
   if (!t) return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
+  const fr = t.match(/^[^\d-]*(-?\d+)\s*\/\s*(\d+)[^\d]*$/);
+  if (fr && Number(fr[2])) return Number(fr[1]) / Number(fr[2]);
+  const found = t.match(/-?\d{1,3}(?: \d{3})+(?:[.,]\d+)?|-?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?/g);
+  if (!found) return null;
+  const nums = [...new Set(found.map((x) => Number(x.replace(/ /g, "").replace(",", "."))))];
+  if (nums.length !== 1 || !Number.isFinite(nums[0])) return null;
+  return nums[0];
 }
 
 // ---------- случайные числа с «зерном»: один и тот же вариант у ученика и учителя ----------
@@ -203,8 +237,8 @@ export function gradeAttempt(test, r) {
         ok = exp !== null && x !== null && Math.abs(x - exp) <= tol + 1e-9;
         keyTxt = exp === null ? "?" : fmtNum(exp) + (tol ? " ± " + fmtNum(tol) : "");
       } else {
-        const list = String(it.answer || "").split(";").map(norm).filter(Boolean);
-        ok = list.includes(norm(a)); keyTxt = String(it.answer || "");
+        const m = matchText(String(it.answer || "").split(";"), a);
+        ok = m.ok; keyTxt = String(it.answer || "") + (m.typo ? " (засчитано с опечаткой)" : "");
       }
       add({ k: it.id, n, type: it.type, label: q, max: pts, auto: ok ? pts : 0, answer: String(a ?? ""), key: keyTxt + (it.unit ? " " + it.unit : "") });
     } else if (it.type === "match") {

@@ -6,7 +6,7 @@
 // =====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { roleOf, pendingHtml } from "../engine/staff.js?v=1";
+import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff.js?v=2";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, KINDS } from "../tests.js?v=8";
@@ -50,6 +50,22 @@ onAuthStateChanged(auth, async (user) => {
       get(query(ref(db, "builder"), orderByChild("shared"), equalTo(true))).catch(() => null)]);
     ALL = b.val() || {}; SET = s.val() || {};
     SHARED = Object.fromEntries(Object.entries(sh?.val() || {}).filter(([, t]) => t.owner !== user.uid));
+    if (ROLE === "colleague") {
+      const me = myStaff();
+      if (!permOf(me, "builder")) {
+        app.innerHTML = `<div class="card center" style="max-width:620px"><h2>🧩 Конструктор пока закрыт</h2>
+          <p>Администратор TechLab ещё не открыл вам Конструктор тестов. Напишите ему — доступ включается одной кнопкой.</p></div>`;
+        return;
+      }
+      if (!permOf(me, "folder")) SHARED = {};
+      // тесты, которыми администратор поделился лично с вами
+      const mineSh = (await get(ref(db, `staffShares/${user.uid}`)).catch(() => null))?.val() || {};
+      for (const id of Object.keys(mineSh)) {
+        if (SHARED[id] || ALL[id]) continue;
+        const t = (await get(ref(db, `builder/${id}`)).catch(() => null))?.val();
+        if (t) SHARED[id] = { ...t, personal: true };
+      }
+    }
   } catch (e) {
     console.warn(e);
     app.innerHTML = `<div class="card center" style="max-width:640px"><h2>${esc(tb("b_noAccess"))}</h2><p>${tb("b_noAccessP")}</p></div>`;
@@ -117,7 +133,7 @@ async function showList() {
       const [st, stT] = statusOf(t), open = !!SET[t.id]?.open, s = subjOf(t.subject);
       const foreign = t.owner && t.owner !== USER.uid;     // тест коллеги
       if (LTAB === "shared" && ROLE !== "admin") return `<article class="bd-card">
-        <div class="bd-chips"><span class="chip-st st-share">📂 ${esc(t.ownerName || "коллега")}</span></div>
+        <div class="bd-chips"><span class="chip-st st-share">📂 ${esc(t.ownerName || "коллега")}</span>${t.personal ? '<span class="chip-st st-open">лично вам</span>' : ""}</div>
         <h2>${esc(t.title || tb("b_untitled"))}</h2>
         <p class="muted">${esc([s ? subjName(s) : "", t.grade ? gradeLabel(t.grade) : ""].filter(Boolean).join(" · "))}</p>
         <p class="muted small">${esc(tb("b_cardMeta", { n: (t.items || []).length, max: fmt(maxOf(t)), min: t.minutes || 0, d: fmtDT(t.updatedAt) }))}</p>
@@ -134,7 +150,7 @@ async function showList() {
           <button class="btn small ghost" type="button" data-act="now" data-id="${t.id}">${esc(tb("b_setNow"))}</button>
           <button class="btn small ghost" type="button" data-act="link" data-id="${t.id}">${esc(tb("b_link"))}</button>` : ""}
           <button class="btn small ghost" type="button" data-act="dup" data-id="${t.id}">${esc(tb("b_dup"))}</button>
-          ${!foreign ? `<button class="btn small ghost" type="button" data-act="share" data-id="${t.id}" title="Коллеги увидят тест в «Общей папке» и смогут скопировать его к себе. Результаты ваших учеников они не видят.">${t.shared ? "🤝 Не делиться" : "🤝 Поделиться"}</button>` : ""}
+          ${!foreign && (ROLE === "admin" || permOf(myStaff(), "share")) ? `<button class="btn small ghost" type="button" data-act="share" data-id="${t.id}" title="Коллеги увидят тест в «Общей папке» и смогут скопировать его к себе. Результаты ваших учеников они не видят.">${t.shared ? "🤝 Не делиться" : "🤝 Поделиться"}</button>` : ""}
           <button class="btn small ghost danger" type="button" data-act="del" data-id="${t.id}">${esc(tb("b_del"))}</button>
         </div></article>`; }).join("")}</div>`
       : LTAB === "shared" ? `<div class="card center"><h2>📂 Общая папка пуста</h2><p class="muted">${ROLE === "admin" ? "Нажмите «🤝 Поделиться» на карточке теста — он появится здесь и у коллег." : "Когда коллеги поделятся тестами, они появятся здесь."}</p></div>`
@@ -510,6 +526,7 @@ async function publish() {
     T.pubAt = Date.now(); T.updatedAt = T.pubAt;
     const clean = (t) => ({ ...t, items: t.items.map((it) => ({ ...it, options: it.options?.filter((o) => o.t.trim()), pairs: it.pairs?.filter((p) => p.l.trim() && p.r.trim()), cards: it.cards?.filter((c) => c.t.trim()) })) });
     const snap = clean(T), pub = toPublic(snap);
+    logAction(db, USER, `Опубликован тест «${T.title || T.id}»`, "test");
     await Promise.all([
       set(ref(db, `builder/${T.id}`), T),
       set(ref(db, `keys/${T.id}`), snap),

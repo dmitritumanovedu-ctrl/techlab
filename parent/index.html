@@ -24,7 +24,7 @@
       <div class="p-who"><span id="langSw"></span><span id="who" class="p-who"></span></div>
     </header>
     <main id="app"><div class="pc"><p class="muted" data-i18n="loading">Загрузка…</p></div></main>
-    <footer><a href="../" data-i18n="f_start">стартовая страница</a> · <a href="../privacy.html" data-i18n="f_privacy">конфиденциальность</a></footer>
+    <div id="siteFoot" data-root="../"></div>
   </div>
   <script type="module">
     import { applyI18n, mountLangSwitch } from "../engine/i18n.js?v=1";
@@ -34,5 +34,6 @@
   <script type="module" src="../engine/consent.js?v=2"></script>
 <script type="module" src="../engine/nav.js?v=2"></script>
   <script type="module" src="../engine/shell.js?v=2"></script>
+  <script type="module" src="../engine/footer.js?v=1"></script>
 </body>
 </html>

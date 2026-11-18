@@ -18,10 +18,13 @@ export function catOf(d) {
 }
 
 const norm = (s) => String(s ?? "").toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+// Число из ответа: «1 000», «2,5», «25 чел./км²». Несколько разных чисел — ответ не засчитывается.
 export function parseNum(s) {
-  const t = String(s ?? "").replace(/\s/g, "").replace(",", ".").replace(/[^\d.\-]/g, "");
-  const n = parseFloat(t);
-  return Number.isFinite(n) ? n : null;
+  const t = String(s ?? "").replace(/[\u00a0\u202f]/g, " ").replace(/[−–—]/g, "-").replace(/км²|м²|km²/gi, "").trim();
+  const found = t.match(/-?\d{1,3}(?: \d{3})+(?:[.,]\d+)?|-?\d+(?:[.,]\d+)?/g);
+  if (!found) return null;
+  const nums = [...new Set(found.map((x) => Number(x.replace(/ /g, "").replace(",", "."))))];
+  return nums.length === 1 && Number.isFinite(nums[0]) ? nums[0] : null;
 }
 
 // Возвращает список пунктов оценивания: {key, task, label, max, auto(число|null), manual(true если нужна проверка), score}
