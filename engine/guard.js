@@ -95,7 +95,15 @@
       bn.textContent = "Режим учителя: просмотр без кода ученика";
       document.body.appendChild(bn);
     };
-    if (document.body) showGate(); else document.addEventListener("DOMContentLoaded", showGate);
+    // ?preview — «просмотр учителя» из панели: проверяем вход учителя и открываем страницу без кода
+    var PVQ = /[?&]preview(=|&|$)/.test(location.search);
+    if (PVQ) {
+      import(ROOT + "engine/preview-auth.js?v=1").then(function (m) { return m.isStaffPreview(); }).catch(function () { return false; })
+        .then(function (ok) {
+          var go = function () { if (ok) { document.documentElement.classList.remove("tl-locked"); var g = document.querySelector(".tl-gate"); if (g) g.remove(); } else showGate(); };
+          if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
+        });
+    } else if (document.body) showGate(); else document.addEventListener("DOMContentLoaded", showGate);
     // учитель вошёл на этом компьютере в панель учителя? (Firebase хранит вход в IndexedDB)
     try {
       var rq = indexedDB.open("firebaseLocalStorageDb");
@@ -106,7 +114,7 @@
         all.onsuccess = function () {
           var ok = (all.result || []).some(function (x) { return x && String(x.fbase_key || "").indexOf("firebase:authUser:") === 0 && x.value && x.value.email; });
           db.close();
-          if (ok) { if (document.body) unlock(); else document.addEventListener("DOMContentLoaded", unlock); }
+          if (ok && !PVQ) { if (document.body) unlock(); else document.addEventListener("DOMContentLoaded", unlock); }
         };
       };
     } catch (e) {}

@@ -9,7 +9,7 @@ import { getDatabase, ref, get, set, update, remove, onValue, query, limitToLast
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=3";
-import { SUBJECTS, TESTS, addSubjects } from "../tests.js?v=8";
+import { SUBJECTS, TESTS, addSubjects, BUILTIN_SUBJECTS } from "../tests.js?v=8";
 import { clsKey } from "../engine/people.js?v=4";
 import { startNotify } from "../engine/notify.js?v=2";
 
@@ -106,9 +106,12 @@ function render() {
   document.querySelectorAll("#adNav a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + sec));
   // страница учителя внутри панели: не перерисовываем, чтобы рамка не перезагружалась при каждом обновлении данных
   if (FRAMES[sec]) {
+    // #builder/e/<id> — сразу открыть тест в редакторе конструктора
+    const sub = location.hash.slice(1).split("/").slice(1).join("/");
+    const src = FRAMES[sec] + (sub ? "#/" + sub : "");
     const cur = app.querySelector("iframe.ad-frame");
-    if (cur && cur.dataset.sec === sec) return;
-    app.innerHTML = `<iframe class="ad-frame" data-sec="${sec}" src="${FRAMES[sec]}" title="${sec}"></iframe>`;
+    if (cur && cur.dataset.sec === sec) { if (sub && cur.dataset.sub !== sub) { cur.dataset.sub = sub; cur.src = src; } return; }
+    app.innerHTML = `<iframe class="ad-frame" data-sec="${sec}" data-sub="${esc(sub)}" src="${src}" title="${sec}"></iframe>`;
     return;
   }
   const F = { activity: secActivity, overview: secOverview, requests: secRequests, teachers: secTeachers, share: secShare, subjects: secSubjects, classes: secClasses,
@@ -331,7 +334,7 @@ function secActivity() {
       <div class="sub" style="margin:10px 0 4px"><b>Классы:</b> ${cls.length ? esc(cls.join(" · ")) : "не подключены"}</div>
       ${tests.length ? `<div class="sub" style="margin:8px 0 4px"><b>Тесты:</b></div>${tests.slice(0, 6).map(([id, t]) => `<div class="act-t"><span>🧩 ${esc(t.title || id)} <span class="sub">· ${esc(subjName(t.subject))}, ${esc(t.grade || "")} кл. · изменён ${ago(t.updatedAt)}</span></span>
           <span class="act-tags">${D.pubIndex[id] ? '<span class="chip ok">опубликован</span>' : '<span class="chip">черновик</span>'}${D.settings[id]?.open ? '<span class="chip ok">открыт</span>' : ""}${resCount(id) ? `<span class="chip">${resCount(id)} сдач</span>` : ""}
-          <a class="btn small ghost" href="../b/?t=${esc(id)}&preview=1" target="_blank" rel="noopener">Посмотреть ↗</a></span></div>`).join("")}${tests.length > 6 ? `<div class="sub">…и ещё ${tests.length - 6}</div>` : ""}` : '<div class="sub" style="margin-top:8px">Тестов пока не создавал(а).</div>'}
+          ${D.pubIndex[id] ? `<a class="btn small ghost" href="../b/?t=${esc(id)}&preview=1" target="_blank" rel="noopener">👁 Посмотреть</a>` : ""}<a class="btn small ghost" href="#builder/e/${esc(id)}">✏️ Изменить</a></span></div>`).join("")}${tests.length > 6 ? `<div class="sub">…и ещё ${tests.length - 6}</div>` : ""}` : '<div class="sub" style="margin-top:8px">Тестов пока не создавал(а).</div>'}
       <div class="sub" style="margin:10px 0 4px"><b>Последние действия:</b></div>
       ${acts.length ? `<ul class="feed">${acts.map((l) => `<li><span class="ic">${l.kind === "test" ? "🧩" : "🛡"}</span><span>${esc(l.text)}</span><span class="tm">${ago(l.at)}</span></li>`).join("")}</ul>` : '<div class="sub">Пока нет записей.</div>'}
     </div>`;
@@ -379,6 +382,7 @@ function secShare() {
 }
 
 // ---------- предметы: заявки на новые, кто какой предмет ведёт ----------
+let SJEDIT = "";       // какой предмет сейчас редактируется
 function secSubjects() {
   const X = D.settings.subjects || {}, CT = D.settings.classTeachers || {};
   const reqs = Object.entries(D.sreq).flatMap(([uid, x]) => Object.entries(x || {}).filter(([, r]) => r && !r.done).map(([id, r]) => ({ uid, id, ...r })));
@@ -389,9 +393,16 @@ function secSubjects() {
       <div style="display:flex;gap:8px"><button class="btn green" data-sok="${esc(r.uid)}|${esc(r.id)}">✓ Добавить на сайт</button><button class="btn red small" data-sno="${esc(r.uid)}|${esc(r.id)}">Отклонить</button></div></div>`).join("")}</div>` : ""}
     <div class="ad-card tw"><b>Предметы сайта и учителя</b>
       <table class="ad-t" style="margin-top:8px"><thead><tr><th>Предмет</th><th>Классы сайта</th><th>Кто ведёт · подключённые классы</th><th></th></tr></thead><tbody>
-      ${SUBJECTS.map((sj) => { const w = who(sj.id); return `<tr><td><b>${sj.icon} ${esc(sj.name)}</b>${X[sj.id] ? ' <span class="chip">добавлен вами</span>' : ""}</td><td>${esc(sj.grades.join(", "))}</td>
+      ${SUBJECTS.map((sj) => { const w = who(sj.id); return `<tr><td><b>${sj.icon} ${esc(sj.name)}</b>${X[sj.id] ? (BUILTIN_SUBJECTS.includes(sj.id) ? ' <span class="chip">изменён</span>' : ' <span class="chip">добавлен вами</span>') : ""}</td><td>${esc(sj.grades.join(", "))}</td>
         <td>${Object.entries(w).map(([n, cl]) => `<div><b>${esc(n)}</b> · <span class="sub">${esc(cl.join(", "))}</span></div>`).join("") || '<span class="sub">никто не подключил классы</span>'}</td>
-        <td>${X[sj.id] ? `<button class="btn red small" data-sjd="${esc(sj.id)}">Убрать</button>` : ""}</td></tr>`; }).join("")}</tbody></table>
+        <td style="white-space:nowrap"><button class="btn ghost small" data-sje="${esc(sj.id)}">✏️ Изменить</button>
+          ${X[sj.id] ? (BUILTIN_SUBJECTS.includes(sj.id) ? `<button class="btn ghost small" data-sjd="${esc(sj.id)}" title="Вернуть исходное название и классы">↺ Сбросить</button>` : `<button class="btn red small" data-sjd="${esc(sj.id)}">Убрать</button>`) : ""}</td></tr>
+        ${SJEDIT === sj.id ? `<tr><td colspan="4"><div class="form-row" style="margin:0">
+          <div><label for="seName">Название</label><input id="seName" maxlength="40" value="${esc(sj.name)}"></div>
+          <div><label for="seIcon">Значок</label><input id="seIcon" maxlength="4" value="${esc(sj.icon)}"></div>
+          <div><label for="seColor">Цвет</label><input id="seColor" type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(sj.color) ? sj.color : "#2E4BFF")}"></div>
+          <div><label for="seGrades">Классы</label><input id="seGrades" value="${esc(sj.grades.join(", "))}"></div>
+          <button class="btn green" data-act="savesubj">💾 Сохранить</button><button class="btn ghost" data-act="cancelsubj">Отмена</button></div></td></tr>` : ""}`; }).join("")}</tbody></table>
       <div class="form-row">
         <div><label for="sjName">Новый предмет</label><input id="sjName" maxlength="40" placeholder="Например: История"></div>
         <div><label for="sjIcon">Значок</label><input id="sjIcon" maxlength="4" value="📘"></div>
@@ -510,6 +521,20 @@ function bind() {
   app.querySelectorAll("[data-fbd]").forEach((b) => b.onclick = () => { if (confirm("Удалить отзыв?")) remove(ref(db, `feedback/${b.dataset.fbd}`)).catch((e) => alert(e.message)); });
   // предметы
   app.querySelector('[data-act="addsubj"]')?.addEventListener("click", addSubject);
+  app.querySelectorAll("[data-sje]").forEach((b) => b.onclick = () => { SJEDIT = SJEDIT === b.dataset.sje ? "" : b.dataset.sje; render(); });
+  app.querySelector('[data-act="cancelsubj"]')?.addEventListener("click", () => { SJEDIT = ""; render(); });
+  app.querySelector('[data-act="savesubj"]')?.addEventListener("click", async (e) => {
+    const id = SJEDIT, name = $("#seName").value.trim(), icon = $("#seIcon").value.trim() || "📘", color = $("#seColor").value;
+    const grades = $("#seGrades").value.split(/[ ,;]+/).map((x) => x.trim()).filter((x) => /^\d{1,2}$/.test(x));
+    if (name.length < 2 || !grades.length) return alert("Нужны название и хотя бы один класс цифрами (например: 5, 6).");
+    e.target.disabled = true;
+    const rec = { ...(D.settings.subjects?.[id] || {}), name, icon, color, grades, at: Date.now() };
+    try { await set(ref(db, `settings/subjects/${id}`), rec); } catch (er) { e.target.disabled = false; return alert("Не удалось: " + (er.code || er.message)); }
+    D.settings.subjects = { ...(D.settings.subjects || {}), [id]: rec }; addSubjects({ [id]: rec });
+    try { localStorage.setItem("techlab_xsubj", JSON.stringify(D.settings.subjects)); } catch (er) {}
+    logAction(db, USER, `Изменён предмет «${name}» (классы: ${grades.join(", ")})`);
+    SJEDIT = ""; render();
+  });
   app.querySelectorAll("[data-sok]").forEach((b) => b.onclick = async () => {
     const [uid, id] = b.dataset.sok.split("|"), r = D.sreq[uid]?.[id]; if (!r) return;
     const sid = "s" + Date.now().toString(36);
@@ -529,9 +554,13 @@ function bind() {
     logAction(db, USER, `Отклонён предмет «${r?.name}»`, "staff");
   });
   app.querySelectorAll("[data-sjd]").forEach((b) => b.onclick = async () => {
-    const s = D.settings.subjects?.[b.dataset.sjd]; if (!confirm(`Убрать предмет «${s?.name}» с сайта? Тесты в Конструкторе останутся.`)) return;
+    const s = D.settings.subjects?.[b.dataset.sjd]; if (!confirm(BUILTIN_SUBJECTS.includes(b.dataset.sjd) ? `Вернуть предмету «${s?.name}» исходное название и классы?` : `Убрать предмет «${s?.name}» с сайта? Тесты в Конструкторе останутся.`)) return;
     await remove(ref(db, `settings/subjects/${b.dataset.sjd}`)).catch((e) => alert(e.message));
-    delete D.settings.subjects[b.dataset.sjd]; logAction(db, USER, `Убран предмет «${s?.name}»`); render();
+    delete D.settings.subjects[b.dataset.sjd]; logAction(db, USER, `${BUILTIN_SUBJECTS.includes(b.dataset.sjd) ? "Сброшены изменения предмета" : "Убран предмет"} «${s?.name}»`);
+    try { localStorage.setItem("techlab_xsubj", JSON.stringify(D.settings.subjects)); } catch (e) {}
+    if (BUILTIN_SUBJECTS.includes(b.dataset.sjd)) return location.reload();     // исходное название вернётся после перезагрузки
+    const i = SUBJECTS.findIndex((x) => x.id === b.dataset.sjd); if (i >= 0) SUBJECTS.splice(i, 1);
+    render();
   });
 }
 const shortName = (n) => { const p = String(n || "").trim().split(/\s+/); return p.length >= 2 ? `${p[0]} ${p[1][0]}.` : p[0] || ""; };

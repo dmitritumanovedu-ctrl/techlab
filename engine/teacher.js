@@ -24,6 +24,8 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const app = $("#app"), dlg = $("#dlg");
 const fmtNum = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
+// ссылка «просмотр учителя»: миссия открывается без кода ученика, все этапы открыты, в базу ничего не пишется
+const pvUrl = (path) => "../" + path + (String(path).includes("?") ? "&" : "?") + "preview=1";
 const fmtTime = (ms) => ms ? new Date(ms).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "—";
 const fmtDay = (ms) => ms ? new Date(ms).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 // дата (число, месяц, год) + время начала / сдачи; если сдал в другой день — дата сдачи в скобках
@@ -921,7 +923,8 @@ async function showMissionDashboard() {
       <label style="display:flex;gap:8px;align-items:center;font-weight:600">Тест / миссия:
         <select id="selTest" style="width:auto;min-width:300px">${testOptions()}</select></label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a class="btn small ghost" href="../${ENTRY.path}" target="_blank">👁 Открыть миссию</a>
+        <a class="btn small" href="${pvUrl(ENTRY.path)}" target="_blank" title="Без кода ученика, все этапы открыты, результат никуда не уходит">👁 Просмотр учителя</a>
+        <a class="btn small ghost" href="../${ENTRY.path}" target="_blank">Как видит ученик ↗</a>
         <a class="btn small ghost" href="../" target="_blank">🏠 Стартовая</a>
         <button class="btn small ghost" id="bLinks">📎 Материалы на стартовой</button>
       </div>
@@ -1187,10 +1190,12 @@ async function showOverview() {
         <div class="k">${esc(t.grade)} класс · ${kindLine(t)}</div>
         <div class="n">${esc(t.title)}</div>
         <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}${Number(SET[t.id]?.review) ? ' <span class="ktag" title="Ученики видят разбор своей работы">🔍 Разбор</span>' : ""}</div>
+        ${t.type === "mission" && t.path ? `<span class="hub-pv" data-pv="${pvUrl(t.path)}" title="Открыть содержание миссии без кода ученика">👁 Посмотреть содержание</span>` : ""}
         <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${q ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${q ? "квалификативы" : "ср. оценка"}</div></div>
       </a>`;
     };
     const order = (a, b) => (Number(isOpen(b)) - Number(isOpen(a))) || String(a.n || 0).localeCompare(String(b.n || 0), undefined, { numeric: true }) || a.title.localeCompare(b.title);
+    if (!window.__pvHook) { window.__pvHook = 1; document.addEventListener("click", (e) => { const b = e.target.closest("[data-pv]"); if (!b) return; e.preventDefault(); e.stopPropagation(); window.open(b.dataset.pv, "_blank", "noopener"); }, true); }
     $("#hub").innerHTML = SUBJECTS.filter((x) => !WS.s || x.id === WS.s).map((sb) => {
       const grades = sb.grades.filter((g) => !WS.g || g === WS.g || WS.s !== sb.id);
       const soon = TESTS.filter((t) => t.subject === sb.id && !t.path && (!WS.g || t.grade === WS.g)).length;

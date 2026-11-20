@@ -10,6 +10,7 @@ import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../..
 import { firebaseConfig } from "../../firebase-config.js";
 import { getSession } from "../../engine/people.js?v=3";
 import { VARIANTS } from "./data.js?v=1";
+import { isStaffPreview } from "../../engine/preview-auth.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
@@ -32,7 +33,8 @@ const maxOf = (v) => v.questions.reduce((a, q) => a + MAXP[q.t], 0);
 const V = VARIANTS.find((x) => x.id === Number(new URLSearchParams(location.search).get("v")));
 const WORK_ID = V ? `math5-div-t${V.id}` : null;
 const LS = V ? `techlab_math5_div_t${V.id}` : null;      // черновик (engine/guard.js стирает его, если вошёл другой ученик)
-const ME = getSession();
+let ME = getSession();
+let PREVIEW = false;      // «просмотр учителя» (?preview): без кода, без записи в базу
 
 let db = null;
 try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { console.warn(e); }
@@ -45,8 +47,9 @@ const load = () => { try { return JSON.parse(localStorage.getItem(LS) || "null")
 // ---------- связь с базой ----------
 const P = WORK_ID ? `results/${WORK_ID}` : "";
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
-async function isOpen() { return !!(await withTimeout(get(ref(db, `settings/${WORK_ID}/open`)), 12000)).val(); }
+async function isOpen() { if (PREVIEW) return true; return !!(await withTimeout(get(ref(db, `settings/${WORK_ID}/open`)), 12000)).val(); }
 async function startRecord() {
+  if (PREVIEW) return "";
   const r = push(ref(db, P));
   await withTimeout(set(r, { name: ME.name, cls: ME.cls, status: "in_progress", stage: "Задание 1", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }), 15000);
   return r.key;
@@ -61,6 +64,7 @@ const totals = () => {
   return { pts, max, pct, grade: markOf(pct) };
 };
 async function submit() {
+  if (PREVIEW || !S.rec) return;
   const t = totals();
   const minutes = Math.max(1, Math.round((Date.now() - S.startedAt) / 60000));
   await withTimeout(update(ref(db, `${P}/${S.rec}`), { score: S.score, points: t.pts, max: t.max, percent: t.pct, grade: t.grade, minutes,
@@ -72,6 +76,7 @@ async function submit() {
 // =====================================================================
 init();
 async function init() {
+  if (await isStaffPreview()) { PREVIEW = true; ME = { name: "Просмотр Учителя", cls: "—" }; try { localStorage.removeItem(LS); } catch (e) {} }
   if (!V) return showList();
   $("#hWho").textContent = (ME ? ME.name + " · " + ME.cls + " · " : "") + "Вариант " + V.id;
   if (!ME) return showNoLogin();
@@ -92,7 +97,7 @@ function showList() {
     <h2>Делимость: 10 тренажёров</h2>
     <p class="muted">Каждый вариант — отдельный модуль главы 3. Сначала короткая теория, потом задания с мгновенной проверкой и объяснением.
       Вариант открывается, когда его откроет учитель.</p></div>
-    <div class="tr-grid">${VARIANTS.map((v) => { const b = best(v); return `<a class="tr-v${v.id === 10 ? " fin" : ""}" href="?v=${v.id}">
+    <div class="tr-grid">${VARIANTS.map((v) => { const b = best(v); return `<a class="tr-v${v.id === 10 ? " fin" : ""}" href="?v=${v.id}${PREVIEW ? "&preview=1" : ""}">
       <div class="cv"><div class="n">Вариант ${v.id}</div><div class="m">${fmt(v.module)}</div></div>
       <div class="b"><div class="t">${fmt(v.title)}</div><div class="s">${v.questions.length} заданий · ${maxOf(v)} баллов${b != null ? ` · последний результат: <b>${b}%</b>` : ""}</div></div></a>`; }).join("")}</div>`;
 }

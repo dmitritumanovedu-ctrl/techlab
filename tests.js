@@ -15,11 +15,19 @@ export const SUBJECTS = [
 
 // Дополнительные предметы учителей-коллег — добавляет администратор на странице admin/ (settings/subjects).
 // Хранятся на компьютере и обновляются в фоне: новый предмет появится на сайте при следующем открытии.
+// встроенные предметы (их можно переименовать и поменять классы, но не удалить)
+export const BUILTIN_SUBJECTS = SUBJECTS.map((s) => s.id);
+const gradesOf = (g) => (Array.isArray(g) ? g : String(g || "").split(/[ ,;]+/)).map(String).filter(Boolean);
 export function addSubjects(obj) {
   for (const [id, x] of Object.entries(obj || {})) {
-    if (!x || !x.name || SUBJECTS.some((s) => s.id === id)) continue;
-    SUBJECTS.push({ id, name: String(x.name), icon: x.icon || "📘", color: x.color || "#2E4BFF",
-      grades: (Array.isArray(x.grades) ? x.grades : String(x.grades || "").split(/[ ,;]+/)).map(String).filter(Boolean), extra: true });
+    if (!x || !x.name) continue;
+    const cur = SUBJECTS.find((s) => s.id === id);
+    if (cur) {                       // изменения администратора: название, значок, цвет, классы
+      cur.name = String(x.name); if (x.icon) cur.icon = x.icon; if (x.color) cur.color = x.color;
+      const g = gradesOf(x.grades); if (g.length) cur.grades = g;
+      continue;
+    }
+    SUBJECTS.push({ id, name: String(x.name), icon: x.icon || "📘", color: x.color || "#2E4BFF", grades: gradesOf(x.grades), extra: true });
   }
 }
 try { addSubjects(JSON.parse(localStorage.getItem("techlab_xsubj") || "null")); } catch (e) {}

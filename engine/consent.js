@@ -10,7 +10,7 @@ function accepted() { try { return localStorage.getItem(KEY) === "1"; } catch (e
 function accept() { try { localStorage.setItem(KEY, "1"); } catch (e) {} }
 
 function show() {
-  if (accepted() || document.getElementById("tl-consent")) return;
+  if (accepted() || document.getElementById("tl-consent") || /[?&]preview(=|&|$)/.test(location.search)) return;   // просмотр учителя — без окна согласия
   const T = { h: t("c_h"), p: t("c_p"), l: t("c_l"), ok: t("c_ok") };
   const o = document.createElement("div");
   o.id = "tl-consent";
