@@ -42,6 +42,7 @@ const CSS = `
  */
 export function startNotify(db, user, role, { base = "../" } = {}) {
   if (!user || (role !== "admin" && role !== "colleague") || window.__tlNotify) return;
+  try { if (window.self !== window.top) return; } catch (e) { return; }      // внутри панели администратора колокольчик уже есть
   window.__tlNotify = true;
   if (!document.getElementById("ntCss")) { const st = document.createElement("style"); st.id = "ntCss"; st.textContent = CSS; document.head.appendChild(st); }
   const KEY = "tl_nt_seen_" + user.uid;

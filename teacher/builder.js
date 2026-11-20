@@ -7,7 +7,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff.js?v=3";
-import { startNotify } from "../engine/notify.js?v=1";
+import { startNotify } from "../engine/notify.js?v=2";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, KINDS } from "../tests.js?v=8";
@@ -171,15 +171,17 @@ async function createTest() {
     shuffle: false, protect: { fullscreen: true, autosubmit: true }, items: [newItem("choice")], createdAt: Date.now(), updatedAt: Date.now(),
     owner: USER.uid, ownerName: USER.displayName || USER.email || "" };
   await set(ref(db, `builder/${id}`), t);
+  logAction(db, USER, `Создан новый тест (${subjOf(t.subject)?.name || t.subject}, ${t.grade} кл.)`, "test");
   ALL[id] = t; location.hash = `#/e/${id}`;
 }
 
 async function listAction(act, id, btn) {
   const t = ALL[id];
-  if (act === "open") { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); return showList(); }
+  if (act === "open") { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); logAction(db, USER, `${v ? "Открыл(а)" : "Закрыл(а)"} для учеников тест «${t.title}»`, "test"); return showList(); }
   if (act === "now") {
     await set(ref(db, "settings/current"), { id, title: t.title, path: `b/?t=${id}`, subject: t.subject, grade: t.grade || "", at: Date.now() });
     await update(ref(db, `settings/${id}`), { open: true });
+    logAction(db, USER, `Запустил(а) на уроке тест «${t.title}» (${t.grade} кл.)`, "test");
     return showList();
   }
   if (act === "link") { const url = `${SITE}b/?t=${id}`; try { await navigator.clipboard.writeText(url); btn.textContent = tb("b_copied"); } catch (e) { prompt(tb("b_link"), url); } return; }
@@ -187,7 +189,7 @@ async function listAction(act, id, btn) {
     const nid = "b" + Date.now().toString(36);
     const c = JSON.parse(JSON.stringify(t)); c.id = nid; c.title = t.title + " · " + tb("b_copy"); delete c.pubAt; c.createdAt = c.updatedAt = Date.now();
     c.owner = USER.uid; c.ownerName = USER.displayName || USER.email || ""; c.shared = false;
-    await set(ref(db, `builder/${nid}`), c); ALL[nid] = c; return showList();
+    await set(ref(db, `builder/${nid}`), c); ALL[nid] = c; logAction(db, USER, `Сделал(а) копию теста «${t.title}»`, "test"); return showList();
   }
   if (act === "take") {                     // из общей папки — себе в «Мои тесты»
     const src = SHARED[id]; if (!src) return;
@@ -195,12 +197,12 @@ async function listAction(act, id, btn) {
     const c = JSON.parse(JSON.stringify(src)); c.id = nid; delete c.pubAt; c.createdAt = c.updatedAt = Date.now();
     c.owner = USER.uid; c.ownerName = USER.displayName || USER.email || ""; c.shared = false; c.from = src.ownerName || "";
     try { await set(ref(db, `builder/${nid}`), c); } catch (e) { return alert(e.message); }
-    ALL[nid] = c; LTAB = "mine"; btn.textContent = "✓ Скопировано"; location.hash = `#/e/${nid}`; return;
+    ALL[nid] = c; LTAB = "mine"; btn.textContent = "✓ Скопировано"; logAction(db, USER, `Взял(а) себе тест «${src.title}» из общей папки (автор: ${src.ownerName || "—"})`, "test"); location.hash = `#/e/${nid}`; return;
   }
   if (act === "share") {
     const v = !t.shared;
     await update(ref(db, `builder/${id}`), { shared: v, owner: t.owner || USER.uid, ownerName: t.ownerName || USER.displayName || USER.email || "" }).catch((e) => alert(e.message));
-    t.shared = v; t.owner = t.owner || USER.uid; return showList();
+    t.shared = v; t.owner = t.owner || USER.uid; logAction(db, USER, `${v ? "Положил(а) в общую папку" : "Убрал(а) из общей папки"} тест «${t.title}»`, "test"); return showList();
   }
   if (act === "del") {
     if (!confirm(tb("b_delAsk", { t: t.title }))) return;
@@ -208,6 +210,7 @@ async function listAction(act, id, btn) {
     await Promise.all([remove(ref(db, `pub/${id}`)), remove(ref(db, `pubIndex/${id}`)), remove(ref(db, `keys/${id}`)), remove(ref(db, `results/${id}`)),
       remove(ref(db, `settings/${id}`)), SET.current?.id === id ? remove(ref(db, "settings/current")) : null].filter(Boolean)).catch((e) => console.warn(e));
     await remove(ref(db, `builder/${id}`)).catch((e) => alert(e.message));
+    logAction(db, USER, `Удалил(а) тест «${t.title}»`, "test");
     delete ALL[id]; return showList();
   }
 }
@@ -626,7 +629,7 @@ async function openResults(id) {
     <div id="rStats"></div><div id="rTable"></div></div>`;
   const setOpenBtn = () => { const o = !!SET[id]?.open; $("#rOpen").textContent = o ? tb("b_close") : tb("b_open"); $("#rOpen").classList.toggle("ghost", o); };
   setOpenBtn();
-  $("#rOpen").onclick = async () => { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); SET[id] = { ...(SET[id] || {}), open: v }; setOpenBtn(); };
+  $("#rOpen").onclick = async () => { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); SET[id] = { ...(SET[id] || {}), open: v }; setOpenBtn(); logAction(db, USER, `${v ? "Открыл(а)" : "Закрыл(а)"} для учеников тест «${ALL[id]?.title || id}»`, "test"); };
   $("#rCls").onchange = (e) => { filterCls = e.target.value; renderRes(); };
   $("#rAi").onclick = () => { for (const [rid, r] of Object.entries(RES)) if (needsAi(r)) queueAi(rid); };
   $("#rCsv").onclick = csv;

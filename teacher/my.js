@@ -12,7 +12,7 @@ import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, pendingHtml, myStaff, logAction } from "../engine/staff.js?v=3";
 import { SUBJECTS, addSubjects } from "../tests.js?v=8";
 import { CLASSES, clsKey } from "../engine/people.js?v=4";
-import { startNotify } from "../engine/notify.js?v=1";
+import { startNotify } from "../engine/notify.js?v=2";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

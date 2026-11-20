@@ -11,7 +11,7 @@ import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=3";
 import { SUBJECTS, TESTS, addSubjects } from "../tests.js?v=8";
 import { clsKey } from "../engine/people.js?v=4";
-import { startNotify } from "../engine/notify.js?v=1";
+import { startNotify } from "../engine/notify.js?v=2";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -20,8 +20,10 @@ const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
 let USER = null, unsub = [];
 const D = { staff: {}, req: {}, shares: {}, roster: {}, results: {}, settings: {}, builder: {}, pubIndex: {}, feedback: {}, log: {}, visits: {}, sreq: {} };
-const SECTIONS = ["overview", "requests", "teachers", "share", "subjects", "classes", "visits", "feed", "security", "feedback", "site"];
-const curSec = () => { const h = location.hash.slice(1); return SECTIONS.includes(h) ? h : "overview"; };
+// разделы-страницы учителя, открытые прямо внутри панели (iframe)
+const FRAMES = { lessons: "../teacher/?embed=1", students: "../teacher/students.html", results: "../teacher/results.html", builder: "../teacher/builder.html", mysubj: "../teacher/my.html" };
+const SECTIONS = ["lessons", "students", "results", "builder", "mysubj", "activity", "overview", "requests", "teachers", "share", "subjects", "classes", "visits", "feed", "security", "feedback", "site"];
+const curSec = () => { const h = location.hash.slice(1).split("/")[0]; return SECTIONS.includes(h) ? h : "overview"; };
 addEventListener("hashchange", () => { if (USER) { render(); scrollTo(0, 0); } });
 let feedFilter = "all", fbFilter = "new";
 
@@ -62,6 +64,7 @@ onAuthStateChanged(auth, async (user) => {
   app.innerHTML = `<div class="ad-card ad-center"><p class="muted">Загружаю данные платформы…</p></div>`;
   await loadAll();
   live();
+  if (!location.hash) history.replaceState(null, "", "#lessons");    // по умолчанию — уроки и тесты
   render();
   startNotify(db, user, "admin", { base: "../" });
 });
@@ -88,6 +91,7 @@ async function loadAll() {
 }
 function live() {
   const on = (path, k, q) => unsub.push(onValue(q || ref(db, path), (s) => { D[k] = s.val() || {}; render(); }, (e) => console.warn(path, e.code)));
+  on("log", "log", query(ref(db, "log"), limitToLast(300)));
   on("staff", "staff"); on("staffRequests", "req"); on("feedback", "feedback"); on("staffShares", "shares"); on("subjectRequests", "sreq");
 }
 
@@ -100,7 +104,14 @@ function render() {
   $("#nReq").textContent = nReq || ""; $("#nFb").textContent = nFb || ""; $("#nSubj").textContent = nS || "";
   const sec = curSec();
   document.querySelectorAll("#adNav a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + sec));
-  const F = { overview: secOverview, requests: secRequests, teachers: secTeachers, share: secShare, subjects: secSubjects, classes: secClasses,
+  // страница учителя внутри панели: не перерисовываем, чтобы рамка не перезагружалась при каждом обновлении данных
+  if (FRAMES[sec]) {
+    const cur = app.querySelector("iframe.ad-frame");
+    if (cur && cur.dataset.sec === sec) return;
+    app.innerHTML = `<iframe class="ad-frame" data-sec="${sec}" src="${FRAMES[sec]}" title="${sec}"></iframe>`;
+    return;
+  }
+  const F = { activity: secActivity, overview: secOverview, requests: secRequests, teachers: secTeachers, share: secShare, subjects: secSubjects, classes: secClasses,
     visits: secVisits, feed: secFeed, security: secSecurity, feedback: secFeedback, site: secSite };
   app.innerHTML = F[sec]().replace('class="ad-sec"', 'class="ad-sec on"') +
     `<div class="foot-note">© ${Math.max(2026, new Date().getFullYear())} TechLab · All rights reserved · Ⓐ Туманов Дмитрий</div>`;
@@ -300,6 +311,36 @@ function secSite() {
       <li>Кнопка «📚 Предметы» — список всех предметов; ученик и родитель после входа видят только свои.</li>
       <li>Справа — дата, «Факт дня» и «В этот день».</li>
       <li>Внизу — форма «Напишите нам» (приходит в «Отзывы») и ссылка «вы учитель? присоединяйтесь».</li></ul></div></div></section>`;
+}
+
+// ---------- 👀 активность коллег: что делают учителя на платформе ----------
+function secActivity() {
+  const S = Object.entries(D.staff).sort((a, b) => (b[1].seen || 0) - (a[1].seen || 0));
+  const CT = D.settings.classTeachers || {};
+  const resCount = (id) => Object.values(D.results[id] || {}).filter((r) => r && r.status === "submitted").length;
+  const card = ([uid, x]) => {
+    const tests = Object.entries(D.builder).filter(([, t]) => t && t.owner === uid).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+    const pub = tests.filter(([id]) => D.pubIndex[id]).length, open = tests.filter(([id]) => D.settings[id]?.open).length;
+    const subm = tests.reduce((a, [id]) => a + resCount(id), 0);
+    const cls = []; for (const [c, subs] of Object.entries(CT)) for (const [sid, t] of Object.entries(subs || {})) if (t?.[uid]) cls.push(`${c} · ${subjName(sid)}`);
+    const acts = Object.values(D.log).filter((l) => l && l.by && l.by === x.email).sort((a, b) => b.at - a.at).slice(0, 8);
+    const online = x.seen && Date.now() - x.seen < 10 * 60000;
+    return `<div class="ad-card act-card"><div class="act-h"><span class="act-av${online ? " on" : ""}">${esc((x.name || x.email || "?")[0].toUpperCase())}</span>
+        <div><b>${esc(x.name || x.email)}</b> ${x.role === "admin" ? '<span class="chip adm">админ</span>' : ""}<div class="sub">${esc(x.email)} · ${online ? '<span class="ok-t">сейчас на сайте</span>' : "был(а) " + ago(x.seen)}</div></div></div>
+      <div class="act-k"><div><b>${tests.length}</b><span>тестов</span></div><div><b>${pub}</b><span>опубликовано</span></div><div><b>${open}</b><span>открыто ученикам</span></div><div><b>${subm}</b><span>сдач учеников</span></div></div>
+      <div class="sub" style="margin:10px 0 4px"><b>Классы:</b> ${cls.length ? esc(cls.join(" · ")) : "не подключены"}</div>
+      ${tests.length ? `<div class="sub" style="margin:8px 0 4px"><b>Тесты:</b></div>${tests.slice(0, 6).map(([id, t]) => `<div class="act-t"><span>🧩 ${esc(t.title || id)} <span class="sub">· ${esc(subjName(t.subject))}, ${esc(t.grade || "")} кл. · изменён ${ago(t.updatedAt)}</span></span>
+          <span class="act-tags">${D.pubIndex[id] ? '<span class="chip ok">опубликован</span>' : '<span class="chip">черновик</span>'}${D.settings[id]?.open ? '<span class="chip ok">открыт</span>' : ""}${resCount(id) ? `<span class="chip">${resCount(id)} сдач</span>` : ""}
+          <a class="btn small ghost" href="../b/?t=${esc(id)}&preview=1" target="_blank" rel="noopener">Посмотреть ↗</a></span></div>`).join("")}${tests.length > 6 ? `<div class="sub">…и ещё ${tests.length - 6}</div>` : ""}` : '<div class="sub" style="margin-top:8px">Тестов пока не создавал(а).</div>'}
+      <div class="sub" style="margin:10px 0 4px"><b>Последние действия:</b></div>
+      ${acts.length ? `<ul class="feed">${acts.map((l) => `<li><span class="ic">${l.kind === "test" ? "🧩" : "🛡"}</span><span>${esc(l.text)}</span><span class="tm">${ago(l.at)}</span></li>`).join("")}</ul>` : '<div class="sub">Пока нет записей.</div>'}
+    </div>`;
+  };
+  const online = S.filter(([, x]) => x.seen && Date.now() - x.seen < 10 * 60000).length;
+  return `<section class="ad-sec" id="activity"><div class="ad-h"><h2>👀 Активность коллег</h2><span class="sp"></span>
+      <span class="sub">Сейчас на сайте: ${online} · всего коллег: ${S.length}</span><button class="btn ghost small" data-act="reload">⟳ Обновить</button></div>
+    <p class="sub" style="margin:-4px 0 12px">Что создают и публикуют учителя, какие классы подключили, сколько учеников сдали их тесты. Записи появляются в журнале автоматически, когда коллега что-то делает.</p>
+    ${S.length ? `<div class="act-grid">${S.map(card).join("")}</div>` : '<div class="ad-card empty">Коллег пока нет.</div>'}</section>`;
 }
 
 // ---------- 📤 поделиться: выбранным коллегам — тесты и материалы по предметам ----------

@@ -5,7 +5,7 @@ import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
 import { startAutoSync, syncProgress } from "./sync.js?v=2";
-import { startNotify } from "./notify.js?v=1";
+import { startNotify } from "./notify.js?v=2";
 import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=3";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
@@ -43,6 +43,8 @@ onAuthStateChanged(auth, async (user) => {
   const role = await roleOf(db, user);
   if (role === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
   if (role === "colleague") { location.replace(new URL("teacher/builder.html", new URL("../", import.meta.url)).href); return; }
+  // администратор работает в своей панели: «Центр управления» открывается внутри неё
+  if (role === "admin" && OVERVIEW && window.self === window.top && !new URLSearchParams(location.search).has("full")) { location.replace(new URL("admin/#lessons", new URL("../", import.meta.url)).href); return; }
   startAutoSync(db);   // оценки сразу уходят на страницы учеников и родителей
   startNotify(db, user, role, { base: "../" });   // 🔔 новые учителя, предметы, отзывы
   if (OVERVIEW) return showOverview();
