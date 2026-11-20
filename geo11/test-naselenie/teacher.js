@@ -10,6 +10,10 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const app = $("#app"), dlg = $("#dlg");
 const fmtNum = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
 const fmtTime = (ms) => ms ? new Date(ms).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "—";
+const fmtDay = (ms) => ms ? new Date(ms).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+// дата (число, месяц, год) + время начала / сдачи; если сдал в другой день — дата сдачи в скобках
+const fmtWhen = (a, b) => { const d1 = fmtDay(a), d2 = fmtDay(b);
+  return `<b>${d1 || "—"}</b><br><small>${fmtTime(a)} / ${b ? fmtTime(b) : "…"}${d2 && d2 !== d1 ? ` (${d2})` : ""}</small>`; };
 
 const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
@@ -71,7 +75,7 @@ function showDashboard() {
   </div>
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
   <div class="table-wrap"><table class="res"><thead><tr>
-    <th>№</th><th>Ученик</th><th>Класс</th><th>Вар.</th><th>Статус</th><th>Нарушения</th><th>Начало / сдано</th>
+    <th>№</th><th>Ученик</th><th>Класс</th><th>Вар.</th><th>Статус</th><th>Нарушения</th><th>Дата · начало / сдано</th>
     <th>Авто-баллы</th><th>Итог</th><th>Оценка</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="11" class="muted">Ожидание работ…</td></tr></tbody></table></div>
   <p class="muted" style="font-size:14px">Шкала перевода в 10-балльную систему (% от ${TEST.max} б.):
     ${SCALE.map(([p, g]) => `<b>${g}</b> — от ${p}%`).join(" · ")}. Оценка окончательная, когда проверены все развёрнутые ответы.</p>`;
@@ -162,10 +166,10 @@ function renderTable() {
     const gradeCell = r.status !== "submitted" ? `<span class="grade pending">—</span>`
       : g.complete ? `<span class="grade">${g.grade}</span>` : `<span class="grade pending" title="Предварительно по уже выставленным баллам">≈${g.gradeNow} · проверить ${g.pending}</span>`;
     return `<tr class="${fresh}">
-      <td>${list.length - i}</td><td><b>${esc(r.name)}</b>${dup}</td><td>${esc(r.cls)}</td><td>${r.variant}</td>
+      <td>${list.length - i}</td><td data-sort="${esc(String(r.name || "").replace(/^\d+\.\s*/, "").toLowerCase())}"><b>${esc(r.name)}</b>${dup}</td><td>${esc(r.cls)}</td><td>${r.variant}</td>
       <td>${statusTag(r)}${aiTag(r)}</td>
       <td>${r.violations ? `<span class="bad">${r.violations}</span>` : "0"}</td>
-      <td>${fmtTime(r.startedAt)} / ${r.status === "submitted" ? fmtTime(r.submittedAt) : "…"}</td>
+      <td data-sort="${r.submittedAt || r.startedAt || 0}" style="white-space:nowrap">${fmtWhen(r.startedAt, r.status === "submitted" ? r.submittedAt : 0)}</td>
       <td>${fmtNum(g.auto)}</td>
       <td>${r.status === "submitted" ? `<b>${fmtNum(g.total)}</b> / ${g.max}` : "—"}</td>
       <td>${gradeCell}</td>

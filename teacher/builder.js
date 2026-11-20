@@ -23,7 +23,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const SITE = new URL("../", location.href).href;
 const L = itemLabels();
 const fmt = (n) => String(Math.round((n || 0) * 10) / 10).replace(".", ",");
-const fmtDT = (ms) => ms ? new Date(ms).toLocaleString(LOCALE, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+const fmtDT = (ms) => ms ? new Date(ms).toLocaleString(LOCALE, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const KINDS_T = KINDS.map(kindT);
 
@@ -659,12 +659,13 @@ function renderRes() {
     <div class="bd-stat"><b>${done.length}</b><span>${esc(tb("r_submitted"))}</span></div>
     <div class="bd-stat"><b>${done.length ? avg.toFixed(0) + "%" : "—"}</b><span>${esc(tb("r_avg"))}</span></div>
     <div class="bd-stat wide"><span>${esc(tb("r_perTask"))}</span><div class="bd-bars">${per.map((p, i) => `<div class="bd-bar1" title="${esc(L.task)} ${i + 1}: ${p ?? "—"}%"><i style="height:${p ?? 0}%"></i><small>${i + 1}</small></div>`).join("")}</div></div></div>`;
-  $("#rTable").innerHTML = rows.length ? `<div class="table-wrap"><table class="bd-table"><thead><tr><th>${esc(tb("r_name"))}</th><th>${esc(tb("p_cls"))}</th><th>${esc(tb("variant"))}</th><th>${esc(tb("r_status"))}</th><th>${esc(tb("r_score"))}</th><th>${esc(tb("r_grade"))}</th><th>${esc(tb("r_viol"))}</th><th>${esc(tb("r_ai"))}</th><th></th></tr></thead><tbody>
+  $("#rTable").innerHTML = rows.length ? `<div class="table-wrap"><table class="bd-table"><thead><tr><th>${esc(tb("r_name"))}</th><th>${esc(tb("p_cls"))}</th><th>${esc(tb("variant"))}</th><th>${esc(tb("r_status"))}</th><th>${esc(tb("r_score"))}</th><th>${esc(tb("r_grade"))}</th><th>${esc(tb("r_viol"))}</th><th>Дата сдачи</th><th>${esc(tb("r_ai"))}</th><th></th></tr></thead><tbody>
     ${rows.map(([rid, r]) => { const g = gradeAttempt(KEY, r), sub = r.status === "submitted";
       return `<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.variant}</td>
         <td>${sub ? `<span class="chip-st st-pub">${esc(tb("r_done"))}</span>${r.reason && r.reason !== "manual" ? `<small class="muted"> · ${esc(tb("rs_" + r.reason))}</small>` : ""}` : `<span class="chip-st st-open">${esc(tb("r_inProg"))}</span>`}</td>
-        <td>${fmt(g.total)} / ${fmt(g.max)}${g.pending ? ` <small class="muted">(${esc(tb("r_pending", { n: g.pending }))})</small>` : ""}</td>
+        <td data-sort="${g.total ?? ""}">${fmt(g.total)} / ${fmt(g.max)}${g.pending ? ` <small class="muted">(${esc(tb("r_pending", { n: g.pending }))})</small>` : ""}</td>
         <td>${sub ? gradeCell(g) : "—"}</td><td>${r.violations ? `<span class="bd-viol">${r.violations}</span>` : "0"}</td>
+        <td data-sort="${r.submittedAt || r.startedAt || 0}" style="white-space:nowrap"><small>${esc(fmtDT(sub ? r.submittedAt : r.startedAt))}</small></td>
         <td><small>${r.aiStatus === "done" ? "✓" : r.aiStatus === "error" ? "⚠" : aiQueue.includes(rid) ? "…" : needsAi(r) ? tb("r_aiNeed") : "—"}</small></td>
         <td><button type="button" class="btn small ghost" data-open="${rid}">${esc(tb("r_open"))}</button></td></tr>`; }).join("")}</tbody></table></div>`
     : `<div class="card center"><p class="muted">${esc(tb("r_empty"))}</p><p class="bd-url">${esc(SITE)}b/?t=${esc(KEY.id)}</p></div>`;
