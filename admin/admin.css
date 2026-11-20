@@ -134,3 +134,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 .bar i { background: linear-gradient(180deg, #5B74FF, var(--blue)); }
 .foot-note { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 28px; }
 @media (max-width: 900px) { .ad-app { grid-template-columns: 1fr; } .ad-side { position: static; height: auto; } .ad-main { padding: 16px; } }
+
+.sh-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.sh-list { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; padding: 4px 10px; }
+.btn.green:disabled { opacity: .5; }

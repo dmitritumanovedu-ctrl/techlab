@@ -11,7 +11,7 @@
 // =====================================================================
 export const ADMIN_EMAILS = ["dmitri.tumanov.edu@gmail.com"];
 
-import { ref, get, set, remove, update, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { ref, get, set, remove, update, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const configured = () => ADMIN_EMAILS.some((e) => e && !e.startsWith("ВАШ_"));
 const low = (s) => String(s || "").trim().toLowerCase();
@@ -48,6 +48,15 @@ export async function roleOf(db, user) {
   try {
     const old = (await get(ref(db, `staffRequests/${user.uid}`)).catch(() => null))?.val();
     await set(ref(db, `staffRequests/${user.uid}`), { email: user.email || "", name: user.displayName || "", at: old?.at || Date.now(), subject: old?.subject || "", school: old?.school || "" });
+    // как только администратор примет заявку — страница сама откроет кабинет
+    const stop = onValue(ref(db, `staff/${user.uid}`), (snap) => {
+      if (!snap.exists()) return;
+      stop();
+      const box = document.createElement("div");
+      box.style.cssText = "position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:99999;background:#2E8B57;color:#fff;font:700 16px Inter,Arial,sans-serif;padding:14px 22px;border-radius:14px;box-shadow:0 14px 30px rgba(0,0,0,.25)";
+      box.textContent = "✅ Администратор принял вашу заявку! Открываю кабинет…";
+      document.body.appendChild(box); setTimeout(() => location.reload(), 2200);
+    }, () => {});
     window.__tlPendingSave = async () => {
       const subj = document.getElementById("rqSubj")?.value.trim().slice(0, 120) || "", school = document.getElementById("rqSchool")?.value.trim().slice(0, 120) || "";
       await update(ref(db, `staffRequests/${user.uid}`), { subject: subj, school });

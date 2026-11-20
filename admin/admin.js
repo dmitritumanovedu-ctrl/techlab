@@ -8,9 +8,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=2";
+import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=3";
 import { SUBJECTS, TESTS, addSubjects } from "../tests.js?v=8";
 import { clsKey } from "../engine/people.js?v=4";
+import { startNotify } from "../engine/notify.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -19,7 +20,7 @@ const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
 let USER = null, unsub = [];
 const D = { staff: {}, req: {}, shares: {}, roster: {}, results: {}, settings: {}, builder: {}, pubIndex: {}, feedback: {}, log: {}, visits: {}, sreq: {} };
-const SECTIONS = ["overview", "requests", "teachers", "subjects", "classes", "visits", "feed", "security", "feedback", "site"];
+const SECTIONS = ["overview", "requests", "teachers", "share", "subjects", "classes", "visits", "feed", "security", "feedback", "site"];
 const curSec = () => { const h = location.hash.slice(1); return SECTIONS.includes(h) ? h : "overview"; };
 addEventListener("hashchange", () => { if (USER) { render(); scrollTo(0, 0); } });
 let feedFilter = "all", fbFilter = "new";
@@ -62,6 +63,7 @@ onAuthStateChanged(auth, async (user) => {
   await loadAll();
   live();
   render();
+  startNotify(db, user, "admin", { base: "../" });
 });
 
 function showLogin() {
@@ -98,7 +100,7 @@ function render() {
   $("#nReq").textContent = nReq || ""; $("#nFb").textContent = nFb || ""; $("#nSubj").textContent = nS || "";
   const sec = curSec();
   document.querySelectorAll("#adNav a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + sec));
-  const F = { overview: secOverview, requests: secRequests, teachers: secTeachers, subjects: secSubjects, classes: secClasses,
+  const F = { overview: secOverview, requests: secRequests, teachers: secTeachers, share: secShare, subjects: secSubjects, classes: secClasses,
     visits: secVisits, feed: secFeed, security: secSecurity, feedback: secFeedback, site: secSite };
   app.innerHTML = F[sec]().replace('class="ad-sec"', 'class="ad-sec on"') +
     `<div class="foot-note">© ${Math.max(2026, new Date().getFullYear())} TechLab · All rights reserved · Ⓐ Туманов Дмитрий</div>`;
@@ -300,6 +302,41 @@ function secSite() {
       <li>Внизу — форма «Напишите нам» (приходит в «Отзывы») и ссылка «вы учитель? присоединяйтесь».</li></ul></div></div></section>`;
 }
 
+// ---------- 📤 поделиться: выбранным коллегам — тесты и материалы по предметам ----------
+const SH = { to: new Set(), subj: "all", pick: new Set(), q: "", msg: "" };
+function shareItems() {
+  const tests = Object.entries(D.builder).filter(([, t]) => t && (!t.owner || t.owner === USER.uid || D.staff[t.owner]?.role === "admin"))
+    .map(([id, t]) => ({ id, kind: "test", title: t.title || id, subject: t.subject || "", grade: t.grade || "", ic: "🧩", note: `тест из Конструктора · ${(t.items || []).length || "?"} вопр.` }));
+  const mats = Object.entries(D.settings.links || {}).map(([id, l]) => ({ id: "m_" + id, kind: "material", title: l.title, subject: l.subject, grade: l.grade, url: l.url, file: l.file || null,
+    ic: l.file ? "📁" : "🔗", note: l.file ? `файл · ${l.file.name}` : "ссылка" }));
+  return tests.concat(mats);
+}
+function secShare() {
+  const S = Object.entries(D.staff);
+  const all = shareItems();
+  const L = all.filter((x) => (SH.subj === "all" || x.subject === SH.subj) && (!SH.q || x.title.toLowerCase().includes(SH.q)));
+  const subjects = [...new Set(all.map((x) => x.subject).filter(Boolean))];
+  const opened = (uid) => Object.entries(D.shares[uid] || {}).filter(([, x]) => x && typeof x === "object");
+  return `<section class="ad-sec" id="share"><div class="ad-h"><h2>📤 Поделиться с коллегами</h2><span class="sp"></span><span class="sub">Коллеги видят только то, что вы открыли. Ваших учеников и оценки — нет.</span></div>
+    ${!S.length ? '<div class="ad-card empty">Коллег пока нет. Когда учитель подаст заявку и вы её примете, здесь можно будет открыть ему тесты и материалы.</div>' : `
+    <div class="ad-card"><b>1. Кому</b><div class="sh-row">${S.map(([uid, x]) => `<label class="tg${SH.to.has(uid) ? " on" : ""}"><input type="checkbox" data-shto="${esc(uid)}" ${SH.to.has(uid) ? "checked" : ""}>${esc(x.name || x.email)}${(x.subjects || Object.keys(x.subj || {})).length ? ` <span class="sub">· ${esc([...new Set([...(x.subjects || []), ...Object.keys(x.subj || {})])].map(subjName).join(", "))}</span>` : ""}</label>`).join("")}
+      <button class="btn ghost small" data-shall>Всем коллегам</button></div></div>
+    <div class="ad-card" style="margin-top:12px"><div class="ad-h" style="margin:0 0 8px"><b>2. Что открыть</b><span class="sp"></span>
+      <input id="shQ" placeholder="поиск по названию" value="${esc(SH.q)}" style="max-width:240px"></div>
+      <div class="fil" style="margin-bottom:10px"><button data-shs="all" class="${SH.subj === "all" ? "on" : ""}">Все предметы</button>${subjects.map((sid) => `<button data-shs="${esc(sid)}" class="${SH.subj === sid ? "on" : ""}">${subjIcon(sid)} ${esc(subjName(sid))}</button>`).join("")}</div>
+      ${L.length ? `<div style="display:flex;gap:8px;margin-bottom:6px"><button class="btn ghost small" data-shpickall>☑ Отметить всё ${SH.subj === "all" ? "" : "по предмету"} (${L.length})</button><button class="btn ghost small" data-shpicknone>Снять</button></div>
+        <div class="sh-list">${L.map((x) => `<label class="ck"><input type="checkbox" data-shit="${esc(x.id)}" ${SH.pick.has(x.id) ? "checked" : ""}><span>${x.ic} <b>${esc(x.title)}</b> <span class="sub">· ${esc(subjName(x.subject))}${x.grade ? ", " + esc(x.grade) + " кл." : ""} · ${esc(x.note)}</span>
+          ${SH.to.size && [...SH.to].every((u) => D.shares[u]?.[x.id]) ? ' <span class="chip ok">✓ уже открыто</span>' : ""}</span></label>`).join("")}</div>`
+        : '<div class="empty">Здесь появятся ваши тесты из Конструктора и материалы со стартовой («📎 Материалы» в Центре управления).</div>'}
+    </div>
+    <div class="ad-card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><b>3.</b>
+      <button class="btn green" data-shgo ${SH.to.size && SH.pick.size ? "" : "disabled"}>${!SH.to.size ? "📤 Выберите, кому открыть (шаг 1)" : !SH.pick.size ? "📤 Отметьте, что открыть (шаг 2)" : `📤 Открыть доступ: ${SH.pick.size} шт. → ${SH.to.size === 1 ? "1 коллеге" : SH.to.size + " коллегам"}`}</button>
+      <span class="sub">Коллега сразу получит уведомление 🔔 и увидит это в «📚 Мои предметы → Мне открыли».</span><span class="ok-t">${esc(SH.msg)}</span></div>
+    <div class="ad-card tw" style="margin-top:12px"><b>Что уже открыто</b><table class="ad-t" style="margin-top:8px"><thead><tr><th>Коллега</th><th>Открыто</th></tr></thead><tbody>
+      ${S.map(([uid, x]) => `<tr><td><b>${esc(x.name || x.email)}</b><div class="sub">${opened(uid).length} шт.</div></td><td>${opened(uid).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).map(([id, it]) => `<span class="chip">${it.kind === "material" ? (it.file ? "📁" : "🔗") : "🧩"} ${esc(it.title || id)} <button class="btn small ghost" style="padding:0 6px;margin-left:4px" title="Закрыть доступ" data-shrm="${esc(uid)}|${esc(id)}">✕</button></span>`).join("") || '<span class="sub">ничего</span>'}</td></tr>`).join("")}
+    </tbody></table></div>`}</section>`;
+}
+
 // ---------- предметы: заявки на новые, кто какой предмет ведёт ----------
 function secSubjects() {
   const X = D.settings.subjects || {}, CT = D.settings.classTeachers || {};
@@ -399,6 +436,32 @@ function bind() {
     remove(ref(db, `staffShares/${uid}`)).catch(() => {}); remove(ref(db, `settings/teachers/${uid}`)).catch(() => {});
     logAction(db, USER, `Закрыт доступ учителю ${x.email}`, "staff");
   });
+  // поделиться
+  app.querySelectorAll("[data-shto]").forEach((i) => i.onchange = () => { i.checked ? SH.to.add(i.dataset.shto) : SH.to.delete(i.dataset.shto); SH.msg = ""; render(); });
+  app.querySelector("[data-shall]")?.addEventListener("click", () => { Object.keys(D.staff).forEach((u) => SH.to.add(u)); render(); });
+  app.querySelectorAll("[data-shs]").forEach((b) => b.onclick = () => { SH.subj = b.dataset.shs; render(); });
+  app.querySelectorAll("[data-shit]").forEach((i) => i.onchange = () => { i.checked ? SH.pick.add(i.dataset.shit) : SH.pick.delete(i.dataset.shit); SH.msg = ""; render(); });
+  app.querySelector("[data-shpickall]")?.addEventListener("click", () => { app.querySelectorAll("[data-shit]").forEach((i) => SH.pick.add(i.dataset.shit)); render(); });
+  app.querySelector("[data-shpicknone]")?.addEventListener("click", () => { SH.pick.clear(); render(); });
+  const shq = app.querySelector("#shQ"); if (shq) shq.onchange = () => { SH.q = shq.value.trim().toLowerCase(); render(); };
+  app.querySelector("[data-shgo]")?.addEventListener("click", async (e) => {
+    const items = shareItems().filter((x) => SH.pick.has(x.id)), by = shortName(USER.displayName || USER.email), upd = {};
+    for (const uid of SH.to) for (const x of items) {
+      upd[`staffShares/${uid}/${x.id}`] = x.kind === "test" ? { kind: "test", title: x.title, subject: x.subject, grade: x.grade, at: Date.now(), by }
+        : { kind: "material", title: x.title, subject: x.subject || "", grade: x.grade || "", url: x.url, file: x.file, at: Date.now(), by };
+    }
+    e.target.disabled = true;
+    try {
+      await update(ref(db), upd);
+      logAction(db, USER, `Открыт доступ: ${items.length} шт. для ${[...SH.to].map((u) => D.staff[u]?.name || D.staff[u]?.email).join(", ")}`, "staff");
+      SH.msg = `✓ Открыто: ${items.length} × ${SH.to.size}`; SH.pick.clear(); render();
+    } catch (err) { alert("Не удалось: " + (err.code || err.message)); e.target.disabled = false; }
+  });
+  app.querySelectorAll("[data-shrm]").forEach((b) => b.onclick = async () => {
+    const [uid, id] = b.dataset.shrm.split("|");
+    await remove(ref(db, `staffShares/${uid}/${id}`)).catch((e) => alert(e.message));
+    logAction(db, USER, `Закрыт доступ «${D.shares[uid]?.[id]?.title || id}» для ${D.staff[uid]?.email}`, "staff");
+  });
   // лента и отзывы
   app.querySelectorAll("[data-ff]").forEach((b) => b.onclick = () => { feedFilter = b.dataset.ff; render(); });
   app.querySelectorAll("[data-fbf]").forEach((b) => b.onclick = () => { fbFilter = b.dataset.fbf; render(); });
@@ -483,7 +546,7 @@ function shareDialog(uid) {
   $("#shSave").onclick = async () => {
     const on = new Set([...dlg.querySelectorAll("#shList input:checked")].map((i) => i.value));
     const upd = {};
-    for (const id of on) if (!mine[id]) upd[`staffShares/${uid}/${id}`] = { title: D.builder[id]?.title || id, at: Date.now() };
+    for (const id of on) if (!mine[id]) upd[`staffShares/${uid}/${id}`] = { kind: "test", title: D.builder[id]?.title || id, subject: D.builder[id]?.subject || "", at: Date.now(), by: shortName(USER.displayName || USER.email) };
     for (const id of Object.keys(mine)) if (!on.has(id)) upd[`staffShares/${uid}/${id}`] = null;
     if (!Object.keys(upd).length) return dlg.close();
     try { await update(ref(db), upd); logAction(db, USER, `${x.email}: личный доступ к тестам — ${on.size} шт.`, "staff"); dlg.close(); }

@@ -5,7 +5,8 @@ import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
 import { startAutoSync, syncProgress } from "./sync.js?v=2";
-import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=2";
+import { startNotify } from "./notify.js?v=1";
+import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=3";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -43,6 +44,7 @@ onAuthStateChanged(auth, async (user) => {
   if (role === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
   if (role === "colleague") { location.replace(new URL("teacher/builder.html", new URL("../", import.meta.url)).href); return; }
   startAutoSync(db);   // оценки сразу уходят на страницы учеников и родителей
+  startNotify(db, user, role, { base: "../" });   // 🔔 новые учителя, предметы, отзывы
   if (OVERVIEW) return showOverview();
   if (IS_MISSION) return showMissionDashboard();
   try {

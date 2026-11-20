@@ -9,16 +9,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { roleOf, pendingHtml, myStaff, logAction } from "../engine/staff.js?v=2";
+import { roleOf, pendingHtml, myStaff, logAction } from "../engine/staff.js?v=3";
 import { SUBJECTS, addSubjects } from "../tests.js?v=8";
 import { CLASSES, clsKey } from "../engine/people.js?v=4";
+import { startNotify } from "../engine/notify.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const app = $("#app"), dlg = $("#dlg");
 const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
-let USER = null, ROLE = "none", MINE = {}, CT = {}, REQ = {}, NAME = "";
+let USER = null, ROLE = "none", MINE = {}, CT = {}, REQ = {}, NAME = "", SHARED = {};
 const shortName = (n) => { const p = String(n || "").trim().split(/\s+/); return p.length > 1 ? `${p[1]} ${p[0][0]}.` : p[0] || ""; };
 const val = async (p) => { try { return (await get(ref(db, p))).val(); } catch (e) { return null; } };
 
@@ -31,6 +32,8 @@ onAuthStateChanged(auth, async (user) => {
   if (ROLE === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
   NAME = shortName(user.displayName || user.email);
   await load(); render();
+  startNotify(db, user, ROLE, { base: "../" });
+  if (location.hash === "#shared") setTimeout(() => document.getElementById("shared")?.scrollIntoView({ behavior: "smooth" }), 300);
 });
 function showLogin() {
   app.innerHTML = `<div class="ad-card ad-center"><h2>📚 Мои предметы</h2><p class="muted">Войдите Google-аккаунтом учителя.</p>
@@ -38,8 +41,10 @@ function showLogin() {
   $("#go").onclick = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (e) { $("#err").textContent = e.code || e.message; } };
 }
 async function load() {
-  const [xs, ct, me, rq] = await Promise.all([val("settings/subjects"), val("settings/classTeachers"),
-    ROLE === "admin" ? Promise.resolve(null) : val(`staff/${USER.uid}`), val(`subjectRequests/${USER.uid}`)]);
+  const [xs, ct, me, rq, sh] = await Promise.all([val("settings/subjects"), val("settings/classTeachers"),
+    ROLE === "admin" ? Promise.resolve(null) : val(`staff/${USER.uid}`), val(`subjectRequests/${USER.uid}`),
+    ROLE === "admin" ? Promise.resolve(null) : val(`staffShares/${USER.uid}`)]);
+  SHARED = sh || {};
   if (xs) addSubjects(xs);
   CT = ct || {}; REQ = rq || {};
   if (ROLE === "admin") {
@@ -67,6 +72,7 @@ function render() {
         <p class="sub" style="margin-top:10px">Новый предмет появится после одобрения администратором.</p></div>`).join("")}
       <button class="my-new" id="addSubj">＋<br>Добавить предмет<br><span class="sub" style="font-weight:500">выбрать из списка или предложить новый</span></button>
     </div>
+    ${ROLE !== "admin" ? sharedHtml() : ""}
     <div class="ad-card" style="margin-top:18px"><b>Как это работает</b>
       <ul style="margin:8px 0 0;padding-left:18px;line-height:1.6">
         <li>Подключённый класс видит предмет в «Моих предметах», а родители — в кабинете родителя.</li>
@@ -77,6 +83,21 @@ function render() {
   app.querySelectorAll("[data-off]").forEach((b) => b.onclick = () => { const [sid, c] = b.dataset.off.split("|"); disconnect(sid, c); });
   app.querySelectorAll("[data-drop]").forEach((b) => b.onclick = () => dropSubject(b.dataset.drop));
   $("#addSubj").onclick = subjectDialog;
+}
+
+// ---------- 📥 «Мне открыли»: тесты и материалы, которыми поделился администратор ----------
+function sharedHtml() {
+  const L = Object.entries(SHARED).filter(([, x]) => x && typeof x === "object").sort((a, b) => (b[1].at || 0) - (a[1].at || 0));
+  const fresh = (x) => Date.now() - (x.at || 0) < 3 * 864e5;
+  const bySubj = {};
+  for (const [id, x] of L) (bySubj[x.subject || ""] = bySubj[x.subject || ""] || []).push([id, x]);
+  return `<div class="ad-card" id="shared" style="margin-top:18px"><div class="ad-h" style="margin:0 0 6px"><b>📥 Мне открыли</b><span class="sp"></span><span class="sub">${L.length} шт.</span></div>
+    ${L.length ? Object.entries(bySubj).map(([sid, arr]) => { const sj = SUBJECTS.find((x) => x.id === sid);
+      return `<div style="margin-top:10px"><div class="sub" style="font-weight:700;margin-bottom:4px">${sj ? sj.icon + " " + esc(sj.name) : "Без предмета"}</div>
+        ${arr.map(([id, x]) => `<div class="req"><div class="who"><b>${x.kind === "material" ? (x.file ? "📁" : "🔗") : "🧩"} ${esc(x.title || id)}</b>${fresh(x) ? ' <span class="chip ok">новое</span>' : ""}
+          <div class="sub">${x.kind === "material" ? (x.file ? "файл · " + esc(x.file.name || "") : "ссылка") : "тест — в Конструкторе, вкладка «📂 Общая папка», кнопка «📥 Скопировать к себе»"}${x.grade ? " · " + esc(x.grade) + " кл." : ""} · от ${esc(x.by || "администратора")}</div></div>
+          ${x.kind === "material" ? `<a class="btn small" href="${esc(x.url)}" target="_blank" rel="noopener">Открыть ↗</a>` : `<a class="btn small" href="builder.html">В Конструктор →</a>`}</div>`).join("")}</div>`; }).join("")
+      : '<div class="empty">Пока ничего. Когда администратор откроет вам тест или материал, он появится здесь, а на колокольчике 🔔 загорится число.</div>'}</div>`;
 }
 
 function openDlg(title, body) {

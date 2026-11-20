@@ -6,7 +6,8 @@
 // =====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff.js?v=2";
+import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff.js?v=3";
+import { startNotify } from "../engine/notify.js?v=1";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, KINDS } from "../tests.js?v=8";
@@ -43,6 +44,7 @@ onAuthStateChanged(auth, async (user) => {
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
   ROLE = await roleOf(db, user);
   if (ROLE === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
+  startNotify(db, user, ROLE, { base: "../" });   // 🔔 коллеге: «вам открыли тест/материал»
   try {
     // владелец видит все тесты; коллега — только свои (+ общая папка)
     const mine = ROLE === "admin" ? ref(db, "builder") : query(ref(db, "builder"), orderByChild("owner"), equalTo(user.uid));
