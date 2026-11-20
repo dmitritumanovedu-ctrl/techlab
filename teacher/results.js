@@ -23,7 +23,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 
 const LS = (k, d) => { try { return localStorage.getItem("rz_" + k) ?? d; } catch (e) { return d; } };
 const SS = (k, v) => { try { localStorage.setItem("rz_" + k, v); } catch (e) {} };
-let ROSTER = {}, PROG = {}, CSUBJ = {}, LOADED = false;
+let ROSTER = {}, PROG = {}, CSUBJ = {}, LOADED = false, SYNCMSG = "";
 const ST = {
   cls: LS("cls", ""), subj: LS("subj", "all"), period: LS("period", "all"), view: LS("view", "table"), metric: LS("metric", "avg"),
   hide: LS("hide", "0") === "1", works: new Set(), sel: new Set(), onlySel: false, sort: { k: "rank", dir: 1 }, student: "", big: false, show: null,
@@ -125,8 +125,13 @@ function render() {
   if (!LOADED) return;
   const M = model();
   const classes = classList();
-  const inCls = new Set(Object.keys(ROSTER).filter((c) => ROSTER[c].cls === ST.cls).flatMap((c) => Object.values(PROG[c]?.works || {}).map((w) => w?.subject)));
-  const subjs = SUBJECTS.filter((s) => inCls.has(s.id));
+  // предметы класса: подключённые к классу и группам + те, по которым уже есть сданные работы
+  const codesC = Object.keys(ROSTER).filter((c) => ROSTER[c].cls === ST.cls);
+  const withWorks = new Set(codesC.flatMap((c) => Object.values(PROG[c]?.works || {}).map((w) => w?.subject)));
+  const connected = new Set([...Object.keys(CSUBJ[clsKey(ST.cls)] || {}), ...codesC.flatMap((c) => Object.keys(ROSTER[c]?.plus || {}))]);
+  const subjs = SUBJECTS.filter((s) => withWorks.has(s.id) || connected.has(s.id));
+  if (ST.subj !== "all" && !subjs.some((s) => s.id === ST.subj)) { ST.subj = "all"; SS("subj", "all"); return render(); }   // фильтр от другого класса
+  const noWorks = ST.subj !== "all" && !withWorks.has(ST.subj);
   app.innerHTML = `
     <div class="big-h"><h1>📊 ${esc(ST.cls)} · ${esc(ST.subj === "all" ? "все предметы" : subjOf(ST.subj)?.name || "")}</h1><span class="rz-sp"></span>
       <div class="slide-dots" id="dots"></div>
@@ -135,7 +140,7 @@ function render() {
       <button class="btn" id="bExit">✕ Выйти</button></div>
     <div class="rz-card rz-bar no-print">
       <div class="rz-f"><label for="fCls">Класс</label><select id="fCls">${classes.map((c) => `<option ${c === ST.cls ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
-      <div class="rz-f"><label for="fSubj">Предмет</label><select id="fSubj"><option value="all">Все предметы</option>${subjs.map((s) => `<option value="${s.id}" ${s.id === ST.subj ? "selected" : ""}>${s.icon} ${esc(s.name)}</option>`).join("")}</select></div>
+      <div class="rz-f"><label for="fSubj">Предмет</label><select id="fSubj"><option value="all">Все предметы</option>${subjs.map((s) => `<option value="${s.id}" ${s.id === ST.subj ? "selected" : ""}>${s.icon} ${esc(s.name)}${withWorks.has(s.id) ? "" : " · пока нет сданных работ"}</option>`).join("")}</select></div>
       <div class="rz-f"><label for="fPer">Период</label><select id="fPer">${[["all", "Всё время"], ["term", "Это полугодие"], ["30", "30 дней"], ["7", "7 дней"]].map(([k, l]) => `<option value="${k}" ${k === ST.period ? "selected" : ""}>${l}</option>`).join("")}</select></div>
       <div class="rz-f"><label for="fFind">Найти ученика</label><input id="fFind" placeholder="фамилия…" autocomplete="off"></div>
       <button class="btn ghost" id="bPick">👥 Выбрать учеников${ST.sel.size ? ` (${ST.sel.size})` : ""}</button>
@@ -147,13 +152,15 @@ function render() {
       <button class="btn ghost" id="bHide">${ST.hide ? "👁 Фамилии" : "🙈 Скрыть фамилии"}</button>
       <button class="btn dark" id="bBig">🖥 Большой экран</button>
     </div>
+    ${SYNCMSG && M.works.length ? `<p class="sub no-big" style="margin:8px 2px 0">✓ ${SYNCMSG}</p>` : ""}
     ${M.allWorks.length ? `<div class="rz-chips no-print"><span class="sub" style="align-self:center">Работы:</span>
       <button class="chip ${ST.works.size ? "" : "on"}" data-w="*">все (${M.allWorks.length})</button>
       ${M.allWorks.map((w) => `<button class="chip ${ST.works.has(w.id) ? "on" : ""}" data-w="${esc(w.id)}" title="${esc(w.title)}">${subjOf(w.subject)?.icon || ""} ${esc(shortT(w.title))} · ${dm(w.date)}</button>`).join("")}</div>` : ""}
     <div class="rz-views">${VIEWS.map(([k, l]) => `<button data-v="${k}" class="${ST.view === k ? "on" : ""}">${l}</button>`).join("")}</div>
     ${kpis(M)}
     <div id="view">${!M.rows.length ? `<div class="rz-card empty">В этом классе пока нет учеников с кодами.</div>`
-      : !M.works.length && ST.view !== "student" ? `<div class="rz-card empty">Сданных работ за выбранный период нет. Попробуйте «Всё время» или нажмите «⟳ Обновить».</div>`
+      : !M.works.length && ST.view !== "student" ? `<div class="rz-card empty">${noWorks ? `По предмету «${esc(subjOf(ST.subj)?.name || "")}» у ${esc(ST.cls)} пока нет сданных работ.<br>` : "Сданных работ за выбранный период нет.<br>"}
+          Если ученики уже сдавали — нажмите «⟳ Обновить»: оценки пересчитаются из последних сдач.${SYNCMSG ? `<br><b>${SYNCMSG}</b>` : ""}</div>`
       : ({ table: vTable, rank: vRank, charts: vCharts, student: vStudent, compare: vCompare })[ST.view](M)}</div>`;
   bind(M);
 }
@@ -320,7 +327,10 @@ function bind(M) {
   on("#bShow", () => { ST.show ? stopShow() : startShow(); render(); });
   on("#bSync", async () => {
     const b = $("#bSync"); b.disabled = true; b.textContent = "⏳ Пересчитываю…";
-    try { await syncProgress(db); await load(); } catch (e) { alert("Не удалось: " + (e.code || e.message)); }
+    try {
+      const r = await syncProgress(db); await load();
+      SYNCMSG = `Обновлено: найдено ${r.matched} сданных работ` + (r.unmatched ? ` · ${r.unmatched} работ не удалось привязать к ученику (имя или класс в работе не совпали с кодом — проверьте в «Ученики и родители»)` : "");
+    } catch (e) { alert("Не удалось: " + (e.code || e.message)); }
     render();
   });
   const dots = $("#dots"); if (dots && ST.show) dots.innerHTML = SHOW.map((v) => `<i class="${v === ST.view ? "on" : ""}"></i>`).join("");
