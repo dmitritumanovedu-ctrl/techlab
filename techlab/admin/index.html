@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1A2340">
+  <title>Администратор · TechLab</title>
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="admin.css?v=4">
+</head>
+<body>
+  <div class="ad-app">
+    <aside class="ad-side">
+      <a class="ad-brand" href="#overview"><span class="ad-logo">T</span><span><b>TechLab</b><small>Администратор</small></span></a>
+      <nav class="ad-nav" id="adNav" hidden>
+        <div class="ad-grp">Работа с классами</div>
+        <a href="#lessons">🎛 Уроки и тесты</a>
+        <a href="#students">👥 Ученики и коды</a>
+        <a href="#results">📊 Результаты и рейтинги</a>
+        <a href="#builder">🧩 Конструктор тестов</a>
+        <a href="#mysubj">📚 Мои предметы и классы</a>
+        <div class="ad-grp">Платформа</div>
+        <a href="#overview">📊 Обзор</a>
+        <a href="#activity">👀 Активность коллег</a>
+        <a href="#requests">🆕 Заявки учителей <i id="nReq"></i></a>
+        <a href="#teachers">👩‍🏫 Учителя и права</a>
+        <a href="#share">📤 Поделиться с коллегами</a>
+        <a href="#subjects">📚 Предметы сайта <i id="nSubj"></i></a>
+        <a href="#classes">🏫 Классы</a>
+        <a href="#visits">📈 Посещаемость</a>
+        <a href="#feed">🕑 Журнал действий</a>
+        <a href="#security">🔐 Безопасность</a>
+        <a href="#feedback">✉️ Отзывы <i id="nFb"></i></a>
+        <a href="#site">⚙️ Настройки сайта</a>
+        <div class="ad-grp">Сайт</div>
+        <a href="../">🏠 Стартовая ↗</a>
+      </nav>
+      <div class="ad-me" id="adWho">Загрузка…</div>
+    </aside>
+    <main class="ad-main" id="app"><div class="ad-card ad-center"><p class="muted">Загрузка…</p></div></main>
+  </div>
+  <dialog id="dlg" class="ad-dlg"></dialog>
+  <script type="module" src="admin.js?v=4"></script>
+</body>
+</html>
