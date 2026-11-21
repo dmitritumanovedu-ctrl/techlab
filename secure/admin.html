@@ -23,12 +23,9 @@
   <!-- Вход учителя -->
   <div class="card hidden" id="loginCard" style="max-width:420px; margin:60px auto">
     <h1>Кабинет учителя</h1>
-    <form id="loginForm">
-      <label>Почта</label><input id="em" type="email" autocomplete="username">
-      <label>Пароль</label><input id="pw" type="password" autocomplete="current-password">
-      <div class="err" id="loginErr"></div>
-      <button style="width:100%">Войти</button>
-    </form>
+    <p class="muted">Вход только для учителя.</p>
+    <button id="gBtn" style="width:100%">Войти через Google</button>
+    <div class="err" id="loginErr"></div>
   </div>
 
   <div id="panel" class="hidden">
@@ -102,7 +99,7 @@
 import { auth, db, el, isAdmin, generateCode, prettyCode, codeToEmail, codeToPassword } from "./guard.js";
 import { firebaseConfig, SUBJECTS } from "./firebase-config.js";
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, initializeAuth, inMemoryPersistence, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { GoogleAuthProvider, signInWithPopup, signOut, setPersistence, browserSessionPersistence, initializeAuth, inMemoryPersistence, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const $ = (id) => document.getElementById(id);
@@ -112,15 +109,21 @@ async function start() {
   if (await isAdmin()) { $("loginCard").classList.add("hidden"); $("panel").classList.remove("hidden"); init(); }
   else { $("panel").classList.add("hidden"); $("loginCard").classList.remove("hidden"); }
 }
-$("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault(); $("loginErr").textContent = "";
+$("gBtn").onclick = async () => {
+  $("loginErr").textContent = "";
   try {
     await setPersistence(auth, browserSessionPersistence);
-    await signInWithEmailAndPassword(auth, $("em").value.trim(), $("pw").value);
-    if (!(await isAdmin())) { await signOut(auth); throw new Error("Эта учётная запись не является учительской."); }
+    await signInWithPopup(auth, new GoogleAuthProvider());
+    if (!(await isAdmin())) {
+      const uid = auth.currentUser.uid;
+      await signOut(auth);
+      throw new Error("Этот аккаунт не учительский. Его UID: " + uid);
+    }
     start();
-  } catch (x) { $("loginErr").textContent = x.message.startsWith("Firebase") ? "Неверная почта или пароль." : x.message; }
-});
+  } catch (x) {
+    $("loginErr").textContent = x.code === "auth/popup-closed-by-user" ? "Окно входа закрыто." : x.message;
+  }
+};
 $("outBtn").onclick = async () => { await signOut(auth); location.reload(); };
 
 // ---------- Общее ----------
