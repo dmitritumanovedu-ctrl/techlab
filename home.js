@@ -2,7 +2,7 @@
 // Данные читаются быстрым HTTPS-запросом с таймаутом и повтором (engine/fbrest.js),
 // последние данные хранятся на компьютере — страница открывается сразу даже при медленном интернете.
 import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
-import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=8";
+import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=9";
 import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT, plusOf, samePlus, mySubjects } from "./engine/people.js?v=4";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=2";

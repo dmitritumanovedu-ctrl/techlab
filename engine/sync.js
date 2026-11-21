@@ -6,7 +6,7 @@
 // =====================================================================
 import { ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { grade, toGrade, usesQual, qualOf } from "./grading.js?v=5";
-import { TESTS, kindOf } from "../tests.js?v=8";
+import { TESTS, kindOf } from "../tests.js?v=9";
 import { nameKey, clsKey, xpOf } from "./people.js?v=2";
 import { gradeAttempt } from "./btest.js?v=1";
 

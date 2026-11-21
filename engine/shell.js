@@ -7,7 +7,7 @@
 //  HTTPS-запросами и хранятся на компьютере — панель открывается сразу.
 // =====================================================================
 import { readDb, cacheGet, cachePut } from "./fbrest.js?v=1";
-import { SUBJECTS } from "../tests.js?v=8";
+import { SUBJECTS } from "../tests.js?v=9";
 import { LANG, LOCALE, subjName } from "./i18n.js?v=1";
 import { getSession, clsKey, SESSION_EVENT } from "./people.js?v=4";
 

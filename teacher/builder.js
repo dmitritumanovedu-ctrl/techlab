@@ -10,7 +10,7 @@ import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff
 import { startNotify } from "../engine/notify.js?v=2";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { SUBJECTS, KINDS } from "../tests.js?v=8";
+import { SUBJECTS, KINDS } from "../tests.js?v=9";
 import { TYPES, esc, uid, newItem, toPublic, variantOf, renderItem, gradeAttempt, importItems, maxOf, evalFormula, fmtNum, fillParams } from "../engine/btest.js?v=1";
 import { tb, itemLabels, typeName } from "../engine/b-i18n.js?v=1";
 import { mountLangSwitch, subjName, kindT, gradeLabel, qualShow, LOCALE, LANG } from "../engine/i18n.js?v=1";

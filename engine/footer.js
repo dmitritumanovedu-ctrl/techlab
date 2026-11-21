@@ -6,7 +6,7 @@
 // =====================================================================
 import { firebaseConfig } from "../firebase-config.js";
 import { readDb, cacheGet, cachePut } from "./fbrest.js?v=1";
-import { SUBJECTS } from "../tests.js?v=8";
+import { SUBJECTS } from "../tests.js?v=9";
 
 const BASE = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

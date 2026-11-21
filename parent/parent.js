@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { SUBJECTS } from "../tests.js?v=8";
+import { SUBJECTS } from "../tests.js?v=9";
 import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc, clsKey, plusOf, mySubjects } from "../engine/people.js?v=4";
 import { t, plw, subjName, kindShortById, qualShow, LOCALE, LANG } from "../engine/i18n.js?v=1";
 import { reviewBtn, openReview } from "../engine/review.js?v=1";

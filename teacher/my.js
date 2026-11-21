@@ -10,7 +10,7 @@ import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, pendingHtml, myStaff, logAction } from "../engine/staff.js?v=3";
-import { SUBJECTS, addSubjects } from "../tests.js?v=8";
+import { SUBJECTS, addSubjects } from "../tests.js?v=9";
 import { CLASSES, clsKey } from "../engine/people.js?v=4";
 import { startNotify } from "../engine/notify.js?v=2";
 

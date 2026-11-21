@@ -1,5 +1,5 @@
 import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
-import { SUBJECTS, TESTS as TESTS_RAW, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=8";
+import { SUBJECTS, TESTS as TESTS_RAW, EXPEDITIONS, KINDS as KINDS_RAW, kindOf as kindOfRaw } from "./tests.js?v=9";
 let TESTS = TESTS_RAW;   // + тесты из конструктора (pubIndex)
 import { t, pl, gradeLabel, subjName, subjShort, kindT, LOCALE, LANG } from "./engine/i18n.js?v=1";
 import { getSession, clsKey, SESSION_EVENT, mySubjects as mergeSubj } from "./engine/people.js?v=4";

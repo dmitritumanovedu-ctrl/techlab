@@ -3,7 +3,7 @@ import { getDatabase, ref, get, set, update, remove, onValue, push } from "https
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
-import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
+import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=9";
 import { startAutoSync, syncProgress } from "./sync.js?v=2";
 import { startNotify } from "./notify.js?v=2";
 import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=3";

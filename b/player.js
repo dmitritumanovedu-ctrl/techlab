@@ -7,7 +7,7 @@ import { variantOf, renderItem, answered, esc } from "../engine/btest.js?v=1";
 import { tb, itemLabels } from "../engine/b-i18n.js?v=1";
 import { mountLangSwitch, subjName, gradeLabel } from "../engine/i18n.js?v=1";
 import { CLASSES } from "../engine/people.js?v=2";
-import { SUBJECTS } from "../tests.js?v=8";
+import { SUBJECTS } from "../tests.js?v=9";
 import { isStaffPreview } from "../engine/preview-auth.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);

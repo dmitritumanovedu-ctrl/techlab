@@ -9,7 +9,7 @@ import { getDatabase, ref, get, set, update, remove, onValue, query, limitToLast
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=3";
-import { SUBJECTS, TESTS, addSubjects, BUILTIN_SUBJECTS } from "../tests.js?v=8";
+import { SUBJECTS, TESTS, addSubjects, BUILTIN_SUBJECTS } from "../tests.js?v=9";
 import { clsKey } from "../engine/people.js?v=4";
 import { startNotify } from "../engine/notify.js?v=2";
 

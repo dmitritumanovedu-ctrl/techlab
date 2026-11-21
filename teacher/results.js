@@ -11,7 +11,7 @@ import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, pendingHtml } from "../engine/staff.js?v=3";
-import { SUBJECTS, addSubjects } from "../tests.js?v=8";
+import { SUBJECTS, addSubjects } from "../tests.js?v=9";
 import { clsKey, xpOf } from "../engine/people.js?v=4";
 import { syncProgress } from "../engine/sync.js?v=2";
 

@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { SUBJECTS, TESTS } from "../tests.js?v=8";
+import { SUBJECTS, TESTS } from "../tests.js?v=9";
 import { roleOf, pendingHtml } from "../engine/staff.js?v=3";
 import { syncProgress, startAutoSync, autoSyncOn, setAutoSync, getClassSubjects, setClassSubjects } from "../engine/sync.js?v=2";
 import { plusOf, CLASSES, PLAN, makeCode, prettyCode, nameKey, clsKey, xpOf, levelOf, fmt1, esc } from "../engine/people.js?v=4";
