@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<script src="../../../engine/guard.js?v=3"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1B1446">
+<title>Векторная экспедиция · Inkscape · 7 класс</title>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800;900&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#140F3A; --bg2:#1F1760; --panel:#FFFFFF; --ink:#1A1440; --muted:#6A6496;
+  --pink:#FF4FB8; --cyan:#29E3FF; --lime:#B6FF3B; --gold:#FFC93C; --orange:#FF8A3D; --violet:#8B5CFF; --red:#FF4D6D; --ok:#12B76A;
+  --display:"Unbounded",system-ui,sans-serif; --body:"Manrope",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--body);color:#fff;background:radial-gradient(1200px 600px at 20% -10%,#3B2BB0 0,transparent 60%),radial-gradient(900px 500px at 110% 10%,#B0237F 0,transparent 55%),var(--bg);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.stars-bg{position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20% 30%,#fff8,transparent),radial-gradient(1.5px 1.5px at 70% 20%,#fff9,transparent),
+  radial-gradient(2px 2px at 40% 80%,#fff6,transparent),radial-gradient(1.5px 1.5px at 85% 65%,#fff8,transparent),radial-gradient(1px 1px at 10% 70%,#fff8,transparent);opacity:.8}
+
+/* ---------- старт ---------- */
+#start{min-height:100vh;display:grid;place-items:center;padding:24px 16px;position:relative}
+.start-card{width:min(560px,100%);background:linear-gradient(160deg,#2A2080,#1A1352);border:2px solid #4B3CD0;border-radius:28px;padding:30px;box-shadow:0 0 0 6px #ffffff10,0 30px 80px #0008,0 0 80px #8B5CFF55;position:relative;z-index:1}
+.logo{font-family:var(--display);font-weight:900;font-size:44px;line-height:1;letter-spacing:-.02em;margin:6px 0 4px;
+  background:linear-gradient(90deg,var(--cyan),var(--pink),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #0006)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--lime);text-transform:uppercase}
+.lead{color:#D8D2FF;margin:10px 0 18px}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-weight:700;font-size:14px;color:#D8D2FF}
+.field input,.field select{font:inherit;font-size:17px;padding:13px 14px;border-radius:14px;border:2px solid #5A4BE0;background:#0F0B33;color:#fff}
+.field input:focus,.field select:focus{outline:none;border-color:var(--cyan)}
+.err{color:#FF9FB3;min-height:1.3em;font-weight:700;font-size:14px}
+.btn{border:0;border-radius:16px;padding:14px 22px;font-weight:800;font-size:17px;color:#1A1440;background:linear-gradient(180deg,#FFE27A,var(--gold));box-shadow:0 6px 0 #B9861A;transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #B9861A}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.cyan{background:linear-gradient(180deg,#8FF3FF,var(--cyan));box-shadow:0 6px 0 #0F9BB3}
+.btn.pink{background:linear-gradient(180deg,#FF9AD8,var(--pink));box-shadow:0 6px 0 #B02579;color:#fff}
+.btn.ghost{background:#ffffff18;color:#fff;box-shadow:none;border:2px solid #ffffff40}
+.big{width:100%;font-size:20px;padding:16px}
+
+/* ---------- HUD ---------- */
+#game{max-width:1080px;margin:0 auto;padding:12px 14px 40px;position:relative;z-index:1}
+.hud{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#0E0A2Cdd;border:2px solid #3B2EA8;border-radius:20px;padding:10px 14px;position:sticky;top:8px;z-index:20;backdrop-filter:blur(6px)}
+.hud .who{font-weight:800}.hud .who small{display:block;font-family:var(--mono);font-size:11px;color:var(--lime);letter-spacing:.1em}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#ffffff14;border-radius:999px;padding:6px 12px;font-weight:800;font-family:var(--mono)}
+.chip.gold{color:var(--gold)}.chip.cyan{color:var(--cyan)}.chip.pink{color:var(--pink)}
+.xp{flex:1 1 180px;max-width:260px}.xp .bar{height:10px;background:#ffffff22;border-radius:999px;overflow:hidden}.xp .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));transition:width .6s}
+.xp small{font-family:var(--mono);font-size:11px;color:#CFC8FF}
+
+/* ---------- карта уровней ---------- */
+.map{position:relative;margin-top:18px;background:linear-gradient(180deg,#2A1F86,#1B1460);border:2px solid #4B3CD0;border-radius:28px;padding:26px 18px 30px;overflow:hidden}
+.map h1{font-family:var(--display);font-size:28px;margin:0 0 4px}.map p{color:#D8D2FF;margin:0 0 18px}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;position:relative}
+.node{position:relative;text-align:left;border:0;border-radius:22px;padding:16px;min-height:170px;color:#1A1440;background:#fff;box-shadow:0 8px 0 #0004;display:flex;flex-direction:column;gap:6px;transition:transform .15s}
+.node:hover:not(:disabled){transform:translateY(-4px) rotate(-.5deg)}
+.node .n{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--violet)}
+.node .t{font-family:var(--display);font-weight:800;font-size:17px;line-height:1.2;padding-right:46px}
+.node .d{font-size:13px;color:var(--muted)}
+.node .st{margin-top:auto;font-size:20px;letter-spacing:2px}
+.node .ic{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:24px}
+.node.lock{background:#ffffff1a;color:#ffffff99;box-shadow:none;border:2px dashed #ffffff40}
+.node.lock .n,.node.lock .d{color:#ffffff88}
+.node.done{outline:4px solid var(--lime)}
+.node.boss{background:linear-gradient(160deg,#FFE27A,#FF8A3D)}
+.node.fin{background:linear-gradient(160deg,#8FF3FF,#8B5CFF);color:#fff}.node.fin .n,.node.fin .d{color:#fff}
+
+/* ---------- сцена уровня ---------- */
+.stage{margin-top:18px;background:var(--panel);color:var(--ink);border-radius:28px;padding:22px;box-shadow:0 20px 60px #0006}
+.lv-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.lv-badge{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.1em;background:var(--ink);color:var(--lime);padding:6px 12px;border-radius:999px}
+.lv-head h2{font-family:var(--display);font-size:24px;margin:0;flex:1 1 300px}
+.lv-help{background:#F3F0FF;border-radius:16px;padding:12px 14px;color:#3B2F86;margin-bottom:14px}
+.back{background:#EEEAFE;color:#3B2F86;border:0;border-radius:12px;padding:9px 14px;font-weight:800}
+.prog{font-family:var(--mono);font-weight:700;color:var(--violet)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.imgbox{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.imgbox canvas{width:100%;height:100%;display:block}
+.imgbox .lbl{position:absolute;top:10px;left:10px;background:#000a;color:#fff;font-family:var(--mono);font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;z-index:2}
+.vig::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,#000d 100%);pointer-events:none}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.choice{border:3px solid #E3DEFF;background:#fff;border-radius:16px;padding:14px;font-weight:800;color:var(--ink);text-align:left;transition:transform .1s,border-color .1s}
+.choice:hover:not(:disabled){transform:translateY(-2px);border-color:var(--violet)}
+.choice.right{border-color:var(--ok);background:#E5F9EF}.choice.wrong{border-color:var(--red);background:#FFE7EC}
+.choice small{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:2px}
+.feedback{min-height:1.6em;font-weight:800;margin-top:10px}
+.feedback.ok{color:var(--ok)}.feedback.bad{color:var(--red)}
+
+/* аркада */
+.arcade{position:relative;border-radius:22px;overflow:hidden;background:#0B0830;border:4px solid var(--ink)}
+.arcade canvas{display:block;width:100%;height:auto;max-height:52vh;object-fit:contain;touch-action:none}
+.arc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ink);color:#fff;padding:10px 14px}
+.arc-top .target{font-weight:800}.arc-top .target b{color:var(--gold)}
+.hearts{font-size:20px;letter-spacing:2px}
+.pad{display:flex;justify-content:center;gap:18px;margin-top:14px;flex-wrap:wrap}
+.joy{width:96px;height:96px;border-radius:50%;border:0;font-size:38px;color:#fff;background:radial-gradient(circle at 35% 30%,#A99BFF,var(--violet));box-shadow:0 8px 0 #4B2FB8,0 0 0 6px #8B5CFF33;user-select:none;-webkit-user-select:none;touch-action:none}
+.joy:active,.joy.on{transform:translateY(5px);box-shadow:0 3px 0 #4B2FB8}
+.keys{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+.overlay-msg{position:absolute;inset:0;display:grid;place-items:center;background:#0B0830d9;text-align:center;padding:20px}
+.overlay-msg h3{font-family:var(--display);font-size:26px;margin:0 0 8px;color:var(--gold)}
+.overlay-msg p{color:#E4DFFF;margin:0 0 14px}
+
+/* слайдеры */
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;margin-top:14px}
+.sl{display:grid;gap:4px}.sl label{display:flex;justify-content:space-between;font-weight:800;font-size:14px}
+.sl input{width:100%;accent-color:var(--violet)}
+.meter{height:14px;background:#EEEAFE;border-radius:999px;overflow:hidden;margin-top:12px}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--ok));transition:width .3s}
+
+/* клиенты */
+.client{display:flex;gap:14px;align-items:flex-start;background:#F7F5FF;border-radius:18px;padding:14px;margin-bottom:6px}
+.avatar{width:62px;height:62px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:22px;color:#fff}
+.bubble{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:12px 14px;font-weight:600}
+.bubble b{color:var(--violet)}
+
+/* босс */
+.fx-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.fx{border:3px solid #E3DEFF;background:#fff;border-radius:999px;padding:9px 14px;font-weight:800;color:var(--ink)}
+.fx[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.cover-title{position:absolute;left:0;right:0;bottom:8%;text-align:center;font-family:var(--display);font-weight:900;font-size:clamp(20px,4vw,40px);color:#fff;text-shadow:0 3px 0 #000a,0 0 20px #000a;padding:0 10px;z-index:2;pointer-events:none}
+textarea,.tin{width:100%;font:inherit;font-size:16px;border:2px solid #DCD5FF;border-radius:14px;padding:12px;color:var(--ink)}
+textarea{min-height:110px;resize:vertical}
+textarea:focus,.tin:focus{outline:none;border-color:var(--violet)}
+
+/* результат уровня */
+.win-pop{position:fixed;inset:0;background:#0B0830cc;display:grid;place-items:center;z-index:100;padding:16px}
+.win-box{background:linear-gradient(160deg,#2A2080,#1A1352);border:3px solid var(--gold);border-radius:28px;padding:28px;text-align:center;width:min(420px,100%);animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.win-box h3{font-family:var(--display);font-size:28px;margin:0 0 6px}
+.win-stars{font-size:52px;letter-spacing:6px;margin:8px 0}
+.win-stars .off{filter:grayscale(1);opacity:.3}
+.win-box p{color:#D8D2FF}
+
+/* финиш */
+.qual{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.qual-badge{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;align-content:center;color:#fff;background:conic-gradient(var(--lime),var(--cyan),var(--violet),var(--pink),var(--lime));padding:8px}
+.qual-badge div{width:100%;height:100%;border-radius:50%;background:var(--ink);display:grid;place-items:center;align-content:center}
+.qual-badge b{font-family:var(--display);font-size:52px;line-height:1}.qual-badge small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--lime)}
+.scale{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.scale div{border:2px solid #E3DEFF;border-radius:14px;padding:10px;text-align:center;font-size:13px;color:var(--muted)}
+.scale div b{display:block;font-family:var(--display);font-size:22px;color:var(--ink)}
+.scale div.on{border-color:var(--violet);background:#F3F0FF}
+table.tbl{width:100%;border-collapse:collapse;margin-top:10px}table.tbl td,table.tbl th{padding:8px 10px;border-bottom:1px solid #EEEAFE;text-align:left}
+table.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mood{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.mood button{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink)}
+.mood button[aria-pressed="true"]{border-color:var(--violet);background:#F3F0FF}
+.sent{background:var(--ink);color:#CFE6FF;font-family:var(--mono);border-radius:14px;padding:14px;margin-top:12px}
+.sent .g{color:var(--lime)}.sent .r{color:#FF9FB3}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border:2px solid var(--lime);padding:10px 18px;border-radius:999px;font-weight:800;opacity:0;transition:opacity .2s;z-index:200;pointer-events:none}
+#toast.on{opacity:1}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:150}
+@media (max-width:600px){.logo{font-size:34px}.lv-head h2{font-size:20px}.scale{grid-template-columns:repeat(2,1fr)}.joy{width:84px;height:84px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ---------- чат-квест: цепочка, корзины, профиль, телефон ---------- */
+.chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.chain .arr{font-size:22px;color:var(--violet);font-weight:800}
+.slot{min-width:150px;min-height:56px;border:3px dashed #CFC6FF;border-radius:16px;background:#F7F5FF;font-weight:800;color:var(--ink);padding:8px 12px}
+.slot i{font-style:normal;font-family:var(--mono);color:#B3A9F5;font-size:20px}
+.slot.on{border-style:solid;border-color:var(--violet);background:#fff}.slot.right{border-color:var(--ok);background:#E5F9EF}.slot.wrong{border-color:var(--red);background:#FFE7EC}
+.cards{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;min-height:52px}
+.card{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:11px 14px;font-weight:800;color:var(--ink);box-shadow:0 4px 0 #E3DEFF;transition:transform .1s}
+.card:hover{transform:translateY(-2px)}.card.sel{border-color:var(--violet);background:#F3F0FF;box-shadow:0 4px 0 var(--violet)}
+.card.in{display:block;width:100%;text-align:left;margin-top:6px;box-shadow:none;font-size:14px;padding:8px 10px}
+.card.right{border-color:var(--ok);background:#E5F9EF}.card.wrong{border-color:var(--red);background:#FFE7EC}
+.bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.bin{border:3px solid #DCD5FF;border-radius:20px;padding:12px;min-height:200px;background:#FBFAFF;cursor:pointer}
+.bin:hover{border-color:var(--violet)}
+.bin-h{display:grid;text-align:center;gap:2px;margin-bottom:6px}.bin-h b{font-size:26px}.bin-h span{font-family:var(--display);font-weight:800}.bin-h small{color:var(--muted)}
+.tf .choice small{font-size:13px}
+.profile{display:flex;gap:16px;align-items:flex-start;background:#F7F5FF;border-radius:20px;padding:16px;margin-top:10px}
+.pf-av{width:76px;height:76px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:38px}
+.pf-b b{font-family:var(--display);font-size:20px}.pf-b small{display:block;color:var(--muted);font-family:var(--mono);font-size:12px}
+.phone{max-width:430px;margin:12px auto 0;border:10px solid var(--ink);border-radius:36px;overflow:hidden;background:#E9F1FF;box-shadow:0 16px 40px #0003}
+.ph-top{display:flex;gap:10px;align-items:center;background:var(--ink);color:#fff;padding:10px 14px}.ph-top small{margin-left:auto;color:var(--lime);font-family:var(--mono);font-size:11px}
+.ph-av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800}
+.ph-body{height:270px;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#EAF2FF,#F7F5FF)}
+.msg{max-width:82%;padding:9px 12px;border-radius:16px;font-weight:600;color:var(--ink);font-size:15px;animation:pop .25s}
+.msg.in{background:#fff;align-self:flex-start;border-bottom-left-radius:4px}.msg.out{background:#D9FDD3;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.old{opacity:.55}
+.typing{display:flex;gap:4px}.typing i{width:8px;height:8px;border-radius:50%;background:#9A93C9;animation:blink 1s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px}
+.rule{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:12px 14px;font-weight:700;color:var(--ink);text-align:left}
+.rule[aria-pressed="true"]{border-color:var(--violet);background:#F3F0FF}.rule[aria-pressed="true"]::before{content:"✓ ";color:var(--violet)}
+.rule.right{border-color:var(--ok);background:#E5F9EF}.rule.wrong{border-color:var(--red);background:#FFE7EC}.rule.miss{border-style:dashed;border-color:var(--ok)}
+/* ---------- ОС: теория, диспетчер задач, бонусы ---------- */
+.slide{font-size:18px;line-height:1.6;background:#F7F5FF;border-radius:20px;padding:18px 22px;margin:12px 0}
+.slide p{margin:8px 0}
+.dots{display:flex;gap:6px;margin:4px 0}.dots i{width:28px;height:6px;border-radius:9px;background:#E3DEFF}.dots i.on{background:var(--violet)}
+.anal{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.anal>div{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:10px 16px;display:grid;gap:4px;text-align:center;min-width:150px}.anal span{background:#F3F0FF;border-radius:8px;padding:2px 8px}
+.oses{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:8px 0}
+.oses div{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:12px;text-align:center;font-size:30px;display:grid}.oses b{font-size:17px}.oses small{font-size:13px;color:var(--muted)}
+.fns{display:grid;gap:8px}.fns div{background:#fff;border:2px solid #E3DEFF;border-radius:14px;padding:10px 14px;font-size:24px;display:grid;grid-template-columns:40px 1fr;align-items:center;column-gap:8px}
+.fns b{font-size:17px}.fns small{grid-column:2;font-size:15px;color:var(--muted)}
+.boot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}.boot span{background:#fff;border:2px solid #E3DEFF;border-radius:12px;padding:8px 12px;font-weight:700;font-size:15px}.boot i{font-style:normal;color:var(--violet);font-weight:800}
+.kbd{display:inline-block;background:#fff;border:2px solid #CFC6FF;border-bottom-width:4px;border-radius:8px;padding:2px 10px;font-family:var(--mono);font-weight:700;color:var(--ink)}
+.tmwin{border:3px solid var(--ink);border-radius:16px;overflow:hidden;margin-top:12px;background:#fff}
+.tm-top{display:flex;justify-content:space-between;background:var(--ink);color:#fff;padding:8px 14px;font-weight:800;font-family:var(--mono)}
+.tm-top .hot{color:#FF9FB3}
+table.tm{width:100%;border-collapse:collapse}table.tm th,table.tm td{padding:9px 12px;text-align:left;border-bottom:1px solid #EEEAFE;font-size:15px}
+table.tm th{font-family:var(--mono);font-size:12px;color:var(--muted)}table.tm tr[data-r]{cursor:pointer}table.tm tr[data-r]:hover{background:#F7F5FF}
+table.tm tr.hang td{color:#B42318;font-weight:700}table.tm tr.sel{background:#E9E4FF!important;outline:2px solid var(--violet)}table.tm tr.killed td{text-decoration:line-through;opacity:.5}
+.tm-bot{padding:10px 14px;display:flex;justify-content:flex-end;background:#F7F5FF}
+.node.bonusn{background:linear-gradient(160deg,#FFF8D6,#FFE7A8)}
+.scale10{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin:14px 0}
+.scale10 div{border:2px solid #E3DEFF;border-radius:10px;padding:6px 2px;text-align:center;font-size:11px;color:var(--muted)}.scale10 b{display:block;font-family:var(--display);font-size:18px;color:var(--ink)}
+.scale10 div.on{border-color:var(--violet);background:#F3F0FF}
+@media (max-width:600px){.scale10{grid-template-columns:repeat(5,1fr)}}
+.pline{cursor:pointer;border-radius:8px;padding:0 6px;margin:2px 0}.pline:hover{background:#FFF3C4}
+.pline.mk{background:#FFE0E6;text-decoration:underline wavy #E5484D}.pline.good{background:#E5F9EF;text-decoration:none}.pline.bad{background:#FFE7EC;outline:2px solid #E5484D}
+.pline small{color:#0E8F52;font-size:15px;line-height:1.4;display:inline-block}
+/* ---------- Inkscape: окно, фигуры, слои, булевы, узлы, логотип ---------- */
+.ink{display:grid;grid-template-columns:44px 1fr 150px;grid-template-rows:auto auto auto 230px auto auto;grid-template-areas:"menu menu menu" "cmd cmd cmd" "ctrl ctrl ctrl" "tools canvas fill" "pal pal pal" "status status status";
+  gap:3px;background:#2C2C2A;border-radius:12px;padding:4px;margin-top:12px;font-size:13px;color:#ddd}
+.ink .z{background:#444441;border-radius:6px;padding:6px 8px;cursor:pointer;transition:outline .1s}.ink .z:hover{outline:3px solid #FAC775}
+.ink .tools{text-align:center;line-height:1.7;font-size:15px}.ink .canvas{background:#888780;display:grid;place-items:center}
+.ink .page{background:#fff;width:70%;height:75%;box-shadow:0 2px 8px #0006;display:flex;gap:14px;align-items:center;justify-content:center}
+.ink .pal{display:flex;gap:3px;padding:5px}.ink .pal i{flex:1;height:18px;border-radius:3px;border:1px solid #0004}
+.ink .hit{outline:4px solid #12B76A!important}.ink .miss{outline:4px solid #E5484D!important}
+.shapebox{position:relative;background:repeating-conic-gradient(#F1EFE8 0 25%,#fff 0 50%) 0 0/18px 18px;border:2px solid #E3DEFF;border-radius:16px;padding:8px;display:grid;place-items:center}
+.shapebox svg{width:100%;max-height:300px}.lbl2{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+.ctrlbar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;background:#F7F5FF;border-radius:14px;padding:12px;margin-top:12px}
+.ctrlbar label{display:grid;gap:4px;font-weight:700;min-width:190px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.seg button{border:2px solid #E3DEFF;background:#fff;border-radius:10px;padding:7px 11px;font-weight:700;color:var(--ink);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.layers{display:grid;gap:6px}.lay{border:2px solid #E3DEFF;background:#fff;border-radius:10px;padding:9px 12px;font-weight:800;color:var(--ink);text-align:left}
+.lay.on{border-color:var(--violet);background:#F3F0FF}.zbtns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.zbtns .btn{color:var(--ink);border-color:#DCD5FF;padding:10px 6px;font-size:14px;font-family:var(--mono)}
+.bool{display:flex;gap:10px;align-items:center;justify-content:center;background:#F7F5FF;border-radius:16px;padding:10px}
+.bool>div{text-align:center}.bool small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted)}.bool svg{width:170px;background:#fff;border-radius:12px}.arr2{font-size:28px;color:var(--violet);font-weight:800}
+.node-h{fill:#fff;stroke:#D85A30;stroke-width:3;cursor:grab}.node-h:hover{fill:#FAC775}
+.flow{display:grid;gap:6px;margin:12px 0}.flow .slot{text-align:left;min-height:46px}
+.lgc{display:grid;gap:10px}.lgc b{font-size:14px}
+/* ---------- журнал, конспект ---------- */
+.node.brief{background:linear-gradient(160deg,#B6FF3B,#29E3FF)}
+.node .tm{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+.brief-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.box{background:#F7F5FF;border-radius:18px;padding:16px 18px}
+.box h3{font-family:var(--display);font-size:17px;margin:0 0 8px}
+.box ol,.box ul{margin:0;padding-left:20px}.box li{margin:4px 0}
+.topic{font-family:var(--display);font-weight:800;font-size:22px;color:var(--violet);margin:2px 0 10px}
+.notebook{background:#FFFDF3;border:2px solid #F0E3B0;border-radius:18px;padding:18px 22px 18px 52px;position:relative;
+  background-image:repeating-linear-gradient(transparent 0 31px,#E8DFC0 31px 32px);line-height:32px;font-size:17px}
+.notebook::before{content:"";position:absolute;left:36px;top:0;bottom:0;width:2px;background:#FF9FB3}
+.notebook h3{font-family:var(--display);font-size:18px;margin:0;line-height:32px;color:#B02579}
+.notebook p{margin:0}.notebook b{color:#1A1440}
+.notebook .key{background:#FFE27A;border-radius:6px;padding:0 4px}
+.copy-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.ring{font-family:var(--mono);font-weight:700;color:var(--violet)}
+.plan{display:grid;gap:6px}.plan div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #DCD5FF;padding:3px 0;font-size:15px}
+.plan span{font-family:var(--mono);color:var(--muted);font-size:13px;white-space:nowrap}
+.hud-btn{background:#ffffff18;color:#fff;border:2px solid #ffffff40;border-radius:999px;padding:6px 12px;font-weight:800}
+/* лупа и сетка */
+.zoomwrap{max-width:640px;margin:0 auto;position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.zoomwrap canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.grid-px{display:grid;gap:2px;background:#1A1440;padding:2px;border-radius:10px;width:min(100%,420px);margin:0 auto}
+.grid-px i{display:block;aspect-ratio:1}
+/* RGB */
+.swatches{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sw{border-radius:20px;aspect-ratio:16/7;display:grid;place-items:end start;padding:12px;font-family:var(--mono);font-weight:700;color:#fff;text-shadow:0 1px 3px #000a;border:4px solid var(--ink)}
+.sl.r input{accent-color:#FF2D55}.sl.g input{accent-color:#12B76A}.sl.b input{accent-color:#2E6BFF}
+.rgbtip{font-size:14px;color:var(--muted);margin-top:8px}
+/* размер */
+.rs-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-top:12px}
+.rs-row .field{margin:0}.rs-row input{width:130px;font:inherit;font-size:20px;font-weight:800;padding:10px 12px;border-radius:14px;border:2px solid #DCD5FF;color:var(--ink)!important;background:#fff!important}
+.rs-row label{color:var(--ink)!important}
+.lock{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:10px 14px;font-weight:800;color:var(--ink);font-size:18px}
+.lock[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.frame{background:repeating-conic-gradient(#EEE 0 25%,#fff 0 50%) 0 0/20px 20px;border-radius:18px;height:300px;display:grid;place-items:center;border:2px solid #E3DEFF;overflow:hidden}
+.frame canvas{display:block;box-shadow:0 6px 20px #0003;border-radius:4px}
+.dims{font-family:var(--mono);font-weight:700;color:var(--violet);margin-top:6px}
+/* температура */
+.tint{position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;z-index:1}
+/* блиц */
+.blitz{font-family:var(--display);font-size:clamp(20px,3vw,28px);font-weight:800;text-align:center;padding:28px 16px;background:#F7F5FF;border-radius:20px;min-height:130px;display:grid;place-items:center}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.tf .choice{text-align:center;font-size:22px;padding:18px}
+/* боcс */
+.steps{display:grid;gap:8px;margin:8px 0 14px}
+.step{display:flex;gap:10px;align-items:center;background:#F7F5FF;border-radius:14px;padding:10px 14px;font-weight:700}
+.step.ok{background:#E5F9EF}.step .m{font-size:20px}
+/* дескрипторы */
+.desc{display:grid;gap:8px;margin:12px 0}
+.desc div{display:flex;gap:12px;align-items:center;border:2px solid #EEEAFE;border-radius:14px;padding:10px 14px}
+.desc .ic{font-size:22px}.desc .lvl{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:12px;white-space:nowrap}
+.desc .y{border-color:#9BE7C3;background:#F0FBF5}.desc .h{border-color:#FFE08A;background:#FFFBEA}.desc .n{border-color:#FFC2CF;background:#FFF5F7}
+</style>
+</head>
+<body>
+<div class="stars-bg"></div>
+
+<section id="start">
+  <div class="start-card">
+    <div class="eyebrow">Технологическое воспитание · 7 класс · 23.11 · перед СО</div>
+    <div class="logo">ВЕКТОРНАЯ ЭКСПЕДИЦИЯ</div>
+    <div style="font-family:var(--display);font-weight:700;font-size:18px">Основы графического дизайна в Inkscape: повторяем всё полугодие</div>
+    <p class="lead">Сначала — короткий конспект-шпаргалка. Потом 10 островов: интерфейс, инструменты, фигуры, порядок, группы, булевы операции, узлы, текст, цвет и конвейер дизайнера. Финал — логотип за 3 минуты и пробная контрольная. В конце — квалификатив и план подготовки к СО.</p>
+    <div class="field"><label for="fio">Фамилия и имя</label><input id="fio" autocomplete="off" maxlength="60" placeholder="Например: Руссу Анна"></div>
+    <div class="field"><label for="cls">Класс</label>
+      <select id="cls"><option value="">выбери…</option><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div>
+    <div class="err" id="err"></div>
+    <button class="btn big" id="go" type="button">▶ В ЭКСПЕДИЦИЮ</button>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="hud">
+    <div class="who" id="who"></div>
+    <div class="xp"><small id="xpTxt">УРОВЕНЬ ИГРОКА 1</small><div class="bar"><i id="xpBar" style="width:0"></i></div></div>
+    <div class="chips"><button class="hud-btn" type="button" id="hudNote">📒 Конспект</button><span class="chip gold" title="Монеты">🪙 <span id="coins">0</span></span><span class="chip cyan" title="Звёзды">⭐ <span id="stars">0</span>/42</span><span class="chip pink" title="Время урока">⏱ <span id="clock">00:00</span></span></div>
+  </div>
+  <div id="view"></div>
+</section>
+<div id="toast" role="status"></div>
+<canvas class="confetti" id="confetti"></canvas>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script src="../../../engine/preview.js?v=1"></script>
+<script type="module">
+/* Связь с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech7-ink-m1";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Бортовой журнал", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+"use strict";
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const TL=()=>window.TL_READY;
+const rnd=(n)=>Math.floor(Math.random()*n);
+const shuffle=(a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const num=(n)=>Number(n).toLocaleString("ru-RU");
+
+/* ===================== СОСТОЯНИЕ ===================== */
+const KEY="techlab_tech7_ink1";
+const LEVELS=[
+  {k:"q1",ic:"🖥",bg:"#E0F9FF",t:"Интерфейс",d:"Найди части окна Inkscape",max:5,tm:"3 мин"},
+  {k:"q2",ic:"🛠",bg:"#EFE9FF",t:"Инструменты",d:"Клавиши и инструменты",max:5,tm:"3 мин"},
+  {k:"q3",ic:"⭐",bg:"#FFE3F3",t:"Фигуры",d:"Повтори звезду и многоугольник",max:6,tm:"3 мин"},
+  {k:"q4",ic:"🥪",bg:"#FFF3D6",t:"Порядок объектов",d:"Home, PgUp, PgDn, End",max:6,tm:"3 мин"},
+  {k:"q5",ic:"🔒",bg:"#E5F9EF",t:"Группа и замок",d:"Группировка, блокировка, выравнивание",max:5,tm:"2 мин"},
+  {k:"q6",ic:"🌗",bg:"#FFE9E3",t:"Булевы операции",d:"Объединение, разность, пересечение",max:6,tm:"3 мин"},
+  {k:"q7",ic:"✒",bg:"#E0F9FF",t:"Мастер узлов",d:"Тяни узлы — повтори контур",max:6,tm:"3 мин"},
+  {k:"q8",ic:"🔤",bg:"#EFE9FF",t:"Текст",d:"По контуру, в рамке, оконтурить",max:5,tm:"2 мин"},
+  {k:"q9",ic:"🎨",bg:"#FFE3F3",t:"Заливка и обводка",d:"Цвет, градиент, пунктир",max:5,tm:"2 мин"},
+  {k:"q10",ic:"🏭",bg:"#FFF3D6",t:"Конвейер дизайнера",d:"Порядок работы и экспорт",max:6,tm:"3 мин"},
+  {k:"q11",ic:"👑",bg:"",t:"Босс: логотип за 3 минуты",d:"Заказ клиента + описание для ИИ",max:3,boss:true,tm:"6 мин"},
+  {k:"q12",ic:"📝",bg:"#E5F9EF",t:"Пробная контрольная",d:"10 вопросов как на СО 30.11",max:5,tm:"4 мин"},
+];
+const BONUS=[
+  {k:"b1",ic:"⚡",bg:"#FFF3D6",t:"Булевы на скорость",d:"8 картинок подряд",max:4,bonus:true},
+  {k:"b2",ic:"🕵",bg:"#E0F9FF",t:"Найди ошибку дизайнера",d:"6 типичных ошибок",max:3,bonus:true},
+];
+const BONUS_CAP=3;
+const ALLL=[...LEVELS,...BONUS];
+const ISL=10;               // острова 1–10 — в любом порядке; босс и пробная СО — после 7 островов
+const FIN_MIN=42;           // финиш (и отправка учителю) — не раньше 42-й минуты от входа
+const MAXALL=LEVELS.reduce((s,l)=>s+l.max,0)+3; // + описание логотипа (ИИ) 3 б.
+let S=fresh("","");
+function fresh(fio,cls){return {fio,cls,start:Date.now(),brief:0,noteAt:0,score:{},stars:{},coins:0,open:{o1:""},boss:{},mood:"",sent:0,rec:""};}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+  if(S.rec)TL().then(t=>t.progress(S.rec,{score:S.score,open:S.open,stage:stageLabel(),doneCount:Object.keys(S.score).length})).catch(()=>{});}
+function stageLabel(){if(!S.brief)return "Шпаргалка";const n=LEVELS.filter(l=>S.score[l.k]!=null).length;return n>=LEVELS.length?"Финиш":"Пройдено "+n+" из "+LEVELS.length;}
+const starsOf=(pts,max)=>pts<=0?0:pts/max>=.9?3:pts/max>=.6?2:1;
+function totalStars(){return Object.values(S.stars).reduce((a,b)=>a+b,0);}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+
+/* ===================== ЗВУК, ТОСТ, КОНФЕТТИ ===================== */
+let AC=null;
+function beep(f=660,d=.08,type="square",v=.05){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
+const sGood=()=>{beep(660,.07);setTimeout(()=>beep(990,.09),70);};
+const sBad=()=>beep(160,.18,"sawtooth",.05);
+const sWin=()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,"triangle",.06),i*110));
+
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1600);}
+function confetti(){const cv=$("confetti"),c=cv.getContext("2d");cv.width=innerWidth;cv.height=innerHeight;
+  const P=Array.from({length:120},()=>({x:innerWidth/2,y:innerHeight/3,vx:(Math.random()-.5)*14,vy:-Math.random()*12-4,c:["#FF4FB8","#29E3FF","#B6FF3B","#FFC93C","#8B5CFF"][rnd(5)],s:6+rnd(6)}));
+  let n=0;(function f(){c.clearRect(0,0,cv.width,cv.height);for(const p of P){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;c.fillStyle=p.c;c.fillRect(p.x,p.y,p.s,p.s*.6);}if(++n<90)requestAnimationFrame(f);else c.clearRect(0,0,cv.width,cv.height);})();}
+
+/* ===================== HUD ===================== */
+function hud(){
+  $("who").innerHTML=`<small>ИГРОК</small>${esc(S.fio)} · ${esc(S.cls)}`;
+  $("coins").textContent=S.coins;$("stars").textContent=totalStars();
+  const xp=S.coins,lvl=1+Math.floor(xp/100);$("xpTxt").textContent=`УРОВЕНЬ ИГРОКА ${lvl} · ${xp} XP`;$("xpBar").style.width=(xp%100)+"%";
+}
+setInterval(()=>{if(!S.fio)return;const s=Math.floor((Date.now()-S.start)/1000);$("clock").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");},1000);
+
+function finishLevel(k,pts){
+  const L=ALLL.find(l=>l.k===k);pts=Math.max(0,Math.min(L.max,Math.round(pts*2)/2));
+  const st=starsOf(pts,L.max),gain=pts*10+st*10;
+  const better=S.score[k]==null||pts>S.score[k];
+  if(better){S.coins+=gain-(S.score[k]!=null?S.score[k]*10+(S.stars[k]||0)*10:0);S.score[k]=pts;S.stars[k]=st;}
+  save();hud();if(st>=2)confetti();sWin();
+  const o=document.createElement("div");o.className="win-pop";
+  o.innerHTML=`<div class="win-box"><div class="eyebrow">УРОВЕНЬ ПРОЙДЕН</div><h3>${esc(L.t)}</h3>
+    <div class="win-stars">${[1,2,3].map(i=>`<span class="${i<=st?"":"off"}">⭐</span>`).join("")}</div>
+    <p>Баллы: <b>${pts} / ${L.max}</b> · монеты: <b>+${gain} 🪙</b>${better?"":" (твой прошлый результат был лучше — он сохранён)"}</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+      <button class="btn" type="button" id="wMap">🗺 На карту</button>${st<3&&!L.boss&&!L.bonus?`<button class="btn ghost" type="button" id="wAgain">↻ Ещё раз</button>`:""}</div></div>`;
+  document.body.appendChild(o);
+  $("wMap").onclick=()=>{o.remove();showMap();};
+  $("wAgain")?.addEventListener("click",()=>{o.remove();openLevel(k);});
+}
+
+/* ===================== БОРТОВОЙ ЖУРНАЛ: тема, цели, задачи, конспект ===================== */
+const PV=()=>S.rec==="preview";      // просмотр учителя: без ожидания
+const NOTE_SEC=240;     // конспект: кнопка «Я записал(а)» — через 4 минуты // кнопка «Я записал(а)» включается через 3 минуты — успеть переписать
+const NOTE=`<div class="notebook">
+  <h3>23.11 · Inkscape — шпаргалка к контрольной</h3>
+  <p>1. Окно: <b>меню</b>, <b>панель инструментов</b> (слева), <b>панель свойств</b> (сверху), <b>холст</b>, <b>палитра</b> (внизу).</p>
+  <p>2. Клавиши: <span class="key">F1 выделение · N узлы · R прямоугольник · E эллипс · * звезда · B кривые · T текст</span></p>
+  <p>3. Порядок: <b>Home</b> — наверх, <b>End</b> — вниз, <b>PgUp / PgDn</b> — на ступень.</p>
+  <p>4. <b>Ctrl+G</b> группа · <b>Shift+Ctrl+G</b> разгруппировать · <b>Ctrl+D</b> дубль · <b>H / V</b> отражение · замок — блокировка.</p>
+  <p>5. Контур: <b>объединение</b> Ctrl++ · <b>разность</b> Ctrl+− (верхний вырезает из нижнего) · <b>пересечение</b> Ctrl+*</p>
+  <p>6. Кривая = <b>узлы</b> + <b>сегменты</b>. Текст → «Разместить по контуру»; «Оконтурить» = текст → кривые.</p>
+  <p>7. <b>Shift+Ctrl+F</b> заливка и обводка (градиент, пунктир) · <b>Shift+Ctrl+A</b> выровнять.</p>
+  <p>8. Сохраняем в <b>SVG</b> (вектор), показываем в <b>PNG</b>: <b>Shift+Ctrl+E</b> экспорт.</p>
+</div>`;
+function showBrief(){
+  hud();
+  const left=()=>Math.max(0,NOTE_SEC-Math.floor((Date.now()-(S.noteAt||Date.now()))/1000));
+  if(!S.noteAt){S.noteAt=Date.now();save();}
+  $("view").innerHTML=`<section class="stage">
+    <div class="lv-head"><span class="lv-badge">БОРТОВОЙ ЖУРНАЛ</span><h2>🧭 Тема и цели урока</h2>${S.brief||PV()?`<button class="back" type="button" id="back">🗺 Карта</button>`:""}</div>
+    <div class="topic">Основы графического дизайна в Inkscape: обобщение перед контрольной</div>
+    <div class="brief-grid">
+      <div class="box"><h3>🎯 Цель урока</h3>Повторить все темы полугодия по Inkscape, найти свои «слабые места» и подготовиться к <b>контрольной 30.11</b>.</div>
+      <div class="box"><h3>✅ Задачи: сегодня я…</h3><ol>
+        <li>вспомню окно Inkscape и главные инструменты;</li>
+        <li>потренирую фигуры, порядок, группы и булевы операции;</li>
+        <li>поработаю с узлами, текстом, цветом и экспортом;</li>
+        <li>соберу логотип по заказу клиента;</li>
+        <li>пройду пробную контрольную и узнаю, что повторить.</li></ol></div>
+      <div class="box"><h3>🗺 План урока</h3><div class="plan"><div>📒 Шпаргалка и проверка<span>6 мин</span></div>
+        <div>🏝 10 островов (любой порядок)<span>27 мин</span></div><div>👑 Логотип за 3 минуты<span>5 мин</span></div><div>📝 Пробная контрольная<span>4 мин</span></div>
+        <div>⭐ Бонусы для быстрых<span>до 42-й мин</span></div><div>🏁 Итог и план к СО<span>3 мин</span></div></div></div>
+    </div>
+    <h3 style="font-family:var(--display);margin:20px 0 8px">✍ Запиши в тетрадь — шпаргалка к контрольной</h3>
+    ${NOTE}
+    <div class="copy-bar">${S.brief?`<button class="btn" type="button" id="toMap">🗺 На карту островов</button>`:
+      `<button class="btn" type="button" id="wrote" disabled>✓ Я записал(а) шпаргалку</button><span class="ring" id="noteT"></span>`}</div>
+  </section>`;
+  $("back")&&($("back").onclick=showMap);
+  $("toMap")&&($("toMap").onclick=showMap);
+  const b=$("wrote");
+  if(b){
+    const tick=()=>{if(!$("wrote")){clearInterval(t);return;}const l=left();$("noteT").textContent=l>0?`Пиши аккуратно — кнопка откроется через ${Math.floor(l/60)}:${String(l%60).padStart(2,"0")}`:"Готово? Нажимай!";b.disabled=l>0&&!PV();if(l<=0)clearInterval(t);};
+    const t=setInterval(tick,1000);tick();
+    b.onclick=()=>noteCheck();
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+// проверка конспекта: 3 вопроса, без баллов, нужно ответить верно (можно заглянуть в тетрадь)
+const NCHK=[
+  {q:"Какая операция «вырезает» верхний объект из нижнего?",o:["Разность (Ctrl + −)","Объединение (Ctrl + +)","Пересечение (Ctrl + *)","Группировка (Ctrl + G)"]},
+  {q:"Какой клавишей отправить объект в самый низ стопки?",o:["End","Home","PgUp","Ctrl + D"]},
+  {q:"В каком формате сохраняем рисунок, чтобы потом редактировать?",o:["SVG","PNG","JPG","PDF"]},
+];
+function noteCheck(r=0){
+  if(r>=NCHK.length){S.brief=1;S.coins+=20;save();hud();sWin();toast("📒 +20 🪙 за конспект");return showMap();}
+  const X=NCHK[r],order=shuffle([0,1,2,3]);
+  $("view").innerHTML=`<section class="stage"><div class="lv-head"><span class="lv-badge">ПРОВЕРКА ШПАРГАЛКИ · ${r+1} / 3</span><h2>📒 Загляни в тетрадь</h2></div>
+    <div class="lv-help">Ответь на 3 вопроса по своему конспекту. Баллов здесь нет, но без верных ответов дальше не пройти.</div>
+    <h3 style="font-family:var(--display);font-size:19px;margin:14px 0 0">${esc(X.q)}</h3>
+    <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.o[j])}</button>`).join("")}</div>
+    <div class="feedback" id="fb"></div></section>`;
+  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const good=Number(b.dataset.j)===0;
+    if(good){b.classList.add("right");sGood();setTimeout(()=>noteCheck(r+1),700);}
+    else{b.classList.add("wrong");b.disabled=true;sBad();$("fb").className="feedback bad";$("fb").textContent="Неверно. Посмотри в конспект (кнопка 📒 вверху) и попробуй ещё раз.";}});
+}
+function showNote(){
+  const o=document.createElement("div");o.className="win-pop";
+  o.innerHTML=`<div class="stage" style="max-width:760px;width:100%;max-height:90vh;overflow:auto;margin:0">${NOTE}<div style="text-align:center;margin-top:14px"><button class="btn" type="button">Закрыть</button></div></div>`;
+  o.querySelector("button").onclick=()=>o.remove();o.onclick=(e)=>{if(e.target===o)o.remove();};
+  document.body.appendChild(o);
+}
+$("hudNote").onclick=showNote;
+
+/* ===================== КАРТА ===================== */
+const islDone=()=>LEVELS.slice(0,ISL).filter(l=>S.score[l.k]!=null).length;
+function unlocked(i){return i<ISL?!!S.brief:islDone()>=7;}
+const bonusOpen=()=>S.score.q12!=null;
+const finLeft=()=>Math.max(0,FIN_MIN-Math.floor((Date.now()-S.start)/60000));
+const finOpen=()=>finLeft()<=0||PV();
+function node(L,i,lock,label){const done=S.score[L.k]!=null;
+  return `<button type="button" class="node ${lock?"lock":""} ${done?"done":""} ${L.boss?"boss":""} ${L.bonus?"bonusn":""}" data-l="${L.k}" ${lock?"disabled":""}>
+    <span class="ic" style="background:${L.bg||"#fff6"}">${lock?"🔒":L.ic}</span>
+    <span class="n">${label}${L.tm?` <span class="tm">· ${L.tm}</span>`:""}</span><span class="t">${esc(L.t)}</span><span class="d">${esc(L.d)}</span>
+    <span class="st">${done?[1,2,3].map(s=>s<=S.stars[L.k]?"⭐":"☆").join(""):lock?"":"▶ плыть"}</span></button>`;}
+function showMap(){
+  hud();
+  const fo=finOpen(),n=islDone();
+  $("view").innerHTML=`<section class="map">
+    <h1>🗺 Карта экспедиции</h1><p>Острова 1–10 можно проходить <b>в любом порядке</b>. После 7 островов откроются босс и пробная контрольная. Переигрывай острова, чтобы собрать ⭐⭐⭐ — засчитывается лучший результат. Пройдено островов: <b>${n} из ${ISL}</b>.</p>
+    <div class="road">
+      <button type="button" class="node brief ${S.brief?"done":""}" id="toBrief"><span class="ic" style="background:#fff8">📒</span>
+        <span class="n">ПОРТ</span><span class="t">Шпаргалка</span><span class="d">Тема, цели, конспект и проверка</span><span class="st">${S.brief?"✓ записано":"▶ открыть"}</span></button>
+      ${LEVELS.slice(0,ISL).map((L,i)=>node(L,i,!unlocked(i),"ОСТРОВ "+(i+1))).join("")}
+    </div>
+    <h1 style="font-size:22px;margin-top:22px">👑 Финал</h1><p>${n>=7?"Готов! Собери логотип и пройди пробную контрольную.":`Откроется после 7 островов (ещё ${7-n}).`}</p>
+    <div class="road">${LEVELS.slice(ISL).map((L,j)=>node(L,ISL+j,!unlocked(ISL+j),j?"ФИНАЛ 2":"ФИНАЛ 1")).join("")}</div>
+    <h1 style="font-size:22px;margin-top:22px">⭐ Бонусы</h1><p>${bonusOpen()?`Дополнительные баллы: к итогу добавится не больше +${BONUS_CAP}.`:"Откроются после пробной контрольной."}</p>
+    <div class="road">${BONUS.map((L,i)=>node(L,i,!bonusOpen()&&!PV(),"БОНУС "+(i+1))).join("")}
+      <button type="button" class="node fin" id="toFin" ${fo?"":"disabled"}><span class="ic" style="background:#fff3">🏁</span><span class="n">ФИНИШ</span>
+        <span class="t">Квалификатив и план к СО</span><span class="d">${fo?"Узнай итог и отправь учителю":`Откроется через ${finLeft()} мин. Пока — острова, бонусы и ⭐⭐⭐`}</span></button>
+    </div></section>`;
+  document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>openLevel(b.dataset.l));
+  $("toBrief").onclick=showBrief;$("toFin").onclick=showFin;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function lvHead(i,L,help){return `<div class="lv-head"><span class="lv-badge">${L.bonus?"⭐ БОНУС":i<ISL?"ОСТРОВ "+(i+1):"ФИНАЛ"}</span><h2>${L.ic} ${esc(L.t)}</h2><button class="back" type="button" id="back">🗺 Карта</button></div>
+  <div class="lv-help">${help}</div>`;}
+function openLevel(k){const i=ALLL.findIndex(l=>l.k===k);({q1:lv1,q2:lv2,q3:lv3,q4:lv4,q5:lv5,q6:lv6,q7:lv7,q8:lv8,q9:lv9,q10:lv10,q11:lv11,q12:lv12,b1,b2})[k](i,ALLL[i]);const b=$("back");if(b)b.onclick=showMap;
+  if(S.rec)TL().then(t=>t.progress(S.rec,{stage:ALLL[i].bonus?"Бонус: "+ALLL[i].t:ALLL[i].t})).catch(()=>{});window.scrollTo({top:0,behavior:"smooth"});}
+function answerRound(ok,expl,next,delayOk=1300,delayBad=2600){
+  const fb=$("fb");fb.className="feedback "+(ok?"ok":"bad");fb.innerHTML=(ok?"Верно! ":"Не совсем. ")+expl;(ok?sGood:sBad)();setTimeout(next,ok?delayOk:delayBad);
+}
+
+/* ===================== ОБЩИЙ КВИЗ ===================== */
+// Q: [{q, opts:[...], a:index, ex, vis?}]; per — баллов за верный ответ
+function quizLevel(i,L,help,Q,per,key){
+  let r=0,ok=0;
+  function round(){
+    const X=Q[r],order=shuffle(X.opts.map((_,j)=>j));
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,help)}
+      <div class="prog">Вопрос ${r+1} из ${Q.length} · верно: ${ok}</div>
+      ${X.vis?`<div style="margin-top:10px">${X.vis}</div>`:""}
+      <h3 style="font-family:var(--display);font-size:19px;margin:14px 0 0">${X.q}</h3>
+      <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.opts[j])}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+      const good=Number(b.dataset.j)===X.a;
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(Number(x.dataset.j)===X.a)x.classList.add("right");});
+      if(good)ok++;else b.classList.add("wrong");
+      answerRound(good,X.ex,()=>{r++;if(r<Q.length)round();else finishLevel(key,ok*per);},1400,3400);
+    });
+  }
+  round();
+}
+const pick=(arr,n)=>shuffle(arr).slice(0,n);
+// вопрос «выбери из набора»: правильный + 3 случайных неправильных
+const mkQ=(q,right,pool,ex,vis)=>({q,vis,opts:[right,...shuffle(pool.filter(x=>x!==right)).slice(0,3)],a:0,ex});
+
+/* ===================== ОСТРОВ 1: Интерфейс ===================== */
+const UI_Z=[["menu","Строка меню","сверху: Файл, Правка, Объект, Контур, Текст…"],["cmd","Панель команд","кнопки: создать, открыть, сохранить, экспорт…"],
+  ["ctrl","Панель свойств инструмента","меняется для каждого инструмента: ширина, высота, скругление…"],["tools","Панель инструментов","слева: выделитель, узлы, фигуры, текст…"],
+  ["canvas","Холст (страница)","здесь рисуем"],["fill","Панель «Заливка и обводка»","справа: цвет, градиент, толщина обводки"],
+  ["palette","Палитра цветов","внизу: щелчок — заливка, Shift+щелчок — обводка"],["status","Строка состояния","самый низ: что выделено, подсказки, масштаб"]];
+function inkWindow(){return `<div class="ink">
+  <div class="z" data-z="menu" style="grid-area:menu">Файл&nbsp; Правка&nbsp; Вид&nbsp; Слой&nbsp; Объект&nbsp; Контур&nbsp; Текст&nbsp; Фильтры&nbsp; Справка</div>
+  <div class="z" data-z="cmd" style="grid-area:cmd">📄 📂 💾 🖨 ⤴ ↶ ↷ 🔍</div>
+  <div class="z" data-z="ctrl" style="grid-area:ctrl">Ш: 120 &nbsp; В: 80 &nbsp; Rx: 10 &nbsp; Ry: 10</div>
+  <div class="z tools" data-z="tools" style="grid-area:tools">➤<br>◇<br>▭<br>◯<br>☆<br>✎<br>T<br>💧</div>
+  <div class="z canvas" data-z="canvas" style="grid-area:canvas"><div class="page"><span style="color:#D4537E;font-size:34px">★</span><span style="width:46px;height:30px;background:#5DCAA5;display:inline-block;border-radius:6px"></span></div></div>
+  <div class="z" data-z="fill" style="grid-area:fill;font-size:12px;line-height:1.5">Заливка и обводка<br>▣ ▢ ▤ ◐<br>R 212 G 83 B 126<br>Толщина 2 px</div>
+  <div class="z pal" data-z="palette" style="grid-area:pal">${["#000","#fff","#E24B4A","#EF9F27","#FAC775","#639922","#1D9E75","#378ADD","#534AB7","#D4537E","#888780","#5F5E5A"].map(c=>`<i style="background:${c}"></i>`).join("")}</div>
+  <div class="z" data-z="status" style="grid-area:status;font-size:12px">Прямоугольник в слое «Слой 1». Щелчок — выделить, Shift+щелчок — добавить. &nbsp; 100%</div></div>`;}
+function lv1(i,L){
+  const Q=pick(UI_Z,5);let r=0,ok=0;
+  function round(){
+    const [z,n,d]=Q[r];
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Перед тобой окно Inkscape. <b>Нажми на ту часть окна</b>, которую просят найти. С первого раза — 1 балл.")}
+      <div class="prog">Найди ${r+1} из 5 · верно: ${ok}</div>
+      <div class="blitz" style="min-height:0;padding:14px"><span>Где здесь <b>«${esc(n)}»</b>?</span></div>
+      ${inkWindow()}<div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    let done=false;
+    document.querySelectorAll(".ink [data-z]").forEach(el=>el.onclick=()=>{if(done)return;done=true;
+      const good=el.dataset.z===z;document.querySelector(`.ink [data-z="${z}"]`).classList.add("hit");if(!good)el.classList.add("miss");if(good)ok++;
+      answerRound(good,`<b>${esc(n)}</b> — ${esc(d)}.`,()=>{r++;if(r<5)round();else finishLevel("q1",ok);},1300,3000);});
+  }
+  round();
+}
+
+/* ===================== ОСТРОВ 2: Инструменты и клавиши ===================== */
+const TOOLS=[["S или F1","Выделитель (стрелка)"],["N или F2","Редактор узлов"],["R или F4","Прямоугольник"],["E или F5","Эллипс и круг"],
+  ["* (звёздочка)","Звёзды и многоугольники"],["B","Кривые Безье (перо)"],["P","Карандаш (рисование от руки)"],["T","Текст"],["G","Градиент"],["D","Пипетка"],
+  ["Ctrl + D","Дублировать объект"],["Ctrl + G","Сгруппировать"],["Shift + Ctrl + G","Разгруппировать"],["H","Отразить по горизонтали"],["V","Отразить по вертикали"],["Shift + Ctrl + A","Окно «Выровнять и расставить»"]];
+function lv2(i,L){
+  const P=pick(TOOLS,10),names=TOOLS.map(x=>x[1]),keys=TOOLS.map(x=>x[0]);
+  quizLevel(i,L,"Скоростная проверка: клавиша → инструмент или наоборот. 10 вопросов по 0,5 балла.",
+    P.map(([k,n],j)=>j%2?mkQ(`Какая клавиша вызывает: <b>${esc(n)}</b>?`,k,keys,`<b>${esc(n)}</b> — <span class="kbd">${esc(k)}</span>.`)
+      :mkQ(`Что делает клавиша <span class="kbd">${esc(k)}</span>?`,n,names,`<span class="kbd">${esc(k)}</span> — ${esc(n.toLowerCase())}.`)),0.5,"q2");
+}
+
+/* ===================== ОСТРОВ 3: Фигуры — мини-редактор ===================== */
+function starPts(n,star,ratio,cx=90,cy=80,R=66){const pts=[],k=star?2*n:n;
+  for(let j=0;j<k;j++){const a=-Math.PI/2+j*Math.PI*2/k,r=star&&j%2?R*ratio:R;pts.push((cx+r*Math.cos(a)).toFixed(1)+","+(cy+r*Math.sin(a)).toFixed(1));}return pts.join(" ");}
+const SHAPES=[{n:5,star:1,ratio:.4,nm:"пятиконечная звезда"},{n:6,star:0,ratio:.5,nm:"шестиугольник"},{n:8,star:1,ratio:.7,nm:"восьмиконечная звезда-цветок"},
+  {n:3,star:0,ratio:.5,nm:"треугольник"},{n:12,star:1,ratio:.85,nm:"звезда-шестерёнка"},{n:4,star:1,ratio:.25,nm:"четырёхлучевая звезда-искра"},{n:7,star:0,ratio:.5,nm:"семиугольник"}];
+function lv3(i,L){
+  const T=pick(SHAPES,3);let r=0,pts=0;
+  function round(){
+    const X=T[r],v={n:5,star:0,ratio:.5};let tries=0;
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Это инструмент <b>«Звёзды и многоугольники»</b>. На его панели свойств есть: <b>многоугольник / звезда</b>, число <b>углов</b> и <b>пропорция</b> лучей. Повтори фигуру-образец. Точно с 1-й попытки — 2 балла.")}
+      <div class="prog">Фигура ${r+1} из 3 · баллы: ${pts}</div>
+      <div class="two" style="margin-top:10px"><div class="shapebox"><span class="lbl2">ОБРАЗЕЦ</span><svg viewBox="0 0 180 160"><polygon points="${starPts(X.n,X.star,X.ratio)}" fill="#D4537E"/></svg></div>
+        <div class="shapebox"><span class="lbl2">ТВОЯ ФИГУРА</span><svg viewBox="0 0 180 160"><polygon id="my" fill="#534AB7"/></svg></div></div>
+      <div class="ctrlbar"><div class="seg"><button type="button" data-t="0">⬡ Многоугольник</button><button type="button" data-t="1">☆ Звезда</button></div>
+        <label>Углов: <b id="vn">5</b><input type="range" id="sn" min="3" max="12" value="5"></label>
+        <label>Пропорция: <b id="vr">0.50</b><input type="range" id="sr" min="10" max="95" step="5" value="50"></label></div>
+      <div style="margin-top:12px"><button class="btn" type="button" id="chk">✓ Проверить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    const draw=()=>{$("my").setAttribute("points",starPts(v.n,v.star,v.ratio));$("vn").textContent=v.n;$("vr").textContent=v.ratio.toFixed(2);
+      document.querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.t)===v.star));$("sr").disabled=!v.star;};
+    document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{v.star=Number(b.dataset.t);beep(520,.04);draw();});
+    $("sn").oninput=(e)=>{v.n=Number(e.target.value);draw();};$("sr").oninput=(e)=>{v.ratio=Number(e.target.value)/100;draw();};draw();
+    $("chk").onclick=()=>{tries++;const base=v.n===X.n&&v.star===X.star,exact=base&&(!X.star||Math.abs(v.ratio-X.ratio)<=.06);
+      if(exact||tries>=2){const p=exact?(tries===1?2:1.5):base?1:0;pts+=p;$("chk").disabled=true;
+        answerRound(exact,`Это ${X.nm}: ${X.star?"звезда":"многоугольник"}, углов — ${X.n}${X.star?`, пропорция ≈ ${X.ratio}`:""}. +${p} б.`,()=>{r++;if(r<3)round();else finishLevel("q3",pts);},1500,3400);}
+      else{sBad();$("fb").className="feedback bad";$("fb").textContent=base?"Почти! Тип и углы верные — подправь пропорцию лучей. Осталась 1 попытка.":"Посчитай углы и посмотри: это звезда или многоугольник? Осталась 1 попытка.";}};
+  }
+  round();
+}
+
+/* ===================== ОСТРОВ 4: Порядок объектов ===================== */
+const ZOBJ={sky:["Небо",'<rect x="0" y="0" width="300" height="200" fill="#85B7EB"/>'],sun:["Солнце",'<circle cx="200" cy="80" r="38" fill="#EF9F27"/>'],
+  mnt:["Горы",'<polygon points="0,200 90,70 180,200" fill="#3B6D11"/><polygon points="110,200 220,60 300,200" fill="#639922"/>'],
+  house:["Дом",'<rect x="60" y="130" width="70" height="60" fill="#D85A30"/><polygon points="52,132 95,96 138,132" fill="#712B13"/><rect x="85" y="155" width="20" height="35" fill="#FAC775"/>'],
+  cloud:["Облако",'<g fill="#fff"><circle cx="230" cy="55" r="18"/><circle cx="252" cy="50" r="22"/><circle cx="272" cy="58" r="16"/></g>']};
+const ZTASK=[{goal:["sky","sun","mnt","house"],txt:"Небо — в самом низу, солнце — <b>за горами</b>, дом — <b>впереди всех</b>."},
+  {goal:["sky","sun","cloud","mnt","house"],txt:"Небо внизу, облако <b>закрывает часть солнца</b>, горы — перед облаком, дом — впереди всех."},
+  {goal:["sky","mnt","sun","house"],txt:"Солнце <b>садится перед горами</b> (поверх гор), дом — впереди всех, небо — фон."}];
+function lv4(i,L){
+  let r=0,pts=0;
+  function round(){
+    const T=ZTASK[r];let ord=shuffle(T.goal);while(ord.join()===T.goal.join())ord=shuffle(T.goal);
+    let sel=ord[ord.length-1],tries=0;
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Объекты лежат друг на друге, как листы бумаги. Выдели объект в списке и меняй порядок: <span class='kbd'>Home</span> — наверх, <span class='kbd'>PgUp</span> — на ступень выше, <span class='kbd'>PgDn</span> — ниже, <span class='kbd'>End</span> — в самый низ.")}
+      <div class="prog">Сцена ${r+1} из 3 · баллы: ${pts}</div>
+      <div class="lv-help" style="background:#FFF3D6;color:#5A4300;margin-top:10px">🎯 ${T.txt}</div>
+      <div class="two"><div class="shapebox"><svg id="sc" viewBox="0 0 300 200"></svg></div>
+        <div><div class="layers" id="ly"></div>
+          <div class="zbtns"><button class="btn ghost" type="button" data-m="top">Home</button><button class="btn ghost" type="button" data-m="up">PgUp</button><button class="btn ghost" type="button" data-m="down">PgDn</button><button class="btn ghost" type="button" data-m="bot">End</button></div>
+          <div style="margin-top:10px"><button class="btn" type="button" id="chk">✓ Проверить</button></div></div></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    const draw=()=>{$("sc").innerHTML=ord.map(k=>ZOBJ[k][1]).join("");
+      $("ly").innerHTML=ord.slice().reverse().map(k=>`<button type="button" class="lay ${k===sel?"on":""}" data-k="${k}">${esc(ZOBJ[k][0])}</button>`).join("")+'<div class="sub" style="font-size:12px">↑ сверху · ↓ снизу</div>';
+      document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{sel=b.dataset.k;draw();});};
+    document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const j=ord.indexOf(sel);ord.splice(j,1);
+      const m=b.dataset.m,nj=m==="top"?ord.length:m==="bot"?0:m==="up"?Math.min(ord.length,j+1):Math.max(0,j-1);ord.splice(nj,0,sel);beep(480,.04);draw();});
+    draw();
+    $("chk").onclick=()=>{tries++;const good=ord.join()===T.goal.join();
+      if(good||tries>=2){const p=good?(tries===1?2:1):0;pts+=p;$("chk").disabled=true;if(!good){ord=T.goal.slice();draw();}
+        answerRound(good,`Порядок снизу вверх: <b>${T.goal.map(k=>ZOBJ[k][0]).join(" → ")}</b>. +${p} б.`,()=>{r++;if(r<3)round();else finishLevel("q4",pts);},1500,3800);}
+      else{sBad();$("fb").className="feedback bad";$("fb").textContent="Пока не так. Перечитай задание. Осталась 1 попытка.";}};
+  }
+  round();
+}
+
+/* ===================== ОСТРОВ 5: Группа, замок, выравнивание ===================== */
+const ACTS=["Сгруппировать (Ctrl + G)","Разгруппировать (Shift + Ctrl + G)","Заблокировать объект (замок)","Выровнять (Shift + Ctrl + A)","Дублировать и отразить (Ctrl + D, затем H)","Дублировать (Ctrl + D)"];
+const GSIT=[["Нарисовал снеговика из 3 кругов. Хочу двигать его целиком.",0],["В сгруппированном снеговике нужно перекрасить только одну пуговицу.",1],
+  ["Фон всё время случайно сдвигается, когда выделяю объекты на нём.",2],["Надпись должна стоять ровно по центру открытки.",3],
+  ["Нарисовал левое крыло бабочки — нужно такое же правое, зеркальное.",4],["Нужно 10 одинаковых кружков для гирлянды.",5],
+  ["Три звезды стоят криво — их надо выстроить в линию по верхнему краю.",3],["Готовый логотип из 6 деталей «разваливается», когда его двигаешь.",0]];
+function lv5(i,L){
+  quizLevel(i,L,"Прочитай ситуацию и выбери, <b>что сделать в Inkscape</b>. 5 ситуаций по 1 баллу.",
+    pick(GSIT,5).map(([t,a])=>({vis:`<div class="blitz">${esc(t)}</div>`,q:"Что сделать?",opts:[ACTS[a],...shuffle(ACTS.filter((_,j)=>j!==a)).slice(0,3)],a:0,ex:`Нужно: <b>${esc(ACTS[a])}</b>.`})),1,"q5");
+}
+
+/* ===================== ОСТРОВ 6: Булевы операции ===================== */
+let BID=0;
+const OPS={union:["Объединение","Ctrl + +"],diff:["Разность","Ctrl + −"],inter:["Пересечение","Ctrl + *"],excl:["Исключение","Ctrl + ^"]};
+function boolSVG(op,shp){
+  const id="b"+(++BID),A=shp==="sq"?'<rect x="20" y="20" width="70" height="70"/>':'<circle cx="55" cy="55" r="38"/>',B='<circle cx="95" cy="55" r="38"/>',C="#D85A30";
+  const before=`<g transform="translate(0,0)"><g fill="#7F77DD" opacity=".85">${A}</g><g fill="#1D9E75" opacity=".85">${B}</g></g>`;
+  let after="";
+  if(op==="union")after=`<g fill="${C}">${A}${B}</g>`;
+  if(op==="inter")after=`<clipPath id="${id}c">${B}</clipPath><g fill="${C}" clip-path="url(#${id}c)">${A}</g>`;
+  if(op==="diff")after=`<mask id="${id}m"><rect x="0" y="0" width="160" height="120" fill="#fff"/><g fill="#000">${B}</g></mask><g fill="${C}" mask="url(#${id}m)">${A}</g>`;
+  if(op==="excl")after=`<mask id="${id}a"><rect x="0" y="0" width="160" height="120" fill="#fff"/><g fill="#000">${B}</g></mask><mask id="${id}b"><rect x="0" y="0" width="160" height="120" fill="#fff"/><g fill="#000">${A}</g></mask><g fill="${C}"><g mask="url(#${id}a)">${A}</g><g mask="url(#${id}b)">${B}</g></g>`;
+  return `<div class="bool"><div><small>ДО (зелёный — сверху)</small><svg viewBox="0 0 150 110">${before}</svg></div><div class="arr2">→</div><div><small>ПОСЛЕ</small><svg viewBox="0 0 150 110">${after}</svg></div></div>`;
+}
+function lv6(i,L){
+  const ops=Object.keys(OPS),names=ops.map(k=>OPS[k][0]);
+  const Q=shuffle(ops).map((op,j)=>({vis:boolSVG(op,j%2?"sq":"c"),q:"Какая операция (меню «Контур») дала такой результат?",opts:[OPS[op][0],...names.filter(n=>n!==OPS[op][0])],a:0,
+    ex:`Это <b>${OPS[op][0]}</b> (<span class="kbd">${OPS[op][1]}</span>).`}));
+  Q.push({q:"Как сделать <b>полумесяц</b> из двух кругов?",opts:["Положить второй круг сверху со сдвигом и применить разность","Применить объединение","Применить пересечение","Сгруппировать круги"],a:0,ex:"<b>Разность</b>: верхний круг «вырезает» кусок из нижнего — получается полумесяц."});
+  Q.push({q:"При <b>разности</b> что из чего вычитается?",opts:["Верхний объект вычитается из нижнего","Нижний из верхнего","Больший из меньшего","Всегда второй выделенный"],a:0,ex:"При разности <b>верхний</b> объект вырезается из <b>нижнего</b>. Поэтому важен порядок объектов!"});
+  quizLevel(i,L,"Меню <b>«Контур»</b>: объединение, разность, пересечение, исключение. Посмотри «до» и «после» и назови операцию. 6 вопросов по 1 баллу.",Q,1,"q6");
+}
+
+/* ===================== ОСТРОВ 7: Мастер узлов ===================== */
+const NSHAPES=[{nm:"Лист",p:[[60,150],[110,60],[200,35],[270,90],[210,150],[120,165]]},{nm:"Капля",p:[[160,30],[215,120],[200,175],[120,175],[105,120]]},
+  {nm:"Рыбка",p:[[40,100],[110,55],[190,70],[250,40],[245,160],[190,130],[110,145]]},{nm:"Облако",p:[[50,140],[60,90],[120,60],[190,55],[250,85],[260,140]]}];
+function smoothPath(P){const n=P.length;let d=`M${P[0][0]},${P[0][1]}`;
+  for(let j=0;j<n;j++){const p0=P[(j-1+n)%n],p1=P[j],p2=P[(j+1)%n],p3=P[(j+2)%n];
+    d+=` C${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)},${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)},${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0]},${p2[1]}`;}
+  return d+"Z";}
+function lv7(i,L){
+  const T=pick(NSHAPES,2);let r=0,pts=0;
+  function round(){
+    const X=T[r],P=X.p.map(([x,y])=>[Math.max(15,Math.min(285,x+(Math.random()-.5)*90)),Math.max(15,Math.min(185,y+(Math.random()-.5)*80))]);
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Инструмент <b>«Редактор узлов»</b> (<span class='kbd'>N</span>). Кривая состоит из <b>узлов</b> (квадратики) и <b>сегментов</b> между ними. Перетаскивай узлы мышкой, чтобы кривая совпала с пунктирным контуром. От 90 % — 3 балла.")}
+      <div class="prog">Фигура ${r+1} из 2 · «${esc(X.nm)}» · баллы: ${pts}</div>
+      <div class="shapebox" style="margin-top:10px"><svg id="nd" viewBox="0 0 300 200" style="touch-action:none">
+        <path d="${smoothPath(X.p)}" fill="none" stroke="#888780" stroke-width="2" stroke-dasharray="6 5"/>
+        <path id="np" fill="#5DCAA555" stroke="#0F6E56" stroke-width="3"/><g id="nodes"></g></svg></div>
+      <div class="meter"><i id="mt" style="width:0"></i></div><div class="prog" id="mv"></div>
+      <div style="margin-top:12px"><button class="btn" type="button" id="chk">✓ Проверить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    const svg=$("nd");let drag=-1;
+    const score=()=>{const d=P.reduce((a,p,j)=>a+Math.hypot(p[0]-X.p[j][0],p[1]-X.p[j][1]),0)/P.length;return Math.max(0,Math.round((1-d/55)*100));};
+    const draw=()=>{$("np").setAttribute("d",smoothPath(P));
+      $("nodes").innerHTML=P.map((p,j)=>`<rect class="node-h" data-n="${j}" x="${p[0]-7}" y="${p[1]-7}" width="14" height="14"/>`).join("");
+      const m=score();$("mt").style.width=m+"%";$("mv").textContent=`Совпадение: ${m}%`;};
+    const pt=(e)=>{const q=svg.createSVGPoint();q.x=e.clientX;q.y=e.clientY;const r2=q.matrixTransform(svg.getScreenCTM().inverse());return [Math.max(5,Math.min(295,r2.x)),Math.max(5,Math.min(195,r2.y))];};
+    svg.addEventListener("pointerdown",(e)=>{const t=e.target.closest("[data-n]");if(!t)return;drag=Number(t.dataset.n);svg.setPointerCapture(e.pointerId);beep(600,.03);});
+    svg.addEventListener("pointermove",(e)=>{if(drag<0)return;P[drag]=pt(e);draw();});
+    svg.addEventListener("pointerup",()=>{drag=-1;});
+    draw();
+    $("chk").onclick=()=>{const m=score(),p=m>=90?3:m>=75?2:m>=55?1:0;pts+=p;$("chk").disabled=true;
+      answerRound(p>=2,`Совпадение ${m}% → +${p} б. Узлы задают форму, а сегменты между ними изгибаются плавно.`,()=>{r++;if(r<2)round();else finishLevel("q7",pts);},1600,3400);};
+  }
+  round();
+}
+
+/* ===================== ОСТРОВ 8: Текст ===================== */
+const TXQ=[
+  {q:"Надпись должна идти <b>по дуге вокруг круга</b>, как на печати. Что сделать?",opts:["Выделить текст и круг → «Текст → Разместить по контуру»","Повернуть каждую букву вручную","Сгруппировать текст и круг","Применить пересечение"],a:0,ex:"Меню <b>«Текст → Разместить по контуру»</b>: текст «садится» на линию круга."},
+  {q:"Нужно менять форму <b>каждой буквы</b> узлами. Что сделать сначала?",opts:["«Контур → Оконтурить объект» (Shift + Ctrl + C)","Сменить шрифт","Сгруппировать буквы","Включить жирный"],a:0,ex:"<b>Оконтурить</b> — превратить текст в кривые. После этого у букв появляются узлы."},
+  {q:"Длинный текст должен сам <b>переноситься внутри рамки</b>. Как его создать?",opts:["Инструментом «Текст» протянуть рамку и печатать в ней","Нажать Enter после каждого слова","Вставить текст как картинку","Использовать карандаш"],a:0,ex:"Если инструментом <b>Текст</b> протянуть рамку, получится <b>текст в рамке</b> с автопереносом."},
+  {q:"Каким инструментом создаётся текст?",opts:["Текст (T)","Карандаш (P)","Пипетка (D)","Узлы (N)"],a:0,ex:"Инструмент <b>Текст</b> — клавиша <span class='kbd'>T</span>."},
+  {q:"Где меняют <b>расстояние между буквами</b>?",opts:["На панели свойств инструмента «Текст» (межбуквенный интервал)","В окне «Выровнять»","В меню «Фильтры»","В палитре цветов"],a:0,ex:"Интервалы между буквами и строками — на <b>панели свойств</b> инструмента Текст."},
+  {q:"Логотип откроют на другом компьютере, где нет твоего красивого шрифта. Как сохранить вид надписи?",opts:["Оконтурить текст (перевести в кривые)","Сделать текст жирнее","Сгруппировать текст","Увеличить размер шрифта"],a:0,ex:"После <b>оконтуривания</b> буквы — это уже фигуры, им не нужен установленный шрифт."},
+  {q:"Что такое <b>художественный (фигурный) текст</b>?",opts:["Текст, оформленный как рисунок: необычный шрифт, градиент, обводка, изгиб","Любой текст по умолчанию","Текст без цвета","Только текст в таблице"],a:0,ex:"Художественный текст — надпись, оформленная как часть рисунка: <b>шрифт, цвет, градиент, обводка, форма</b>."},
+];
+function lv8(i,L){quizLevel(i,L,"Текст в Inkscape: простой, в рамке, по контуру, художественный. 5 вопросов по 1 баллу.",pick(TXQ,5),1,"q8");}
+
+/* ===================== ОСТРОВ 9: Заливка и обводка (новый) ===================== */
+const gradSVG=(t)=>`<svg viewBox="0 0 160 90" width="160"><defs>${t==="lin"?'<linearGradient id="gl"><stop offset="0" stop-color="#378ADD"/><stop offset="1" stop-color="#ED93B1"/></linearGradient>':'<radialGradient id="gr"><stop offset="0" stop-color="#FAC775"/><stop offset="1" stop-color="#D85A30"/></radialGradient>'}</defs>${t==="lin"?'<rect x="10" y="10" width="140" height="70" rx="10" fill="url(#gl)"/>':'<circle cx="80" cy="45" r="38" fill="url(#gr)"/>'}</svg>`;
+const FSQ=[
+  {vis:'<div class="blitz"><svg viewBox="0 0 120 90" width="120"><circle cx="60" cy="45" r="32" fill="none" stroke="#534AB7" stroke-width="8"/></svg></div>',q:"Что у этой фигуры?",opts:["Только обводка, заливки нет","Только заливка","Градиент","Пунктирная обводка"],a:0,ex:"Внутри пусто — <b>заливки нет</b>, есть только толстая <b>обводка</b>."},
+  {vis:`<div class="blitz">${gradSVG("lin")}</div>`,q:"Какой это градиент?",opts:["Линейный","Радиальный","Сплошная заливка","Узор"],a:0,ex:"Цвет меняется <b>по прямой</b> слева направо — это линейный градиент."},
+  {vis:`<div class="blitz">${gradSVG("rad")}</div>`,q:"Какой это градиент?",opts:["Радиальный","Линейный","Сплошная заливка","Узор"],a:0,ex:"Цвет меняется <b>от центра к краям</b> — это радиальный градиент."},
+  {q:"Какими клавишами открыть окно «Заливка и обводка»?",opts:["Shift + Ctrl + F","Ctrl + G","Shift + Ctrl + A","Ctrl + D"],a:0,ex:"<span class='kbd'>Shift + Ctrl + F</span> — «Заливка и обводка»."},
+  {q:"Щелчок по цвету в палитре меняет заливку. А <b>Shift + щелчок</b>?",opts:["Цвет обводки","Удаляет объект","Делает градиент","Меняет шрифт"],a:0,ex:"<b>Shift + щелчок</b> по палитре задаёт цвет <b>обводки</b>."},
+  {vis:'<div class="blitz"><svg viewBox="0 0 120 90" width="120"><rect x="15" y="15" width="90" height="60" fill="#FAC775" stroke="#854F0B" stroke-width="4" stroke-dasharray="10 6"/></svg></div>',q:"Где настроить такую пунктирную обводку?",opts:["«Заливка и обводка» → вкладка «Стиль обводки»","В меню «Текст»","В окне «Выровнять»","В палитре внизу"],a:0,ex:"Толщина, пунктир и концы линий — на вкладке <b>«Стиль обводки»</b>."},
+  {q:"Как сделать объект <b>полупрозрачным</b>?",opts:["Уменьшить непрозрачность (альфа-канал A)","Удалить заливку","Сгруппировать","Отразить по вертикали"],a:0,ex:"Параметр <b>A (альфа)</b> или «Непрозрачность» делает объект прозрачнее."},
+];
+function lv9(i,L){quizLevel(i,L,"Цвет в Inkscape: заливка, обводка, градиенты, прозрачность. 5 вопросов по 1 баллу.",pick(FSQ,5),1,"q9");}
+
+/* ===================== ОСТРОВ 10: Конвейер дизайнера (новый) ===================== */
+const FLOW=["Нарисовать круг (E)","Дублировать круг (Ctrl + D)","Сдвинуть копию и применить разность (Ctrl + −)","Добавить текст и разместить по контуру","Сгруппировать всё (Ctrl + G)","Экспортировать в PNG (Shift + Ctrl + E)"];
+function lv10(i,L){
+  const pool=shuffle(FLOW.map((_,j)=>j)),slots=[];let pts=0;
+  function seq(){
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Заказ: значок «Луна» — полумесяц и надпись по кругу. Расставь шаги работы <b>по порядку</b>: нажимай на карточки. Нажми на шаг в цепочке, чтобы убрать его.")}
+      <div class="prog">Часть 1 из 2 · порядок работы</div>
+      <div class="flow">${FLOW.map((_,j)=>`<button type="button" class="slot ${slots[j]!=null?"on":""}" data-s="${j}">${slots[j]!=null?`${j+1}. ${esc(FLOW[slots[j]])}`:`<i>${j+1}</i>`}</button>`).join("")}</div>
+      <div class="cards">${pool.filter(x=>!slots.includes(x)).map(x=>`<button type="button" class="card" data-c="${x}">${esc(FLOW[x])}</button>`).join("")}</div>
+      <div style="margin-top:14px"><button class="btn" type="button" id="chk" ${slots.filter(x=>x!=null).length===6?"":"disabled"}>✓ Проверить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{let j=0;while(slots[j]!=null)j++;slots[j]=Number(b.dataset.c);beep(520,.05);seq();});
+    document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const j=Number(b.dataset.s);if(slots[j]!=null){slots[j]=null;seq();}});
+    $("chk").onclick=()=>{const right=FLOW.filter((_,j)=>slots[j]===j).length,p=right===6?3:right>=4?2:right>=2?1:0;pts=p;$("chk").disabled=true;
+      document.querySelectorAll("[data-s]").forEach((b,j)=>b.classList.add(slots[j]===j?"right":"wrong"));
+      answerRound(p===3,`Верно на местах: ${right} из 6 → +${p} б. Сначала фигуры и операции, потом текст, группировка и экспорт.`,()=>quiz(0),1800,4500);};
+  }
+  const Q=[
+    {q:"Какой формат <b>векторный</b> — его можно увеличивать без потери качества?",opts:["SVG","PNG","JPG","BMP"],a:0,ex:"<b>SVG</b> — родной векторный формат Inkscape. PNG и JPG — растровые."},
+    {q:"Зачем делать <b>экспорт в PNG</b>?",opts:["Чтобы картинку можно было открыть где угодно: на сайте, в презентации, в телефоне","Чтобы потом менять узлы","Чтобы файл стал векторным","Чтобы сохранить слои"],a:0,ex:"<b>PNG</b> открывается везде. Но редактировать узлы потом можно только в SVG — сохраняй оба файла."},
+    {q:"Логотип будут печатать на большом баннере. Что выбрать при экспорте?",opts:["Большое разрешение (например, 300 dpi)","96 dpi — как на экране","Самый маленький размер","Чёрно-белый режим"],a:0,ex:"Для печати нужно <b>высокое разрешение</b>, иначе на баннере будут видны пиксели."},
+  ];
+  let ok=0;
+  function quiz(r){
+    if(r>=Q.length)return finishLevel("q10",pts+ok);
+    const X=Q[r],order=shuffle([0,1,2,3]);
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Теперь 3 вопроса про сохранение и экспорт.")}
+      <div class="prog">Часть 2 · вопрос ${r+1} из 3 · баллы: ${pts+ok}</div>
+      <h3 style="font-family:var(--display);font-size:19px;margin:14px 0 0">${X.q}</h3>
+      <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.opts[j])}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const good=Number(b.dataset.j)===X.a;
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(Number(x.dataset.j)===X.a)x.classList.add("right");});
+      if(good)ok++;else b.classList.add("wrong");answerRound(good,X.ex,()=>quiz(r+1));});
+  }
+  seq();
+}
+
+/* ===================== БОСС: логотип за 3 минуты ===================== */
+const ORDERS=[{who:"кафе «Плачинта»",word:"ПЛАЧИНТА",need:{shape:"circle",text:"arc",bool:"any",maxc:3},txt:"<b>круглый</b> логотип, название <b>по дуге</b>, не больше <b>3 цветов</b> и одна деталь из <b>булевой операции</b>"},
+  {who:"клуб «Мэрцишор»",word:"MĂRȚIȘOR",need:{shape:"star",text:"line",bool:"moon",maxc:3},txt:"логотип-<b>звезда</b>, <b>прямая</b> надпись, 2–3 цвета и <b>полумесяц</b> (разность)"},
+  {who:"турбаза «Кодры»",word:"CODRII",need:{shape:"shield",text:"line",bool:"leaf",maxc:3},txt:"логотип-<b>щит</b>, <b>прямая</b> надпись, 2–3 цвета и <b>лист</b> (пересечение двух кругов)"}];
+const PALS=[["Красный + белый",["#E24B4A","#fff"]],["Синий, жёлтый, красный",["#185FA5","#FAC775","#E24B4A"]],["Радуга (6 цветов)",["#E24B4A","#EF9F27","#FAC775","#639922","#378ADD","#534AB7"]],["Зелёный + золото + белый",["#3B6D11","#EF9F27","#fff"]]];
+function logoSVG(B,word){
+  const pal=PALS[B.pal][1],c0=pal[0],c1=pal[1]||"#fff",c2=pal[2]||c1,extra=pal.slice(3);
+  const shp=B.shape==="circle"?`<circle cx="100" cy="100" r="80" fill="${c0}"/>`:B.shape==="star"?`<polygon points="${starPts(5,1,.45,100,105,88)}" fill="${c0}"/>`
+    :B.shape==="shield"?`<path d="M30 30 H170 V100 C170 150 130 175 100 188 C70 175 30 150 30 100 Z" fill="${c0}"/>`:`<rect x="25" y="25" width="150" height="150" rx="18" fill="${c0}"/>`;
+  const id="lg"+(++BID);
+  const bool=B.bool==="moon"?`<mask id="${id}"><rect width="200" height="200" fill="#fff"/><circle cx="112" cy="88" r="26" fill="#000"/></mask><circle cx="100" cy="95" r="30" fill="${c2}" mask="url(#${id})"/>`
+    :B.bool==="leaf"?`<clipPath id="${id}"><circle cx="85" cy="95" r="30"/></clipPath><circle cx="115" cy="95" r="30" fill="${c2}" clip-path="url(#${id})"/>`:"";
+  const dots=extra.map((c,j)=>`<circle cx="${60+j*40}" cy="150" r="8" fill="${c}"/>`).join("");
+  const txt=B.text==="arc"?`<path id="${id}a" d="M35 100 A65 65 0 0 1 165 100" fill="none"/><text font-family="Unbounded,sans-serif" font-weight="800" font-size="17" fill="${c1}"><textPath href="#${id}a" startOffset="50%" text-anchor="middle">${esc(word)}</textPath></text>`
+    :B.text==="line"?`<text x="100" y="150" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="800" font-size="18" fill="${c1}">${esc(word)}</text>`:"";
+  return `<svg viewBox="0 0 200 200" width="100%"><g ${B.stroke?'stroke="#1A1440" stroke-width="4"':''}>${shp}</g>${bool}${dots}${txt}</svg>`;
+}
+function lv11(i,L){
+  const O=S.boss.ord!=null?ORDERS[S.boss.ord]:ORDERS[S.boss.ord=rnd(ORDERS.length)];
+  const B=S.boss;B.shape=B.shape||"square";B.pal=B.pal??2;B.text=B.text||"none";B.bool=B.bool||"none";B.t0=B.t0||Date.now();
+  $("view").innerHTML=`<section class="stage">${lvHead(i,L,`👑 <b>Заказ: ${esc(O.who)}.</b> Нужен ${O.txt}. У тебя <b>3 минуты</b> на сборку! Потом опиши, как сделал(а) бы этот логотип в Inkscape — это проверит ИИ.`)}
+    <div class="prog" id="bt"></div>
+    <div class="two"><div class="shapebox" id="lp"></div>
+      <div class="lgc">
+        <div><b>Форма</b><div class="seg">${[["circle","◯ Круг"],["star","☆ Звезда"],["shield","⛉ Щит"],["square","▢ Квадрат"]].map(([k,n])=>`<button type="button" data-shape="${k}">${n}</button>`).join("")}</div></div>
+        <div><b>Цвета</b><div class="seg">${PALS.map(([n],j)=>`<button type="button" data-pal="${j}">${esc(n)}</button>`).join("")}</div></div>
+        <div><b>Текст</b><div class="seg">${[["none","Без текста"],["line","Прямой"],["arc","По дуге (по контуру)"]].map(([k,n])=>`<button type="button" data-text="${k}">${n}</button>`).join("")}</div></div>
+        <div><b>Деталь (булева операция)</b><div class="seg">${[["none","Нет"],["moon","☾ Полумесяц — разность"],["leaf","🍃 Лист — пересечение"]].map(([k,n])=>`<button type="button" data-bool="${k}">${n}</button>`).join("")}</div></div>
+        <div><b>Обводка</b><div class="seg"><button type="button" data-stroke="1">Есть</button><button type="button" data-stroke="0">Нет</button></div></div>
+      </div></div>
+    <div class="steps" id="steps"></div>
+    <label for="o1" style="display:block;font-weight:800;margin:14px 0 6px">✍ Опиши по шагам: какие инструменты, операции и клавиши Inkscape ты используешь, чтобы сделать этот логотип? (4–6 предложений, проверит ИИ)</label>
+    <textarea id="o1" maxlength="1500" placeholder="Сначала я возьму инструмент … (клавиша …) и нарисую … . Потом …">${esc(S.open.o1||"")}</textarea>
+    <div class="feedback" id="fb"></div>
+    <button class="btn pink big" type="button" id="done" style="margin-top:10px">👑 Сдать логотип клиенту</button></section>`;
+  $("back").onclick=showMap;
+  const N=O.need,crit=()=>[[B.shape===N.shape,"Форма как в заказе"],[B.text===N.text,"Текст как в заказе"],[N.bool==="any"?B.bool!=="none":B.bool===N.bool,"Нужная деталь из булевой операции"],[PALS[B.pal][1].length<=N.maxc,"Не больше 3 цветов"]];
+  const locked=()=>Date.now()-B.t0>180000&&!PV();
+  const draw=()=>{$("lp").innerHTML=logoSVG(B,O.word);
+    ["shape","pal","text","bool","stroke"].forEach(k=>document.querySelectorAll(`[data-${k}]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset[k])===String(k==="stroke"?(B.stroke?1:0):B[k]))));
+    const wc=(S.open.o1||"").trim().split(/\s+/).filter(Boolean).length;
+    $("steps").innerHTML=[...crit(),[wc>=30,`Описание: ${wc} слов (нужно от 30)`]].map(([ok,t])=>`<div class="step ${ok?"ok":""}"><span class="m">${ok?"✅":"⬜"}</span>${esc(t)}</div>`).join("");};
+  const tick=()=>{if(!$("bt")){clearInterval(tm);return;}const l=Math.max(0,180-Math.floor((Date.now()-B.t0)/1000));
+    $("bt").textContent=l>0||PV()?`⏱ Сборка логотипа: осталось ${Math.floor(l/60)}:${String(l%60).padStart(2,"0")}`:"⏱ Время сборки вышло — логотип зафиксирован. Допиши описание и сдай!";
+    if(l<=0)document.querySelectorAll(".lgc button").forEach(b=>b.disabled=!PV());};
+  const tm=setInterval(tick,1000);tick();
+  ["shape","pal","text","bool"].forEach(k=>document.querySelectorAll(`[data-${k}]`).forEach(b=>b.onclick=()=>{if(locked())return;B[k]=k==="pal"?Number(b.dataset[k]):b.dataset[k];beep(520,.04);draw();save();}));
+  document.querySelectorAll("[data-stroke]").forEach(b=>b.onclick=()=>{if(locked())return;B.stroke=b.dataset.stroke==="1";draw();save();});
+  $("o1").oninput=(e)=>{S.open.o1=e.target.value;draw();};$("o1").onchange=save;
+  draw();
+  $("done").onclick=()=>{const wc=(S.open.o1||"").trim().split(/\s+/).filter(Boolean).length;
+    if(wc<30){$("fb").className="feedback bad";$("fb").textContent="Опиши подробнее — 4–6 предложений (от 30 слов).";sBad();return;}
+    const met=crit().filter(c=>c[0]).length;clearInterval(tm);save();finishLevel("q11",met*0.75);};
+}
+
+/* ===================== ПРОБНАЯ КОНТРОЛЬНАЯ ===================== */
+const SOQ=[
+  {q:"Какой формат файла — родной для Inkscape?",opts:["SVG","DOCX","PNG","MP3"],a:0,ex:"Inkscape сохраняет рисунки в векторном формате <b>SVG</b>."},
+  {q:"Чем векторная графика отличается от растровой?",opts:["Состоит из фигур и кривых, не теряет качество при увеличении","Состоит из пикселей","Всегда чёрно-белая","Не умеет текст"],a:0,ex:"Вектор — это <b>фигуры и кривые</b>, которые описываются формулами, поэтому увеличиваются без потерь."},
+  {q:"Какой инструмент рисует идеальный круг, если держать Ctrl?",opts:["Эллипс (E)","Прямоугольник (R)","Карандаш (P)","Текст (T)"],a:0,ex:"<b>Эллипс</b> с нажатым <span class='kbd'>Ctrl</span> рисует ровный круг."},
+  {q:"Как поднять объект на самый верх стопки?",opts:["Home","End","PgDn","Ctrl + D"],a:0,ex:"<span class='kbd'>Home</span> — на передний план, <span class='kbd'>End</span> — на задний."},
+  {q:"Какая операция оставит только общую часть двух фигур?",opts:["Пересечение","Объединение","Разность","Дублирование"],a:0,ex:"<b>Пересечение</b> (<span class='kbd'>Ctrl + *</span>) оставляет общую часть."},
+  {q:"Что делает Ctrl + D?",opts:["Создаёт копию объекта на том же месте","Удаляет объект","Группирует","Открывает «Выровнять»"],a:0,ex:"<span class='kbd'>Ctrl + D</span> — <b>дублировать</b>: копия ложится прямо поверх оригинала."},
+  {q:"Что такое узел?",opts:["Точка кривой, через которую проходит контур","Слой рисунка","Цвет обводки","Тип шрифта"],a:0,ex:"<b>Узел</b> — опорная точка кривой; между узлами — <b>сегменты</b>."},
+  {q:"Зачем блокировать объект?",opts:["Чтобы случайно не выделить и не сдвинуть его","Чтобы удалить его","Чтобы сделать его прозрачным","Чтобы скопировать"],a:0,ex:"<b>Заблокированный</b> объект нельзя случайно выделить и сдвинуть — удобно для фона."},
+  {q:"Где выбирают толщину обводки?",opts:["«Заливка и обводка» → «Стиль обводки»","Меню «Текст»","Окно «Выровнять»","Панель команд"],a:0,ex:"Толщина и вид линии — на вкладке <b>«Стиль обводки»</b>."},
+  {q:"Как сделать два одинаковых зеркальных крыла бабочки?",opts:["Нарисовать одно, Ctrl + D, затем H","Нарисовать оба вручную","Применить пересечение","Сгруппировать и удалить"],a:0,ex:"<b>Дублировать</b> (<span class='kbd'>Ctrl + D</span>) и <b>отразить</b> (<span class='kbd'>H</span>)."},
+  {q:"Что делает инструмент «Пипетка» (D)?",opts:["Берёт цвет с другого объекта","Рисует капли","Удаляет цвет","Делает градиент"],a:0,ex:"<b>Пипетка</b> копирует цвет с любого места рисунка."},
+  {q:"Какое окно помогает поставить объекты ровно в ряд?",opts:["«Выровнять и расставить» (Shift + Ctrl + A)","«Заливка и обводка»","«Документ»","«Экспорт»"],a:0,ex:"<b>Выровнять и расставить</b> — <span class='kbd'>Shift + Ctrl + A</span>."},
+  {q:"Чем группа отличается от объединения?",opts:["Группа сохраняет отдельные объекты, объединение сливает их в одну фигуру","Ничем","Объединение можно разгруппировать","Группа меняет цвет"],a:0,ex:"<b>Группа</b> — объекты вместе, но остаются собой. <b>Объединение</b> — одна новая фигура."},
+  {q:"Как экспортировать рисунок в PNG?",opts:["Файл → Экспорт (Shift + Ctrl + E)","Ctrl + S","Ctrl + G","Правка → Копировать"],a:0,ex:"<b>Экспорт</b> — <span class='kbd'>Shift + Ctrl + E</span>, выбрать PNG и разрешение."},
+];
+function lv12(i,L){quizLevel(i,L,"📝 <b>Пробная контрольная</b>: 10 вопросов по всем темам — как на СО 30.11. По 0,5 балла.",pick(SOQ,10),0.5,"q12");}
+
+/* ===================== БОНУСЫ ===================== */
+function b1(i,L){const ops=Object.keys(OPS),names=ops.map(k=>OPS[k][0]);
+  quizLevel(i,L,"⭐ Бонус: угадай операцию по картинке — 8 раз подряд! (+0,5 балла за ответ)",
+    Array.from({length:8},(_,j)=>{const op=ops[rnd(4)];return {vis:boolSVG(op,j%2?"sq":"c"),q:"Какая операция?",opts:[OPS[op][0],...names.filter(n=>n!==OPS[op][0])],a:0,ex:`<b>${OPS[op][0]}</b>.`};}),0.5,"b1");}
+const BADQ=[
+  {q:"Светло-жёлтый текст на белом фоне. В чём ошибка?",opts:["Текст плохо видно: мало контраста","Слишком много фигур","Нет обводки у фона","Неправильный формат файла"],a:0,ex:"Текст должен <b>контрастировать</b> с фоном."},
+  {q:"Логотип растянули мышкой только в ширину — круг стал овалом. Как надо было?",opts:["Масштабировать с Ctrl (сохраняя пропорции)","Сгруппировать","Сделать разность","Оконтурить"],a:0,ex:"С нажатым <span class='kbd'>Ctrl</span> размер меняется <b>пропорционально</b>."},
+  {q:"На маленькой открытке 7 разных шрифтов. Что не так?",opts:["Слишком пёстро: лучше 1–2 шрифта","Шрифтов мало","Так и надо","Нужно больше цветов"],a:0,ex:"Хороший дизайн — <b>1–2 шрифта</b>, иначе рисунок «шумит»."},
+  {q:"Детали рисунка «разъехались», когда его передвинули. Что забыли?",opts:["Сгруппировать (Ctrl + G)","Заблокировать фон","Экспортировать","Сделать пересечение"],a:0,ex:"Готовый рисунок надо <b>сгруппировать</b>."},
+  {q:"Звёзды на открытке стоят «лесенкой», а должны в ряд. Что поможет?",opts:["Окно «Выровнять и расставить»","Пипетка","Оконтурить","Градиент"],a:0,ex:"<b>Выровнять и расставить</b> ставит объекты ровно."},
+  {q:"Прислали только PNG логотипа, а нужно поменять форму буквы. Что не так?",opts:["Надо было сохранить ещё и SVG — в PNG нет узлов","PNG нельзя открыть","Нужно было JPG","Всё нормально"],a:0,ex:"Сохраняй исходник в <b>SVG</b>, а PNG — только для показа."},
+];
+function b2(i,L){quizLevel(i,L,"⭐ Бонус: найди ошибку дизайнера. (+0,5 балла за ответ)",shuffle(BADQ),0.5,"b2");}
+
+/* ===================== ФИНИШ: квалификатив, дескрипторы, план к СО ===================== */
+// Технологическое воспитание (Республика Молдова): квалификативы вместо отметок
+const QUAL=[[75,"ОХ","очень хорошо"],[50,"Х","хорошо"],[25,"У","удовлетворительно"],[0,"Н","неудовлетворительно"]];
+const qualOf=(p)=>QUAL.find(q=>p>=q[0]);
+const NAMES=Object.fromEntries(ALLL.map(l=>[l.k,(l.bonus?"⭐ ":"")+l.t]));
+const DESC=[
+  ["Ориентируюсь в окне Inkscape и знаю главные инструменты и клавиши",["q1","q2"]],
+  ["Создаю и настраиваю геометрические фигуры",["q3"]],
+  ["Упорядочиваю, группирую, блокирую и выравниваю объекты",["q4","q5"]],
+  ["Применяю объединение, разность и пересечение",["q6"]],
+  ["Редактирую кривые: узлы и сегменты",["q7"]],
+  ["Работаю с текстом, заливкой и обводкой",["q8","q9"]],
+  ["Планирую работу, сохраняю в SVG и экспортирую в PNG",["q10","q11"]],
+];
+function descState(ks){const got=ks.reduce((a,k)=>a+(S.score[k]||0),0),max=ks.reduce((a,k)=>a+ALLL.find(l=>l.k===k).max,0),p=got/max;
+  return p>=.75?["y","✅","умею"]:p>=.4?["h","🟡","почти умею"]:["n","🔴","повторить"];}
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+function showFin(){
+  const main=LEVELS.reduce((s,l)=>s+(S.score[l.k]||0),0),bonusRaw=BONUS.reduce((s,l)=>s+(S.score[l.k]||0),0),bonus=Math.min(BONUS_CAP,bonusRaw);
+  const maxAuto=MAXALL-3,auto=Math.min(maxAuto,main+bonus),pct=Math.round(auto/maxAuto*100),q=qualOf(pct);
+  const weak=LEVELS.filter(l=>(S.score[l.k]||0)/l.max<.6);
+  $("view").innerHTML=`<section class="stage">
+    <div class="lv-head"><span class="lv-badge">ФИНИШ</span><h2>🏁 Экспедиция завершена!</h2><button class="back" type="button" id="back">🗺 Карта</button></div>
+    <div class="qual"><div class="qual-badge"><div><small>ПРЕДВАРИТЕЛЬНО</small><b>${q[1]}</b><small>${q[2].toUpperCase()}</small></div></div>
+      <div><div style="font-family:var(--display);font-size:34px;font-weight:800">${auto}<span style="font-size:18px;color:var(--muted)"> / ${maxAuto} баллов за игру</span></div>
+        <div style="color:var(--muted)">острова и финал ${main} + бонусы ${bonus}${bonusRaw>bonus?` (набрано ${bonusRaw})`:""} · ${pct}% · ⭐ ${totalStars()} / 42 · время ≈ ${minutes()} мин</div>
+        <div style="color:var(--muted);font-size:14px;margin-top:4px">+ до 3 баллов за описание логотипа — его проверит ИИ, итог утвердит учитель.</div></div></div>
+    <div class="scale">${QUAL.map((x,j)=>`<div class="${x===q?"on":""}"><b>${x[1]}</b>${x[2]}<br>${j===0?"от 75 %":j===1?"50–74 %":j===2?"25–49 %":"менее 25 %"}</div>`).join("")}</div>
+    <h3 style="font-family:var(--display);margin:18px 0 4px">🎯 Мои дескрипторы</h3>
+    <div class="desc">${DESC.map(([t,ks])=>{const [c,ic,l]=descState(ks);return `<div class="${c}"><span class="ic">${ic}</span><span>${esc(t)}</span><span class="lvl">${l}</span></div>`;}).join("")}</div>
+    <div class="box" style="margin-top:12px"><h3>📚 Готов ли я к контрольной 30.11?</h3>${weak.length?`Повтори дома: <b>${weak.map(l=>esc(l.t)).join(", ")}</b>. Открой эти острова ещё раз — они будут доступны до контрольной.`:"Все темы пройдены хорошо — ты готов(а)! Повтори шпаргалку накануне."}</div>
+    <table class="tbl"><thead><tr><th>ОСТРОВ</th><th>ЗВЁЗДЫ</th><th>БАЛЛЫ</th></tr></thead><tbody>
+      ${ALLL.map(l=>`<tr><td>${esc(NAMES[l.k])}</td><td>${[1,2,3].map(s=>s<=(S.stars[l.k]||0)?"⭐":"☆").join("")}</td><td>${S.score[l.k]??"—"} ${l.bonus?"(+"+l.max+")":"/ "+l.max}</td></tr>`).join("")}</tbody></table>
+    <h3 style="font-family:var(--display);margin:20px 0 4px">Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(m=>`<button type="button" aria-pressed="${S.mood===m[1]}" data-m="${m[1]}">${m[0]} ${m[1]}</button>`).join("")}</div>
+    <button class="btn cyan big" type="button" id="send" ${S.mood&&!S.sent?"":"disabled"}>${S.sent?"✓ Отправлено учителю":"↑ Отправить учителю"}</button>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div></section>`;
+  $("back").onclick=showMap;
+  document.querySelectorAll("#mood button").forEach(b=>b.onclick=()=>{S.mood=b.dataset.m;save();document.querySelectorAll("#mood button").forEach(x=>x.setAttribute("aria-pressed",x===b));if(!S.sent)$("send").disabled=false;});
+  $("send").onclick=()=>{
+    const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+    const desc={};DESC.forEach(([t,ks],j)=>{desc["d"+(j+1)]=descState(ks)[2];});
+    const data={score:S.score,open:S.open,points:auto,bonus,max:MAXALL,percent:pct,qual:q[1],stars:totalStars(),coins:S.coins,descriptors:desc,weak:weak.map(l=>l.t),
+      logo:{ord:S.boss.ord,shape:S.boss.shape,pal:S.boss.pal,text:S.boss.text,bool:S.boss.bool,stroke:!!S.boss.stroke},minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:LEVELS.filter(l=>S.score[l.k]!=null).length};
+    const ok=()=>{S.sent=1;save();$("sendOut").innerHTML=sentHTML(true);btn.textContent="✓ Отправлено учителю";confetti();toast("✓ Отправлено учителю");};
+    const fail=()=>{$("sendOut").innerHTML=sentHTML(false);btn.disabled=false;btn.textContent="↑ Отправить учителю";};
+    if(!S.rec){fail();return;}
+    TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+  };
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function sentHTML(ok){return ok?`<div class="sent"><span class="g">✓ результат передан учителю</span><br>Отличная работа! Шпаргалка в тетради — твой помощник к контрольной 30.11.</div>`
+  :`<div class="sent"><span class="r">✗ Не получилось отправить.</span> Проверь интернет и нажми ещё раз или позови учителя.</div>`;}
+
+/* ===================== СТАРТ ===================== */
+$("go").onclick=async()=>{
+  const fio=$("fio").value.trim().replace(/\s+/g," "),cls=$("cls").value,err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";return;}
+  err.textContent="Подключаюсь…";$("go").disabled=true;
+  try{
+    const t=await Promise.race([TL(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),8000))]);
+    if(!(await t.isOpen())){err.textContent="Учитель ещё не открыл миссию. Подожди и нажми ещё раз.";$("go").disabled=false;return;}
+    S=fresh(fio,cls);S.rec=await t.start({name:fio,cls});err.textContent="";save();openApp();
+  }catch(e){err.textContent="Нет связи с сервером. Проверь интернет или позови учителя.";$("go").disabled=false;}
+};
+function openApp(){$("start").hidden=true;$("game").hidden=false;hud();S.brief?showMap():showBrief();}
+setInterval(()=>{if(S.fio&&$("toFin")&&$("toFin").disabled&&finOpen())showMap();},30000);   // финиш открылся по времени
+load();
+if(S.fio)openApp();
+</script>
+<script type="module" src="../../../engine/autofill.js?v=3"></script>
+</body>
+</html>
