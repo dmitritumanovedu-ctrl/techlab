@@ -5,7 +5,8 @@ import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=8";
 import { startAutoSync, syncProgress } from "./sync.js?v=2";
-import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=2";
+import { startNotify } from "./notify.js?v=2";
+import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=3";
 
 // Выбор теста: ?test=код (по умолчанию — первый в списке)
 const READY = TESTS.filter((x) => x.path);
@@ -23,7 +24,13 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const app = $("#app"), dlg = $("#dlg");
 const fmtNum = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
+// ссылка «просмотр учителя»: миссия открывается без кода ученика, все этапы открыты, в базу ничего не пишется
+const pvUrl = (path) => "../" + path + (String(path).includes("?") ? "&" : "?") + "preview=1";
 const fmtTime = (ms) => ms ? new Date(ms).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "—";
+const fmtDay = (ms) => ms ? new Date(ms).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+// дата (число, месяц, год) + время начала / сдачи; если сдал в другой день — дата сдачи в скобках
+const fmtWhen = (a, b) => { const d1 = fmtDay(a), d2 = fmtDay(b);
+  return `<b>${d1 || "—"}</b><br><small>${fmtTime(a)} / ${b ? fmtTime(b) : "…"}${d2 && d2 !== d1 ? ` (${d2})` : ""}</small>`; };
 
 const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
@@ -42,7 +49,10 @@ onAuthStateChanged(auth, async (user) => {
   const role = await roleOf(db, user);
   if (role === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
   if (role === "colleague") { location.replace(new URL("teacher/builder.html", new URL("../", import.meta.url)).href); return; }
+  // администратор работает в своей панели: «Центр управления» открывается внутри неё
+  if (role === "admin" && OVERVIEW && window.self === window.top && !new URLSearchParams(location.search).has("full")) { location.replace(new URL("admin/#lessons", new URL("../", import.meta.url)).href); return; }
   startAutoSync(db);   // оценки сразу уходят на страницы учеников и родителей
+  startNotify(db, user, role, { base: "../" });   // 🔔 новые учителя, предметы, отзывы
   if (OVERVIEW) return showOverview();
   if (IS_MISSION) return showMissionDashboard();
   try {
@@ -141,7 +151,7 @@ function showDashboard() {
   </div>
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
   <div class="table-wrap"><table class="res"><thead><tr>
-    <th>№</th><th>Ученик</th><th>Класс</th><th>Вар.</th><th>Статус</th><th>Нарушения</th><th>Начало / сдано</th>
+    <th>№</th><th>Ученик</th><th>Класс</th><th>Вар.</th><th>Статус</th><th>Нарушения</th><th>Дата · начало / сдано</th>
     <th>Авто-баллы</th><th>Итог</th><th>Оценка</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="11" class="muted">Ожидание работ…</td></tr></tbody></table></div>
   <p class="muted" style="font-size:14px">Шкала перевода в 10-балльную систему (% от ${TEST.max} б.):
     ${SCALE.map(([p, g]) => `<b>${g}</b> — от ${p}%`).join(" · ")}. Оценка окончательная, когда проверены все развёрнутые ответы.</p>`;
@@ -258,10 +268,10 @@ function renderTable() {
     const gradeCell = r.status !== "submitted" ? `<span class="grade pending">—</span>`
       : g.complete ? `<span class="grade">${g.grade}</span>` : `<span class="grade pending" title="Предварительно по уже выставленным баллам">≈${g.gradeNow} · проверить ${g.pending}</span>`;
     return `<tr class="${fresh}">
-      <td>${list.length - i}</td><td><b>${esc(r.name)}</b>${dup}</td><td>${esc(r.cls)}</td><td>${r.variant}</td>
+      <td>${list.length - i}</td><td data-sort="${esc(String(r.name || "").replace(/^\d+\.\s*/, "").toLowerCase())}"><b>${esc(r.name)}</b>${dup}</td><td>${esc(r.cls)}</td><td>${r.variant}</td>
       <td>${statusTag(r)}${aiTag(r)}</td>
       <td>${r.violations ? `<span class="bad">${r.violations}</span>` : "0"}</td>
-      <td>${fmtTime(r.startedAt)} / ${r.status === "submitted" ? fmtTime(r.submittedAt) : "…"}</td>
+      <td data-sort="${r.submittedAt || r.startedAt || 0}" style="white-space:nowrap">${fmtWhen(r.startedAt, r.status === "submitted" ? r.submittedAt : 0)}</td>
       <td>${fmtNum(g.auto)}</td>
       <td>${r.status === "submitted" ? `<b>${fmtNum(g.total)}</b> / ${g.max}` : "—"}</td>
       <td>${gradeCell}</td>
@@ -722,43 +732,147 @@ async function showAnnounce() {
   draw();
 }
 
-function showLinks() {
+// Загрузка файлов: веб-приложение Google Apps Script (apps-script/TechLab_files.gs) кладёт файл на ваш Google Диск
+let FILESCFG;
+const FILE_MAX = 25 * 1024 * 1024;
+const FILE_ACCEPT = ".ppt,.pptx,.pps,.ppsx,.pdf,.doc,.docx,.xls,.xlsx,.odp,.odt,.ods,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.zip";
+const fmtSize = (n) => n >= 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " МБ" : Math.max(1, Math.round(n / 1024)) + " КБ";
+async function callFiles(payload, ms = 180000) {
+  const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), ms);
+  let res;
+  try { res = await fetch(FILESCFG.url, { method: "POST", body: JSON.stringify({ secret: FILESCFG.secret, ...payload }), signal: ctrl.signal }); }
+  catch (e) { throw new Error(e.name === "AbortError" ? "Загрузка заняла слишком долго — проверьте интернет" : "Нет связи с сервисом загрузки файлов"); }
+  finally { clearTimeout(tm); }
+  let data; try { data = JSON.parse(await res.text()); } catch (e) { throw new Error("Сервис загрузки вернул не JSON. Проверьте URL (должен заканчиваться на /exec) и доступ «Все»."); }
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+const readB64 = (file) => new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = () => bad(new Error("Не удалось прочитать файл")); r.readAsDataURL(file); });
+
+async function showLinks() {
   openId = null;
+  if (FILESCFG === undefined) { try { FILESCFG = (await get(ref(db, "keys/_files"))).val(); } catch (e) { FILESCFG = null; } }
   const gradeOpts = wsOptions("|");
   dlg.innerHTML = `<div class="dlg-head"><b>📎 Материалы на стартовой странице</b>
       <button class="btn small ghost" style="background:#fff" id="lClose">Закрыть ✕</button></div>
     <div class="dlg-body">
-      <p class="muted">Ссылки появятся у учеников в разделе нужного класса: презентации, задания, сайты, файлы на Google Диске.</p>
+      <p class="muted">Материалы появятся у учеников в разделе нужного класса: презентации, PDF, документы, ссылки на сайты.</p>
       <div class="grid2">
         <label>Класс<select id="lWhere">${gradeOpts}</select></label>
         <label>Название<input type="text" id="lTitle" placeholder="Например: Презентация «Плотность населения»"></label>
       </div>
-      <label class="f">Ссылка</label><input type="text" id="lUrl" placeholder="https://…">
+      <div class="l-tabs" role="tablist"><button type="button" class="on" data-lt="file">📁 Файл с компьютера</button><button type="button" data-lt="url">🔗 Ссылка</button></div>
+      <div id="lFileBox">
+        ${FILESCFG?.url ? `<label class="l-drop" id="lDrop"><input type="file" id="lFile" accept="${FILE_ACCEPT}" hidden>
+            <b>Перетащите файл сюда</b> или <u>выберите на компьютере</u><br><span class="muted" style="font-size:13px">PowerPoint, PDF, Word, Excel, картинки · до 25 МБ</span></label>
+          <div id="lPicked" class="muted" style="font-size:14px;margin-top:6px"></div>`
+        : `<div class="l-setup">📁 Чтобы загружать файлы, один раз подключите свой Google Диск — 5 минут по инструкции.
+            <button class="btn small" type="button" id="lSetup">⚙ Настроить загрузку файлов</button></div>`}
+      </div>
+      <div id="lUrlBox" hidden><label class="f">Ссылка</label><input type="text" id="lUrl" placeholder="https://…"></div>
       <div class="err" id="lErr"></div>
-      <button class="btn" id="lAdd">Добавить</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" id="lAdd">Добавить</button>
+        ${FILESCFG?.url ? '<button class="btn small ghost" type="button" id="lSetup2">⚙ Загрузка файлов</button>' : ""}</div>
       <div id="lList" style="margin-top:16px"></div>
     </div>`;
   if (!dlg.open) dlg.showModal();
   $("#lClose").onclick = () => dlg.close();
+  let mode = "file", picked = null;
+  dlg.querySelectorAll("[data-lt]").forEach((b) => b.onclick = () => {
+    mode = b.dataset.lt; dlg.querySelectorAll("[data-lt]").forEach((x) => x.classList.toggle("on", x === b));
+    $("#lFileBox").hidden = mode !== "file"; $("#lUrlBox").hidden = mode !== "url"; $("#lErr").textContent = "";
+  });
+  ($("#lSetup") || {}).onclick = showFilesSetup; ($("#lSetup2") || {}).onclick = showFilesSetup;
+  const pick = (f) => {
+    if (!f) return;
+    if (f.size > FILE_MAX) { $("#lErr").textContent = `Файл ${fmtSize(f.size)} — больше 25 МБ. Сожмите его или загрузите на Google Диск и добавьте ссылкой.`; return; }
+    picked = f; $("#lErr").textContent = "";
+    $("#lPicked").innerHTML = `✓ Выбран: <b>${esc(f.name)}</b> · ${fmtSize(f.size)}`;
+    if (!$("#lTitle").value.trim()) $("#lTitle").value = f.name.replace(/\.[^.]+$/, "").replace(/[_]+/g, " ");
+  };
+  const fi = $("#lFile"), drop = $("#lDrop");
+  if (fi) fi.onchange = () => pick(fi.files[0]);
+  if (drop) {
+    ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+    drop.addEventListener("drop", (e) => pick(e.dataTransfer.files[0]));
+  }
   $("#lAdd").onclick = async () => {
     const [subject, grade] = $("#lWhere").value.split("|");
-    const title = $("#lTitle").value.trim(), url = $("#lUrl").value.trim();
-    if (!title) return ($("#lErr").textContent = "Впишите название.");
-    if (!/^https?:\/\//.test(url)) return ($("#lErr").textContent = "Ссылка должна начинаться с https://");
-    await push(ref(db, "settings/links"), { subject, grade, title, url, at: Date.now() });
-    $("#lErr").textContent = ""; $("#lTitle").value = ""; $("#lUrl").value = "";
+    const title = $("#lTitle").value.trim();
+    const btn = $("#lAdd"), err = $("#lErr"); err.style.color = "";
+    if (!title) return (err.textContent = "Впишите название.");
+    if (mode === "url") {
+      const url = $("#lUrl").value.trim();
+      if (!/^https?:\/\//.test(url)) return (err.textContent = "Ссылка должна начинаться с https://");
+      await push(ref(db, "settings/links"), { subject, grade, title, url, at: Date.now() });
+      err.textContent = ""; $("#lTitle").value = ""; $("#lUrl").value = "";
+      return;
+    }
+    if (!FILESCFG?.url) return showFilesSetup();
+    if (!picked) return (err.textContent = "Выберите файл.");
+    btn.disabled = true; btn.textContent = "⏳ Загружаю…"; err.style.color = "var(--muted)"; err.textContent = `Загружаю «${picked.name}» на ваш Google Диск…`;
+    try {
+      const data = await readB64(picked);
+      const sub = SUBJECTS.find((x) => x.id === subject);
+      const r = await callFiles({ action: "upload", name: picked.name, mime: picked.type || "application/octet-stream", data, title, subject: sub?.name || subject, grade });
+      await push(ref(db, "settings/links"), { subject, grade, title, url: r.url, at: Date.now(),
+        file: { id: r.id, name: r.name || picked.name, size: r.size || picked.size, ext: (picked.name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase() || "" } });
+      err.style.color = "var(--green)"; err.textContent = "✓ Файл загружен и появился у учеников.";
+      picked = null; if (fi) fi.value = ""; $("#lPicked").textContent = ""; $("#lTitle").value = "";
+    } catch (e) { err.style.color = ""; err.textContent = "Не удалось загрузить: " + e.message; }
+    btn.disabled = false; btn.textContent = "Добавить";
   };
   const off = onValue(ref(db, "settings/links"), (snap) => {
-    const L = Object.entries(snap.val() || {});
+    const L = Object.entries(snap.val() || {}).sort((a, b) => (b[1].at || 0) - (a[1].at || 0));
     const box = $("#lList"); if (!box) return off();
     box.innerHTML = L.length ? L.map(([id, l]) => {
       const sub = SUBJECTS.find((x) => x.id === l.subject);
-      return `<div class="chk-item chk-row"><span><b>${esc(l.title)}</b><br><span class="muted" style="font-size:13px">${esc((sub?.name || l.subject) + " · " + l.grade + " класс")} · ${esc(l.url)}</span></span>
+      return `<div class="chk-item chk-row"><span><b>${l.file ? "📁 " : "🔗 "}${esc(l.title)}</b><br><span class="muted" style="font-size:13px">${esc((sub?.name || l.subject) + " · " + l.grade + " класс")} ·
+        ${l.file ? esc(l.file.name) + " · " + fmtSize(l.file.size || 0) : esc(l.url)}</span> <a href="${esc(l.url)}" target="_blank" rel="noopener" style="font-size:13px">открыть ↗</a></span>
         <button class="btn small red" data-del="${id}">Удалить</button></div>`;
-    }).join("") : `<p class="muted">Пока нет ни одной ссылки.</p>`;
-    box.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => remove(ref(db, "settings/links/" + b.dataset.del)));
+    }).join("") : `<p class="muted">Пока нет ни одного материала.</p>`;
+    box.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
+      const l = (snap.val() || {})[b.dataset.del];
+      if (!confirm(`Удалить «${l?.title}»?${l?.file ? " Файл переместится в корзину вашего Google Диска." : ""}`)) return;
+      await remove(ref(db, "settings/links/" + b.dataset.del));
+      if (l?.file?.id && FILESCFG?.url) callFiles({ action: "delete", id: l.file.id }, 30000).catch(() => {});
+    });
   });
   dlg.addEventListener("close", off, { once: true });
+}
+
+function showFilesSetup() {
+  dlg.innerHTML = `<div class="dlg-head"><b>⚙ Загрузка файлов на Google Диск</b>
+      <button class="btn small ghost" style="background:#fff" id="fBack">← К материалам</button></div>
+    <div class="dlg-body">
+      <ol style="line-height:1.6;padding-left:20px;margin-top:0">
+        <li>Откройте <a href="https://script.google.com" target="_blank" rel="noopener">script.google.com</a> → «Новый проект».</li>
+        <li>Вставьте код из файла <b>apps-script/TechLab_files.gs</b> и впишите в строке SECRET своё секретное слово.</li>
+        <li>«Начать развёртывание» → «Новое развёртывание» → «Веб-приложение»: выполнять от имени «Я», доступ «Все» → «Развернуть» → разрешите доступ к Диску.</li>
+        <li>Скопируйте URL веб-приложения и вставьте ниже вместе с секретным словом.</li>
+      </ol>
+      <label class="f">URL веб-приложения (заканчивается на /exec)</label>
+      <input type="text" id="fUrl" value="${esc(FILESCFG?.url || "")}" placeholder="https://script.google.com/macros/s/…/exec">
+      <label class="f">Секретное слово</label><input type="text" id="fSecret" value="${esc(FILESCFG?.secret || "")}">
+      <div class="err" id="fErr"></div>
+      <button class="btn" id="fSave">Сохранить и проверить связь</button>
+      <p class="muted" style="font-size:14px;margin-top:12px">Файлы хранятся на вашем Google Диске в папке «TechLab материалы» и открываются по ссылке только для просмотра — ученикам не нужен Google-аккаунт.</p>
+    </div>`;
+  if (!dlg.open) dlg.showModal();
+  $("#fBack").onclick = showLinks;
+  $("#fSave").onclick = async () => {
+    const url = $("#fUrl").value.trim(), secret = $("#fSecret").value.trim();
+    $("#fErr").style.color = ""; $("#fErr").textContent = "Проверяю связь…";
+    if (!/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec/.test(url)) return ($("#fErr").textContent = "Адрес должен начинаться с https://script.google.com/ и заканчиваться на /exec");
+    const prev = FILESCFG; FILESCFG = { url, secret };
+    try {
+      await callFiles({ ping: true }, 30000);
+      await set(ref(db, "keys/_files"), FILESCFG);
+      $("#fErr").style.color = "var(--green)"; $("#fErr").textContent = "✓ Связь есть. Теперь можно загружать файлы.";
+      setTimeout(showLinks, 900);
+    } catch (e) { FILESCFG = prev; $("#fErr").textContent = "Ошибка: " + e.message; }
+  };
 }
 
 
@@ -809,7 +923,8 @@ async function showMissionDashboard() {
       <label style="display:flex;gap:8px;align-items:center;font-weight:600">Тест / миссия:
         <select id="selTest" style="width:auto;min-width:300px">${testOptions()}</select></label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a class="btn small ghost" href="../${ENTRY.path}" target="_blank">👁 Открыть миссию</a>
+        <a class="btn small" href="${pvUrl(ENTRY.path)}" target="_blank" title="Без кода ученика, все этапы открыты, результат никуда не уходит">👁 Просмотр учителя</a>
+        <a class="btn small ghost" href="../${ENTRY.path}" target="_blank">Как видит ученик ↗</a>
         <a class="btn small ghost" href="../" target="_blank">🏠 Стартовая</a>
         <button class="btn small ghost" id="bLinks">📎 Материалы на стартовой</button>
       </div>
@@ -1037,7 +1152,7 @@ async function showOverview() {
     $("#hubTools").innerHTML = `<div class="hub-tools"><a class="btn small" href="builder.html">🧩 Конструктор тестов</a> <a class="btn small" href="students.html">👥 Ученики и родители</a> <a class="btn small ghost" href="../qr.html" target="_blank">📱 QR-код сайта</a> <button class="btn small ghost" id="hPlan">📅 План недели</button>
       <button class="btn small ghost" id="hLinks">📎 Материалы на стартовой</button>
       <button class="btn small ghost" id="hReview">🔍 Разбор для учеников</button>
-      <a class="btn small" href="../admin/" style="background:#0B1A3B">🛡 Администратор</a> <button class="btn small ghost" id="hStaff">👥 Коллеги</button>
+      <a class="btn small" href="../admin/" style="background:#0B1A3B">🛡 Администратор</a> <a class="btn small ghost" href="my.html">📚 Мои предметы</a> <a class="btn small" href="results.html">📊 Результаты и рейтинги</a> <button class="btn small ghost" id="hStaff">👥 Коллеги</button>
       <button class="btn small ghost" id="hAnn">📢 Объявления</button>
       <span class="hub-legend">${KINDS.map((k) => `<span class="ktag k-${k.id}">${k.icon} ${esc(k.short)}</span>`).join("")}</span></div>`;
     $("#hPlan").onclick = showPlan; $("#hLinks").onclick = showLinks;
@@ -1075,10 +1190,12 @@ async function showOverview() {
         <div class="k">${esc(t.grade)} класс · ${kindLine(t)}</div>
         <div class="n">${esc(t.title)}</div>
         <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}${Number(SET[t.id]?.review) ? ' <span class="ktag" title="Ученики видят разбор своей работы">🔍 Разбор</span>' : ""}</div>
+        ${t.type === "mission" && t.path ? `<span class="hub-pv" data-pv="${pvUrl(t.path)}" title="Открыть содержание миссии без кода ученика">👁 Посмотреть содержание</span>` : ""}
         <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${q ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${q ? "квалификативы" : "ср. оценка"}</div></div>
       </a>`;
     };
     const order = (a, b) => (Number(isOpen(b)) - Number(isOpen(a))) || String(a.n || 0).localeCompare(String(b.n || 0), undefined, { numeric: true }) || a.title.localeCompare(b.title);
+    if (!window.__pvHook) { window.__pvHook = 1; document.addEventListener("click", (e) => { const b = e.target.closest("[data-pv]"); if (!b) return; e.preventDefault(); e.stopPropagation(); window.open(b.dataset.pv, "_blank", "noopener"); }, true); }
     $("#hub").innerHTML = SUBJECTS.filter((x) => !WS.s || x.id === WS.s).map((sb) => {
       const grades = sb.grades.filter((g) => !WS.g || g === WS.g || WS.s !== sb.id);
       const soon = TESTS.filter((t) => t.subject === sb.id && !t.path && (!WS.g || t.grade === WS.g)).length;

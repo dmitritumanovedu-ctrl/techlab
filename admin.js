@@ -8,9 +8,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, get, set, update, remove, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=2";
-import { SUBJECTS, TESTS } from "../tests.js?v=8";
+import { roleOf, PERMS, permOf, acceptStaff, declineStaff, removeStaff, setPerm, logAction } from "../engine/staff.js?v=3";
+import { SUBJECTS, TESTS, addSubjects, BUILTIN_SUBJECTS } from "../tests.js?v=8";
 import { clsKey } from "../engine/people.js?v=4";
+import { startNotify } from "../engine/notify.js?v=2";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -18,7 +19,12 @@ const app = $("#app"), dlg = $("#dlg");
 const fb = initializeApp(firebaseConfig);
 const db = getDatabase(fb), auth = getAuth(fb);
 let USER = null, unsub = [];
-const D = { staff: {}, req: {}, shares: {}, roster: {}, results: {}, settings: {}, builder: {}, pubIndex: {}, feedback: {}, log: {}, visits: {} };
+const D = { staff: {}, req: {}, shares: {}, roster: {}, results: {}, settings: {}, builder: {}, pubIndex: {}, feedback: {}, log: {}, visits: {}, sreq: {} };
+// разделы-страницы учителя, открытые прямо внутри панели (iframe)
+const FRAMES = { lessons: "../teacher/?embed=1", students: "../teacher/students.html", results: "../teacher/results.html", builder: "../teacher/builder.html", mysubj: "../teacher/my.html" };
+const SECTIONS = ["lessons", "students", "results", "builder", "mysubj", "activity", "overview", "requests", "teachers", "share", "subjects", "classes", "visits", "feed", "security", "feedback", "site"];
+const curSec = () => { const h = location.hash.slice(1).split("/")[0]; return SECTIONS.includes(h) ? h : "overview"; };
+addEventListener("hashchange", () => { if (USER) { render(); scrollTo(0, 0); } });
 let feedFilter = "all", fbFilter = "new";
 
 // ---------- время ----------
@@ -48,22 +54,24 @@ onAuthStateChanged(auth, async (user) => {
   $("#out").onclick = (e) => { e.preventDefault(); signOut(auth); };
   const role = await roleOf(db, user);
   if (role !== "admin") {
-    $("#adTabs").hidden = true;
+    $("#adNav").hidden = true;
     app.innerHTML = `<div class="ad-card ad-center"><h2>🔒 Только для администратора</h2>
       <p>Эта страница открывается только владельцу платформы TechLab.</p>
       <p class="muted">Вы учитель? Ваш кабинет — <a href="../teacher/builder.html">Конструктор тестов</a>.</p></div>`;
     return;
   }
-  $("#adTabs").hidden = false;
+  $("#adNav").hidden = false;
   app.innerHTML = `<div class="ad-card ad-center"><p class="muted">Загружаю данные платформы…</p></div>`;
   await loadAll();
   live();
+  if (!location.hash) history.replaceState(null, "", "#lessons");    // по умолчанию — уроки и тесты
   render();
+  startNotify(db, user, "admin", { base: "../" });
 });
 
 function showLogin() {
   $("#adWho").textContent = "Вход только для администратора";
-  $("#adTabs").hidden = true;
+  $("#adNav").hidden = true;
   app.innerHTML = `<div class="ad-card ad-center"><h2>🛡 Вход администратора</h2>
     <p class="muted">Войдите Google-аккаунтом владельца платформы.</p><p class="bad-t" id="err"></p>
     <button class="btn" id="go">Войти через Google</button></div>`;
@@ -78,23 +86,39 @@ async function loadAll() {
     val("log", query(ref(db, "log"), limitToLast(300))),
     ...days.map((d) => val(`stats/visits/${d}`))]);
   Object.assign(D, { roster, results, settings, builder, pubIndex, shares, log });
+  addSubjects(settings.subjects);
   D.visits = Object.fromEntries(days.map((d, i) => [d, vis[i]]));
 }
 function live() {
   const on = (path, k, q) => unsub.push(onValue(q || ref(db, path), (s) => { D[k] = s.val() || {}; render(); }, (e) => console.warn(path, e.code)));
-  on("staff", "staff"); on("staffRequests", "req"); on("feedback", "feedback"); on("staffShares", "shares");
+  on("log", "log", query(ref(db, "log"), limitToLast(300)));
+  on("staff", "staff"); on("staffRequests", "req"); on("feedback", "feedback"); on("staffShares", "shares"); on("subjectRequests", "sreq");
 }
 
 // =====================================================================
 //  Отрисовка
 // =====================================================================
 function render() {
-  const keepY = window.scrollY;
   const nReq = Object.keys(D.req).length, nFb = Object.values(D.feedback).filter((x) => !x.read).length;
-  $("#nReq").textContent = nReq || ""; $("#nFb").textContent = nFb || "";
-  app.innerHTML = [secOverview(), secRequests(), secTeachers(), secVisits(), secFeed(), secFeedback(), secSite()].join("");
+  const nS = Object.values(D.sreq).reduce((a, x) => a + Object.values(x || {}).filter((r) => r && !r.done).length, 0);
+  $("#nReq").textContent = nReq || ""; $("#nFb").textContent = nFb || ""; $("#nSubj").textContent = nS || "";
+  const sec = curSec();
+  document.querySelectorAll("#adNav a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + sec));
+  // страница учителя внутри панели: не перерисовываем, чтобы рамка не перезагружалась при каждом обновлении данных
+  if (FRAMES[sec]) {
+    // #builder/e/<id> — сразу открыть тест в редакторе конструктора
+    const sub = location.hash.slice(1).split("/").slice(1).join("/");
+    const src = FRAMES[sec] + (sub ? "#/" + sub : "");
+    const cur = app.querySelector("iframe.ad-frame");
+    if (cur && cur.dataset.sec === sec) { if (sub && cur.dataset.sub !== sub) { cur.dataset.sub = sub; cur.src = src; } return; }
+    app.innerHTML = `<iframe class="ad-frame" data-sec="${sec}" data-sub="${esc(sub)}" src="${src}" title="${sec}"></iframe>`;
+    return;
+  }
+  const F = { activity: secActivity, overview: secOverview, requests: secRequests, teachers: secTeachers, share: secShare, subjects: secSubjects, classes: secClasses,
+    visits: secVisits, feed: secFeed, security: secSecurity, feedback: secFeedback, site: secSite };
+  app.innerHTML = F[sec]().replace('class="ad-sec"', 'class="ad-sec on"') +
+    `<div class="foot-note">© ${Math.max(2026, new Date().getFullYear())} TechLab · All rights reserved · Ⓐ Туманов Дмитрий</div>`;
   bind();
-  window.scrollTo(0, keepY);
 }
 
 // ---------- сводные данные ----------
@@ -134,7 +158,17 @@ function secOverview() {
       ${k("🧩", Object.keys(D.builder).length, "тестов в Конструкторе", `опубликовано: ${Object.keys(D.pubIndex).length}`)}
       ${k("✉️", Object.values(D.feedback).filter((x) => !x.read).length, "новых отзывов", `всего: ${Object.keys(D.feedback).length}`)}
       ${k("⚠️", emptyW, "пустых сдач за неделю", "сдано без единого ответа — проверьте", emptyW > 0)}
-    </div></section>`;
+    </div>
+    <div class="two" style="margin-top:14px">
+      <div class="ad-card"><div class="ad-h" style="margin:0 0 6px"><b>🕑 Последние действия</b><span class="sp"></span><a href="#feed">журнал →</a></div>
+        <ul class="feed">${feedItems().slice(0, 8).map((x) => `<li><span class="ic">${x.ic}</span><span>${x.t}</span><span class="tm">${ago(x.at)}</span></li>`).join("") || '<div class="empty">Пока пусто.</div>'}</ul></div>
+      <div class="ad-card"><div class="ad-h" style="margin:0 0 6px"><b>🆕 Ждут решения</b></div>
+        ${Object.values(D.req).map((x) => `<div class="req"><div class="who"><b>${esc(x.name || x.email)}</b><div class="sub">${esc(x.subject || "заявка учителя")} · ${ago(x.at)}</div></div><a class="btn small" href="#requests">Открыть</a></div>`).join("")}
+        ${Object.values(D.sreq).flatMap((x) => Object.values(x || {})).filter((r) => r && !r.done).map((r) => `<div class="req"><div class="who"><b>📚 ${esc(r.name)}</b><div class="sub">новый предмет · ${esc(r.by || "")}</div></div><a class="btn small" href="#subjects">Открыть</a></div>`).join("")}
+        ${Object.values(D.feedback).filter((x) => !x.read).slice(0, 3).map((x) => `<div class="req"><div class="who"><b>✉️ ${esc(x.name)}</b><div class="sub">${esc(String(x.text || "").slice(0, 70))}</div></div><a class="btn small ghost" href="#feedback">Прочитать</a></div>`).join("")}
+        ${!Object.keys(D.req).length && !Object.values(D.feedback).some((x) => !x.read) ? '<div class="empty">Всё разобрано ✓</div>' : ""}</div>
+    </div>
+    <div style="margin-top:14px">${visitsChart()}</div></section>`;
 }
 
 // ---------- заявки ----------
@@ -183,6 +217,13 @@ function secTeachers() {
 }
 
 // ---------- посещаемость ----------
+function visitsChart() {
+  const days = lastDays(14), keys = days.map(dayKey);
+  const per = keys.map((k) => Object.keys(D.visits[k] || {}).length);
+  const max = Math.max(1, ...per);
+  return `<div class="ad-card"><b>📈 Учеников на сайте по дням · 14 дней</b><div class="bars">${days.map((d, i) => `<div class="bar${d.getDay() === 0 || d.getDay() === 6 ? " we" : ""}" title="${d.toLocaleDateString("ru-RU")}: ${per[i]}"><b>${per[i] || ""}</b><i style="height:${Math.round(per[i] / max * 100)}%"></i></div>`).join("")}</div>
+    <div class="bar-l">${days.map((d) => `<span>${pad(d.getDate())}.${pad(d.getMonth() + 1)}</span>`).join("")}</div></div>`;
+}
 function secVisits() {
   const days = lastDays(14), keys = days.map(dayKey);
   const per = keys.map((k) => Object.keys(D.visits[k] || {}).length);
@@ -263,33 +304,138 @@ function secFeedback() {
 
 // ---------- предметы и стартовая ----------
 function secSite() {
-  const X = D.settings.subjects || {};
-  const builtIn = SUBJECTS.filter((s) => !s.extra && !X[s.id]);
-  return `<section class="ad-sec" id="site"><div class="ad-h"><h2>🧱 Предметы и стартовая страница</h2></div>
-    <div class="two">
-      <div class="ad-card"><b>Предметы на сайте</b>
-        <p class="sub" style="margin:4px 0 8px">Когда приходит учитель нового предмета — добавьте предмет здесь. Он появится на стартовой странице, в Конструкторе и в списке предметов учителя
-          (на компьютерах учеников — при следующем открытии сайта).</p>
-        ${builtIn.map((s) => `<div class="sj"><span class="ic" style="background:${esc(s.color)}22">${s.icon}</span><div><b>${esc(s.name)}</b><div class="sub">классы: ${s.grades.join(", ")} · встроенный</div></div></div>`).join("")}
-        ${Object.entries(X).map(([id, s]) => `<div class="sj"><span class="ic" style="background:${esc(s.color || "#2E4BFF")}22">${esc(s.icon || "📘")}</span><div><b>${esc(s.name)}</b><div class="sub">классы: ${esc([].concat(s.grades || []).join(", "))} · добавлен вами</div></div>
-          <span style="margin-left:auto"><button class="btn red small" data-sjd="${esc(id)}">Убрать</button></span></div>`).join("")}
-        <div class="form-row">
-          <div><label for="sjName">Название предмета</label><input id="sjName" maxlength="40" placeholder="Например: История"></div>
-          <div><label for="sjIcon">Значок</label><input id="sjIcon" maxlength="4" value="📘"></div>
-          <div><label for="sjColor">Цвет</label><input id="sjColor" type="color" value="#2E4BFF"></div>
-          <div><label for="sjGrades">Классы</label><input id="sjGrades" placeholder="5, 6, 7"></div>
-          <button class="btn" data-act="addsubj">＋ Добавить</button>
-        </div><p class="bad-t" id="sjErr" style="margin:6px 0 0"></p></div>
-      <div class="ad-card"><b>Как устроена стартовая для нескольких учителей</b>
-        <ul style="padding-left:18px;line-height:1.55;margin:8px 0">
-          <li>Плитки предметов строятся из списка предметов слева — у каждого учителя свой предмет.</li>
-          <li>Тесты учителя из Конструктора сами появляются в его предмете и классе, когда он нажимает «Опубликовать».</li>
-          <li>Ученик со своим кодом видит только предметы своего класса (настраивается в «Ученики и родители»).</li>
-          <li>Внизу стартовой — блок «Учителя TechLab»: включите «🏠 На стартовой» у учителя в таблице выше.</li>
-          <li>Там же — неприметная ссылка «вы учитель? присоединяйтесь»: новый учитель входит через Google и попадает к вам в «Заявки».</li>
-          <li>Форма «Напишите нам» приходит сюда, в «Отзывы».</li>
-        </ul></div>
-    </div></section>`;
+  const T = D.settings.teachers || {};
+  return `<section class="ad-sec" id="site"><div class="ad-h"><h2>⚙️ Настройки сайта</h2></div>
+    <div class="two"><div class="ad-card"><b>👩‍🏫 Учителя внизу стартовой страницы</b><p class="sub" style="margin:4px 0 8px">Имя и предметы учителя в блоке «Учителя TechLab».</p>
+      ${Object.entries(D.staff).map(([uid, x]) => `<div class="req"><div class="who"><b>${esc(x.name || x.email)}</b><div class="sub">${esc((x.subjects || []).map(subjName).join(", ") || "предметы не выбраны")}</div></div>
+        <label class="tg${T[uid]?.show ? " on" : ""}"><input type="checkbox" data-show="${esc(uid)}" ${T[uid]?.show ? "checked" : ""}>🏠 На стартовой</label></div>`).join("") || '<div class="empty">Коллег пока нет.</div>'}</div>
+    <div class="ad-card"><b>Как устроена стартовая</b><ul style="padding-left:18px;line-height:1.6;margin:8px 0">
+      <li>Гость видит три входа: ученик (код), родитель (код P), учитель (Google).</li>
+      <li>Кнопка «📚 Предметы» — список всех предметов; ученик и родитель после входа видят только свои.</li>
+      <li>Справа — дата, «Факт дня» и «В этот день».</li>
+      <li>Внизу — форма «Напишите нам» (приходит в «Отзывы») и ссылка «вы учитель? присоединяйтесь».</li></ul></div></div></section>`;
+}
+
+// ---------- 👀 активность коллег: что делают учителя на платформе ----------
+function secActivity() {
+  const S = Object.entries(D.staff).sort((a, b) => (b[1].seen || 0) - (a[1].seen || 0));
+  const CT = D.settings.classTeachers || {};
+  const resCount = (id) => Object.values(D.results[id] || {}).filter((r) => r && r.status === "submitted").length;
+  const card = ([uid, x]) => {
+    const tests = Object.entries(D.builder).filter(([, t]) => t && t.owner === uid).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+    const pub = tests.filter(([id]) => D.pubIndex[id]).length, open = tests.filter(([id]) => D.settings[id]?.open).length;
+    const subm = tests.reduce((a, [id]) => a + resCount(id), 0);
+    const cls = []; for (const [c, subs] of Object.entries(CT)) for (const [sid, t] of Object.entries(subs || {})) if (t?.[uid]) cls.push(`${c} · ${subjName(sid)}`);
+    const acts = Object.values(D.log).filter((l) => l && l.by && l.by === x.email).sort((a, b) => b.at - a.at).slice(0, 8);
+    const online = x.seen && Date.now() - x.seen < 10 * 60000;
+    return `<div class="ad-card act-card"><div class="act-h"><span class="act-av${online ? " on" : ""}">${esc((x.name || x.email || "?")[0].toUpperCase())}</span>
+        <div><b>${esc(x.name || x.email)}</b> ${x.role === "admin" ? '<span class="chip adm">админ</span>' : ""}<div class="sub">${esc(x.email)} · ${online ? '<span class="ok-t">сейчас на сайте</span>' : "был(а) " + ago(x.seen)}</div></div></div>
+      <div class="act-k"><div><b>${tests.length}</b><span>тестов</span></div><div><b>${pub}</b><span>опубликовано</span></div><div><b>${open}</b><span>открыто ученикам</span></div><div><b>${subm}</b><span>сдач учеников</span></div></div>
+      <div class="sub" style="margin:10px 0 4px"><b>Классы:</b> ${cls.length ? esc(cls.join(" · ")) : "не подключены"}</div>
+      ${tests.length ? `<div class="sub" style="margin:8px 0 4px"><b>Тесты:</b></div>${tests.slice(0, 6).map(([id, t]) => `<div class="act-t"><span>🧩 ${esc(t.title || id)} <span class="sub">· ${esc(subjName(t.subject))}, ${esc(t.grade || "")} кл. · изменён ${ago(t.updatedAt)}</span></span>
+          <span class="act-tags">${D.pubIndex[id] ? '<span class="chip ok">опубликован</span>' : '<span class="chip">черновик</span>'}${D.settings[id]?.open ? '<span class="chip ok">открыт</span>' : ""}${resCount(id) ? `<span class="chip">${resCount(id)} сдач</span>` : ""}
+          ${D.pubIndex[id] ? `<a class="btn small ghost" href="../b/?t=${esc(id)}&preview=1" target="_blank" rel="noopener">👁 Посмотреть</a>` : ""}<a class="btn small ghost" href="#builder/e/${esc(id)}">✏️ Изменить</a></span></div>`).join("")}${tests.length > 6 ? `<div class="sub">…и ещё ${tests.length - 6}</div>` : ""}` : '<div class="sub" style="margin-top:8px">Тестов пока не создавал(а).</div>'}
+      <div class="sub" style="margin:10px 0 4px"><b>Последние действия:</b></div>
+      ${acts.length ? `<ul class="feed">${acts.map((l) => `<li><span class="ic">${l.kind === "test" ? "🧩" : "🛡"}</span><span>${esc(l.text)}</span><span class="tm">${ago(l.at)}</span></li>`).join("")}</ul>` : '<div class="sub">Пока нет записей.</div>'}
+    </div>`;
+  };
+  const online = S.filter(([, x]) => x.seen && Date.now() - x.seen < 10 * 60000).length;
+  return `<section class="ad-sec" id="activity"><div class="ad-h"><h2>👀 Активность коллег</h2><span class="sp"></span>
+      <span class="sub">Сейчас на сайте: ${online} · всего коллег: ${S.length}</span><button class="btn ghost small" data-act="reload">⟳ Обновить</button></div>
+    <p class="sub" style="margin:-4px 0 12px">Что создают и публикуют учителя, какие классы подключили, сколько учеников сдали их тесты. Записи появляются в журнале автоматически, когда коллега что-то делает.</p>
+    ${S.length ? `<div class="act-grid">${S.map(card).join("")}</div>` : '<div class="ad-card empty">Коллег пока нет.</div>'}</section>`;
+}
+
+// ---------- 📤 поделиться: выбранным коллегам — тесты и материалы по предметам ----------
+const SH = { to: new Set(), subj: "all", pick: new Set(), q: "", msg: "" };
+function shareItems() {
+  const tests = Object.entries(D.builder).filter(([, t]) => t && (!t.owner || t.owner === USER.uid || D.staff[t.owner]?.role === "admin"))
+    .map(([id, t]) => ({ id, kind: "test", title: t.title || id, subject: t.subject || "", grade: t.grade || "", ic: "🧩", note: `тест из Конструктора · ${(t.items || []).length || "?"} вопр.` }));
+  const mats = Object.entries(D.settings.links || {}).map(([id, l]) => ({ id: "m_" + id, kind: "material", title: l.title, subject: l.subject, grade: l.grade, url: l.url, file: l.file || null,
+    ic: l.file ? "📁" : "🔗", note: l.file ? `файл · ${l.file.name}` : "ссылка" }));
+  return tests.concat(mats);
+}
+function secShare() {
+  const S = Object.entries(D.staff);
+  const all = shareItems();
+  const L = all.filter((x) => (SH.subj === "all" || x.subject === SH.subj) && (!SH.q || x.title.toLowerCase().includes(SH.q)));
+  const subjects = [...new Set(all.map((x) => x.subject).filter(Boolean))];
+  const opened = (uid) => Object.entries(D.shares[uid] || {}).filter(([, x]) => x && typeof x === "object");
+  return `<section class="ad-sec" id="share"><div class="ad-h"><h2>📤 Поделиться с коллегами</h2><span class="sp"></span><span class="sub">Коллеги видят только то, что вы открыли. Ваших учеников и оценки — нет.</span></div>
+    ${!S.length ? '<div class="ad-card empty">Коллег пока нет. Когда учитель подаст заявку и вы её примете, здесь можно будет открыть ему тесты и материалы.</div>' : `
+    <div class="ad-card"><b>1. Кому</b><div class="sh-row">${S.map(([uid, x]) => `<label class="tg${SH.to.has(uid) ? " on" : ""}"><input type="checkbox" data-shto="${esc(uid)}" ${SH.to.has(uid) ? "checked" : ""}>${esc(x.name || x.email)}${(x.subjects || Object.keys(x.subj || {})).length ? ` <span class="sub">· ${esc([...new Set([...(x.subjects || []), ...Object.keys(x.subj || {})])].map(subjName).join(", "))}</span>` : ""}</label>`).join("")}
+      <button class="btn ghost small" data-shall>Всем коллегам</button></div></div>
+    <div class="ad-card" style="margin-top:12px"><div class="ad-h" style="margin:0 0 8px"><b>2. Что открыть</b><span class="sp"></span>
+      <input id="shQ" placeholder="поиск по названию" value="${esc(SH.q)}" style="max-width:240px"></div>
+      <div class="fil" style="margin-bottom:10px"><button data-shs="all" class="${SH.subj === "all" ? "on" : ""}">Все предметы</button>${subjects.map((sid) => `<button data-shs="${esc(sid)}" class="${SH.subj === sid ? "on" : ""}">${subjIcon(sid)} ${esc(subjName(sid))}</button>`).join("")}</div>
+      ${L.length ? `<div style="display:flex;gap:8px;margin-bottom:6px"><button class="btn ghost small" data-shpickall>☑ Отметить всё ${SH.subj === "all" ? "" : "по предмету"} (${L.length})</button><button class="btn ghost small" data-shpicknone>Снять</button></div>
+        <div class="sh-list">${L.map((x) => `<label class="ck"><input type="checkbox" data-shit="${esc(x.id)}" ${SH.pick.has(x.id) ? "checked" : ""}><span>${x.ic} <b>${esc(x.title)}</b> <span class="sub">· ${esc(subjName(x.subject))}${x.grade ? ", " + esc(x.grade) + " кл." : ""} · ${esc(x.note)}</span>
+          ${SH.to.size && [...SH.to].every((u) => D.shares[u]?.[x.id]) ? ' <span class="chip ok">✓ уже открыто</span>' : ""}</span></label>`).join("")}</div>`
+        : '<div class="empty">Здесь появятся ваши тесты из Конструктора и материалы со стартовой («📎 Материалы» в Центре управления).</div>'}
+    </div>
+    <div class="ad-card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><b>3.</b>
+      <button class="btn green" data-shgo ${SH.to.size && SH.pick.size ? "" : "disabled"}>${!SH.to.size ? "📤 Выберите, кому открыть (шаг 1)" : !SH.pick.size ? "📤 Отметьте, что открыть (шаг 2)" : `📤 Открыть доступ: ${SH.pick.size} шт. → ${SH.to.size === 1 ? "1 коллеге" : SH.to.size + " коллегам"}`}</button>
+      <span class="sub">Коллега сразу получит уведомление 🔔 и увидит это в «📚 Мои предметы → Мне открыли».</span><span class="ok-t">${esc(SH.msg)}</span></div>
+    <div class="ad-card tw" style="margin-top:12px"><b>Что уже открыто</b><table class="ad-t" style="margin-top:8px"><thead><tr><th>Коллега</th><th>Открыто</th></tr></thead><tbody>
+      ${S.map(([uid, x]) => `<tr><td><b>${esc(x.name || x.email)}</b><div class="sub">${opened(uid).length} шт.</div></td><td>${opened(uid).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).map(([id, it]) => `<span class="chip">${it.kind === "material" ? (it.file ? "📁" : "🔗") : "🧩"} ${esc(it.title || id)} <button class="btn small ghost" style="padding:0 6px;margin-left:4px" title="Закрыть доступ" data-shrm="${esc(uid)}|${esc(id)}">✕</button></span>`).join("") || '<span class="sub">ничего</span>'}</td></tr>`).join("")}
+    </tbody></table></div>`}</section>`;
+}
+
+// ---------- предметы: заявки на новые, кто какой предмет ведёт ----------
+let SJEDIT = "";       // какой предмет сейчас редактируется
+function secSubjects() {
+  const X = D.settings.subjects || {}, CT = D.settings.classTeachers || {};
+  const reqs = Object.entries(D.sreq).flatMap(([uid, x]) => Object.entries(x || {}).filter(([, r]) => r && !r.done).map(([id, r]) => ({ uid, id, ...r })));
+  const who = (sid) => { const m = {}; for (const [c, subs] of Object.entries(CT)) for (const [u, t] of Object.entries(subs?.[sid] || {})) (m[t?.name || u] = m[t?.name || u] || []).push(c); return m; };
+  return `<section class="ad-sec" id="subjects"><div class="ad-h"><h2>📚 Предметы</h2></div>
+    ${reqs.length ? `<div class="ad-card" style="margin-bottom:14px"><b>🆕 Новые предметы на одобрение</b>${reqs.map((r) => `<div class="req"><div class="who"><b>${esc(r.icon || "📘")} ${esc(r.name)}</b>
+      <div class="sub">классы: ${esc([].concat(r.grades || []).join(", "))} · предложил(а) ${esc(r.by || r.email || "")} · ${ago(r.at)}</div></div>
+      <div style="display:flex;gap:8px"><button class="btn green" data-sok="${esc(r.uid)}|${esc(r.id)}">✓ Добавить на сайт</button><button class="btn red small" data-sno="${esc(r.uid)}|${esc(r.id)}">Отклонить</button></div></div>`).join("")}</div>` : ""}
+    <div class="ad-card tw"><b>Предметы сайта и учителя</b>
+      <table class="ad-t" style="margin-top:8px"><thead><tr><th>Предмет</th><th>Классы сайта</th><th>Кто ведёт · подключённые классы</th><th></th></tr></thead><tbody>
+      ${SUBJECTS.map((sj) => { const w = who(sj.id); return `<tr><td><b>${sj.icon} ${esc(sj.name)}</b>${X[sj.id] ? (BUILTIN_SUBJECTS.includes(sj.id) ? ' <span class="chip">изменён</span>' : ' <span class="chip">добавлен вами</span>') : ""}</td><td>${esc(sj.grades.join(", "))}</td>
+        <td>${Object.entries(w).map(([n, cl]) => `<div><b>${esc(n)}</b> · <span class="sub">${esc(cl.join(", "))}</span></div>`).join("") || '<span class="sub">никто не подключил классы</span>'}</td>
+        <td style="white-space:nowrap"><button class="btn ghost small" data-sje="${esc(sj.id)}">✏️ Изменить</button>
+          ${X[sj.id] ? (BUILTIN_SUBJECTS.includes(sj.id) ? `<button class="btn ghost small" data-sjd="${esc(sj.id)}" title="Вернуть исходное название и классы">↺ Сбросить</button>` : `<button class="btn red small" data-sjd="${esc(sj.id)}">Убрать</button>`) : ""}</td></tr>
+        ${SJEDIT === sj.id ? `<tr><td colspan="4"><div class="form-row" style="margin:0">
+          <div><label for="seName">Название</label><input id="seName" maxlength="40" value="${esc(sj.name)}"></div>
+          <div><label for="seIcon">Значок</label><input id="seIcon" maxlength="4" value="${esc(sj.icon)}"></div>
+          <div><label for="seColor">Цвет</label><input id="seColor" type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(sj.color) ? sj.color : "#2E4BFF")}"></div>
+          <div><label for="seGrades">Классы</label><input id="seGrades" value="${esc(sj.grades.join(", "))}"></div>
+          <button class="btn green" data-act="savesubj">💾 Сохранить</button><button class="btn ghost" data-act="cancelsubj">Отмена</button></div></td></tr>` : ""}`; }).join("")}</tbody></table>
+      <div class="form-row">
+        <div><label for="sjName">Новый предмет</label><input id="sjName" maxlength="40" placeholder="Например: История"></div>
+        <div><label for="sjIcon">Значок</label><input id="sjIcon" maxlength="4" value="📘"></div>
+        <div><label for="sjColor">Цвет</label><input id="sjColor" type="color" value="#2E4BFF"></div>
+        <div><label for="sjGrades">Классы</label><input id="sjGrades" placeholder="5, 6, 7"></div>
+        <button class="btn" data-act="addsubj">＋ Добавить</button>
+      </div><p class="bad-t" id="sjErr" style="margin:6px 0 0"></p>
+      <p class="sub" style="margin-top:8px">Учитель сам выбирает свои предметы и подключает классы на странице «📚 Мои предметы». Ученики и родители видят только подключённые предметы.</p></div></section>`;
+}
+// ---------- классы: сколько учеников, какие предметы и кто ведёт ----------
+function secClasses() {
+  const byCls = {};
+  for (const s of Object.values(D.roster)) { const c = s.cls || "—"; byCls[c] = (byCls[c] || 0) + 1; }
+  const CS = D.settings.classSubjects || {}, CT = D.settings.classTeachers || {};
+  const all = [...new Set(Object.keys(byCls).concat(Object.keys(CS)))].sort((a, b) => parseInt(a) - parseInt(b) || a.localeCompare(b));
+  const groups = (c) => { const m = {}; for (const s of Object.values(D.roster)) if (s.cls === c) for (const k of Object.keys(s.plus || {})) m[k] = (m[k] || 0) + 1; return m; };
+  return `<section class="ad-sec" id="classes"><div class="ad-h"><h2>🏫 Классы и ученики</h2><span class="sp"></span><a class="btn" href="../teacher/students.html">👥 Ученики и коды →</a></div>
+    <div class="ad-card tw"><table class="ad-t"><thead><tr><th>Класс</th><th>Учеников с кодами</th><th>Предметы класса · учитель</th><th>Группы (часть класса)</th></tr></thead><tbody>
+    ${all.map((c) => `<tr><td><b>${esc(c)}</b></td><td>${byCls[c] || 0}</td>
+      <td>${Object.keys(CS[c] || {}).map((sid) => `<span class="chip">${subjIcon(sid)} ${esc(subjName(sid))}${Object.values(CT[c]?.[sid] || {}).map((t) => " · " + esc(t?.name || "")).join("")}</span>`).join("") || '<span class="sub">все предметы (не настроено)</span>'}</td>
+      <td>${Object.entries(groups(c)).map(([sid, n]) => `<span class="chip ok">${subjIcon(sid)} ${esc(subjName(sid))}: ${n} уч.</span>`).join("") || '<span class="sub">—</span>'}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">Пока нет классов.</td></tr>'}
+    </tbody></table><p class="sub" style="margin-top:8px">Группы (технология у половины класса и т.п.) отмечаются в «Ученики и родители», столбец «+ предмет».</p></div></section>`;
+}
+// ---------- безопасность ----------
+function secSecurity() {
+  const S = Object.entries(D.staff).sort((a, b) => (b[1].seen || 0) - (a[1].seen || 0));
+  return `<section class="ad-sec" id="security"><div class="ad-h"><h2>🔐 Безопасность</h2></div>
+    <div class="ad-card tw"><b>Учителя и входы</b><table class="ad-t" style="margin-top:8px"><thead><tr><th>Учитель</th><th>Роль</th><th>Последний вход</th><th>Принят(а)</th><th></th></tr></thead><tbody>
+    <tr><td><b>${esc(USER.displayName || USER.email)}</b><div class="sub">${esc(USER.email)}</div></td><td><span class="chip adm">владелец</span></td><td>сейчас</td><td>—</td><td></td></tr>
+    ${S.map(([uid, x]) => `<tr><td><b>${esc(x.name || x.email)}</b><div class="sub">${esc(x.email)}</div></td><td>${x.role === "admin" ? '<span class="chip adm">админ</span>' : '<span class="chip">учитель</span>'}</td>
+      <td>${ago(x.seen)}</td><td>${x.at ? new Date(x.at).toLocaleDateString("ru-RU") : "—"}</td><td><button class="btn red small" data-rm="${esc(uid)}">Закрыть доступ</button></td></tr>`).join("")}</tbody></table></div>
+    <div class="ad-card" style="margin-top:14px"><b>Двухэтапная защита (код из приложения на телефоне)</b>
+      <p class="sub" style="margin-top:6px">Следующий этап: вход через Google + 6-значный код. Включается отдельным обновлением — для неё нужен небольшой серверный модуль (Google Apps Script), который проверяет код. Ученики и родители по-прежнему входят по коду с карточки.</p></div></section>`;
 }
 
 // =====================================================================
@@ -342,6 +488,32 @@ function bind() {
     remove(ref(db, `staffShares/${uid}`)).catch(() => {}); remove(ref(db, `settings/teachers/${uid}`)).catch(() => {});
     logAction(db, USER, `Закрыт доступ учителю ${x.email}`, "staff");
   });
+  // поделиться
+  app.querySelectorAll("[data-shto]").forEach((i) => i.onchange = () => { i.checked ? SH.to.add(i.dataset.shto) : SH.to.delete(i.dataset.shto); SH.msg = ""; render(); });
+  app.querySelector("[data-shall]")?.addEventListener("click", () => { Object.keys(D.staff).forEach((u) => SH.to.add(u)); render(); });
+  app.querySelectorAll("[data-shs]").forEach((b) => b.onclick = () => { SH.subj = b.dataset.shs; render(); });
+  app.querySelectorAll("[data-shit]").forEach((i) => i.onchange = () => { i.checked ? SH.pick.add(i.dataset.shit) : SH.pick.delete(i.dataset.shit); SH.msg = ""; render(); });
+  app.querySelector("[data-shpickall]")?.addEventListener("click", () => { app.querySelectorAll("[data-shit]").forEach((i) => SH.pick.add(i.dataset.shit)); render(); });
+  app.querySelector("[data-shpicknone]")?.addEventListener("click", () => { SH.pick.clear(); render(); });
+  const shq = app.querySelector("#shQ"); if (shq) shq.onchange = () => { SH.q = shq.value.trim().toLowerCase(); render(); };
+  app.querySelector("[data-shgo]")?.addEventListener("click", async (e) => {
+    const items = shareItems().filter((x) => SH.pick.has(x.id)), by = shortName(USER.displayName || USER.email), upd = {};
+    for (const uid of SH.to) for (const x of items) {
+      upd[`staffShares/${uid}/${x.id}`] = x.kind === "test" ? { kind: "test", title: x.title, subject: x.subject, grade: x.grade, at: Date.now(), by }
+        : { kind: "material", title: x.title, subject: x.subject || "", grade: x.grade || "", url: x.url, file: x.file, at: Date.now(), by };
+    }
+    e.target.disabled = true;
+    try {
+      await update(ref(db), upd);
+      logAction(db, USER, `Открыт доступ: ${items.length} шт. для ${[...SH.to].map((u) => D.staff[u]?.name || D.staff[u]?.email).join(", ")}`, "staff");
+      SH.msg = `✓ Открыто: ${items.length} × ${SH.to.size}`; SH.pick.clear(); render();
+    } catch (err) { alert("Не удалось: " + (err.code || err.message)); e.target.disabled = false; }
+  });
+  app.querySelectorAll("[data-shrm]").forEach((b) => b.onclick = async () => {
+    const [uid, id] = b.dataset.shrm.split("|");
+    await remove(ref(db, `staffShares/${uid}/${id}`)).catch((e) => alert(e.message));
+    logAction(db, USER, `Закрыт доступ «${D.shares[uid]?.[id]?.title || id}» для ${D.staff[uid]?.email}`, "staff");
+  });
   // лента и отзывы
   app.querySelectorAll("[data-ff]").forEach((b) => b.onclick = () => { feedFilter = b.dataset.ff; render(); });
   app.querySelectorAll("[data-fbf]").forEach((b) => b.onclick = () => { fbFilter = b.dataset.fbf; render(); });
@@ -349,10 +521,46 @@ function bind() {
   app.querySelectorAll("[data-fbd]").forEach((b) => b.onclick = () => { if (confirm("Удалить отзыв?")) remove(ref(db, `feedback/${b.dataset.fbd}`)).catch((e) => alert(e.message)); });
   // предметы
   app.querySelector('[data-act="addsubj"]')?.addEventListener("click", addSubject);
+  app.querySelectorAll("[data-sje]").forEach((b) => b.onclick = () => { SJEDIT = SJEDIT === b.dataset.sje ? "" : b.dataset.sje; render(); });
+  app.querySelector('[data-act="cancelsubj"]')?.addEventListener("click", () => { SJEDIT = ""; render(); });
+  app.querySelector('[data-act="savesubj"]')?.addEventListener("click", async (e) => {
+    const id = SJEDIT, name = $("#seName").value.trim(), icon = $("#seIcon").value.trim() || "📘", color = $("#seColor").value;
+    const grades = $("#seGrades").value.split(/[ ,;]+/).map((x) => x.trim()).filter((x) => /^\d{1,2}$/.test(x));
+    if (name.length < 2 || !grades.length) return alert("Нужны название и хотя бы один класс цифрами (например: 5, 6).");
+    e.target.disabled = true;
+    const rec = { ...(D.settings.subjects?.[id] || {}), name, icon, color, grades, at: Date.now() };
+    try { await set(ref(db, `settings/subjects/${id}`), rec); } catch (er) { e.target.disabled = false; return alert("Не удалось: " + (er.code || er.message)); }
+    D.settings.subjects = { ...(D.settings.subjects || {}), [id]: rec }; addSubjects({ [id]: rec });
+    try { localStorage.setItem("techlab_xsubj", JSON.stringify(D.settings.subjects)); } catch (er) {}
+    logAction(db, USER, `Изменён предмет «${name}» (классы: ${grades.join(", ")})`);
+    SJEDIT = ""; render();
+  });
+  app.querySelectorAll("[data-sok]").forEach((b) => b.onclick = async () => {
+    const [uid, id] = b.dataset.sok.split("|"), r = D.sreq[uid]?.[id]; if (!r) return;
+    const sid = "s" + Date.now().toString(36);
+    b.disabled = true;
+    try {
+      await update(ref(db), { [`settings/subjects/${sid}`]: { name: r.name, icon: r.icon || "📘", color: "#2E4BFF", grades: r.grades || [], at: Date.now() },
+        [`staff/${uid}/subj/${sid}`]: true, [`subjectRequests/${uid}/${id}`]: null });
+      D.settings.subjects = { ...(D.settings.subjects || {}), [sid]: { name: r.name, icon: r.icon, grades: r.grades } };
+      SUBJECTS.push({ id: sid, name: r.name, icon: r.icon || "📘", color: "#2E4BFF", grades: r.grades || [], extra: true });
+      logAction(db, USER, `Одобрен новый предмет «${r.name}» (${r.by || ""})`, "staff");
+    } catch (e) { alert("Не удалось: " + (e.code || e.message)); b.disabled = false; }
+  });
+  app.querySelectorAll("[data-sno]").forEach((b) => b.onclick = async () => {
+    const [uid, id] = b.dataset.sno.split("|"), r = D.sreq[uid]?.[id];
+    if (!confirm(`Отклонить предмет «${r?.name}»?`)) return;
+    await remove(ref(db, `subjectRequests/${uid}/${id}`)).catch((e) => alert(e.message));
+    logAction(db, USER, `Отклонён предмет «${r?.name}»`, "staff");
+  });
   app.querySelectorAll("[data-sjd]").forEach((b) => b.onclick = async () => {
-    const s = D.settings.subjects?.[b.dataset.sjd]; if (!confirm(`Убрать предмет «${s?.name}» с сайта? Тесты в Конструкторе останутся.`)) return;
+    const s = D.settings.subjects?.[b.dataset.sjd]; if (!confirm(BUILTIN_SUBJECTS.includes(b.dataset.sjd) ? `Вернуть предмету «${s?.name}» исходное название и классы?` : `Убрать предмет «${s?.name}» с сайта? Тесты в Конструкторе останутся.`)) return;
     await remove(ref(db, `settings/subjects/${b.dataset.sjd}`)).catch((e) => alert(e.message));
-    delete D.settings.subjects[b.dataset.sjd]; logAction(db, USER, `Убран предмет «${s?.name}»`); render();
+    delete D.settings.subjects[b.dataset.sjd]; logAction(db, USER, `${BUILTIN_SUBJECTS.includes(b.dataset.sjd) ? "Сброшены изменения предмета" : "Убран предмет"} «${s?.name}»`);
+    try { localStorage.setItem("techlab_xsubj", JSON.stringify(D.settings.subjects)); } catch (e) {}
+    if (BUILTIN_SUBJECTS.includes(b.dataset.sjd)) return location.reload();     // исходное название вернётся после перезагрузки
+    const i = SUBJECTS.findIndex((x) => x.id === b.dataset.sjd); if (i >= 0) SUBJECTS.splice(i, 1);
+    render();
   });
 }
 const shortName = (n) => { const p = String(n || "").trim().split(/\s+/); return p.length >= 2 ? `${p[0]} ${p[1][0]}.` : p[0] || ""; };
@@ -408,7 +616,7 @@ function shareDialog(uid) {
   $("#shSave").onclick = async () => {
     const on = new Set([...dlg.querySelectorAll("#shList input:checked")].map((i) => i.value));
     const upd = {};
-    for (const id of on) if (!mine[id]) upd[`staffShares/${uid}/${id}`] = { title: D.builder[id]?.title || id, at: Date.now() };
+    for (const id of on) if (!mine[id]) upd[`staffShares/${uid}/${id}`] = { kind: "test", title: D.builder[id]?.title || id, subject: D.builder[id]?.subject || "", at: Date.now(), by: shortName(USER.displayName || USER.email) };
     for (const id of Object.keys(mine)) if (!on.has(id)) upd[`staffShares/${uid}/${id}`] = null;
     if (!Object.keys(upd).length) return dlg.close();
     try { await update(ref(db), upd); logAction(db, USER, `${x.email}: личный доступ к тестам — ${on.size} шт.`, "staff"); dlg.close(); }
@@ -416,9 +624,3 @@ function shareDialog(uid) {
   };
 }
 
-// подсветка вкладки при прокрутке
-addEventListener("scroll", () => {
-  let cur = "overview";
-  for (const s of document.querySelectorAll("section.ad-sec")) if (s.getBoundingClientRect().top < 160) cur = s.id;
-  document.querySelectorAll(".ad-tabs a").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === "#" + cur));
-}, { passive: true });

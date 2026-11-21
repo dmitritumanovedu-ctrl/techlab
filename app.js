@@ -1,489 +1,471 @@
+// =====================================================================
+//  TechLab · Тренажёры «Делимость» · Математика, 5 класс · страница ученика
+//  Один файл на все 10 вариантов: math5/div/?v=1 … ?v=10
+//  Каждый вариант — миссия экспедиции «math5-div» в tests.js (id: math5-div-t1 … t10).
+//  Результат пишется в results/<id> так же, как у миссий: name, cls, score{q1…}, stage, status.
+//  Учитель видит баллы по каждому заданию в Центре управления, оценка попадает ученику и родителю.
+// =====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set, update, get, onValue, serverTimestamp }
-  from "../../engine/rtdb.js?v=1";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../engine/rtdb.js?v=1";
 import { firebaseConfig } from "../../firebase-config.js";
-import { TEST, VARIANTS } from "./questions.js";
-import { drawMap } from "./map.js";
+import { getSession } from "../../engine/people.js?v=3";
+import { VARIANTS } from "./data.js?v=1";
+import { isStaffPreview } from "../../engine/preview-auth.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
-const LS_KEY = "techlab_attempt_" + TEST.id;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// **жирный**, _{индекс}, ^{степень}
+const fmt = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/_\{(.+?)\}/g, "<sub>$1</sub>").replace(/\^\{(.+?)\}/g, "<sup>$1</sup>");
+const plain = (s) => String(s).replace(/\*\*/g, "").replace(/_\{(.+?)\}/g, "$1").replace(/\^\{(.+?)\}/g, "^$1");
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-if (!firebaseConfig || String(firebaseConfig.apiKey || "").includes("ВСТАВЬТЕ")) {
-  app.innerHTML = `<div class="card center"><h2>Тест ещё не подключён</h2>
-    <p>Учителю нужно вставить настройки Firebase в файл <b>firebase-config.js</b>.</p></div>`;
-  throw new Error("firebase-config not set");
+// Баллы за задание: простые — 1, составные — 2 (1 балл, если ровно одна ошибка)
+const MAXP = { choice: 1, tf: 1, num: 1, multi: 2, set: 2, order: 2, bins: 2, match: 2 };
+const TYPE = { choice: "Выбери один ответ", multi: "Выбери все верные ответы", tf: "Верно или неверно?", num: "Введи число",
+  set: "Запиши множество", order: "Расставь по порядку (перетаскивание)", bins: "Разложи по группам (перетаскивание)", match: "Соотнеси" };
+// Шкала — та же, что у миссий TechLab (engine/sync.js, engine/teacher.js)
+const MSCALE = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2], [0, 1]];
+const markOf = (pct) => { for (const [p, g] of MSCALE) if (pct >= p) return g; return 1; };
+const MOODS = [["🟢", "Мне всё понятно, могу объяснить другу"], ["🟡", "Понятно, но есть вопросы"], ["🔴", "Нужна помощь"]];
+const maxOf = (v) => v.questions.reduce((a, q) => a + MAXP[q.t], 0);
+
+const V = VARIANTS.find((x) => x.id === Number(new URLSearchParams(location.search).get("v")));
+const WORK_ID = V ? `math5-div-t${V.id}` : null;
+const LS = V ? `techlab_math5_div_t${V.id}` : null;      // черновик (engine/guard.js стирает его, если вошёл другой ученик)
+let ME = getSession();
+let PREVIEW = false;      // «просмотр учителя» (?preview): без кода, без записи в базу
+
+let db = null;
+try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { console.warn(e); }
+
+// ---------- черновик на этом компьютере ----------
+let S = null;   // { name, cls, rec, order[], i, score{}, wrong[], streak, best, startedAt, done, sent, mood }
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} };
+const load = () => { try { return JSON.parse(localStorage.getItem(LS) || "null"); } catch (e) { return null; } };
+
+// ---------- связь с базой ----------
+const P = WORK_ID ? `results/${WORK_ID}` : "";
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+async function isOpen() { if (PREVIEW) return true; return !!(await withTimeout(get(ref(db, `settings/${WORK_ID}/open`)), 12000)).val(); }
+async function startRecord() {
+  if (PREVIEW) return "";
+  const r = push(ref(db, P));
+  await withTimeout(set(r, { name: ME.name, cls: ME.cls, status: "in_progress", stage: "Задание 1", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }), 15000);
+  return r.key;
 }
-const db = getDatabase(initializeApp(firebaseConfig));
-const resultsPath = `results/${TEST.id}`;
+function progress() {
+  if (!S.rec) return;
+  update(ref(db, `${P}/${S.rec}`), { score: S.score, stage: `Задание ${Math.min(S.i + 1, S.order.length)} из ${S.order.length}`, doneCount: S.i, updatedAt: serverTimestamp() }).catch(() => {});
+}
+const totals = () => {
+  const max = maxOf(V), pts = Object.values(S.score).reduce((a, x) => a + (Number(x) || 0), 0);
+  const pct = Math.min(100, Math.round(pts / max * 100));
+  return { pts, max, pct, grade: markOf(pct) };
+};
+async function submit() {
+  if (PREVIEW || !S.rec) return;
+  const t = totals();
+  const minutes = Math.max(1, Math.round((Date.now() - S.startedAt) / 60000));
+  await withTimeout(update(ref(db, `${P}/${S.rec}`), { score: S.score, points: t.pts, max: t.max, percent: t.pct, grade: t.grade, minutes,
+    stage: "Финиш", doneCount: S.order.length, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }), 20000);
+}
 
-// ---------- состояние ----------
-let S = null;          // { id, name, cls, variant, deadline, answers }
-let active = false;    // идёт тест и включена защита
-let finishing = false;
-let timerId = null, saveTimer = null, blurTimer = null;
-let charts = [];
-
-// ---------- старт ----------
+// =====================================================================
+//  Экраны
+// =====================================================================
 init();
 async function init() {
-  const saved = localStorage.getItem(LS_KEY);
-  if (saved) {
-    try {
-      const snap = await get(ref(db, `${resultsPath}/${saved}`));
-      const r = snap.val();
-      // Работа со старого урока (время вышло больше 5 минут назад) — компьютер свободен для следующего ученика
-      if (r && Date.now() > (r.deadline || 0) + 5 * 60000) {
-        if (r.status === "in_progress") {
-          await update(ref(db, `${resultsPath}/${saved}`), { status: "submitted", reason: "timeout", submittedAt: serverTimestamp() }).catch(() => {});
-        }
-        localStorage.removeItem(LS_KEY);
-        return showLogin();
-      }
-      if (r) {
-        S = { id: saved, name: r.name, cls: r.cls, variant: r.variant, deadline: r.deadline, answers: r.answers || {}, viol: r.violations || 0 };
-        if (r.status === "in_progress") return resume(r);
-        return showDone(r.reason);
-      }
-    } catch (e) { console.warn(e); }
-    localStorage.removeItem(LS_KEY);
+  if (await isStaffPreview()) { PREVIEW = true; ME = { name: "Просмотр Учителя", cls: "—" }; try { localStorage.removeItem(LS); } catch (e) {} }
+  if (!V) return showList();
+  $("#hWho").textContent = (ME ? ME.name + " · " + ME.cls + " · " : "") + "Вариант " + V.id;
+  if (!ME) return showNoLogin();
+  const d = load();
+  if (d && d.name === ME.name && Date.now() - (d.startedAt || 0) < 12 * 3600e3) {
+    S = d;
+    if (!S.done) return showResume();
+    return showIntro(true);
   }
-  showLogin();
+  showIntro(false);
 }
 
-function showLogin() {
-  app.innerHTML = `
-  <div class="card center">
-    <h2>Вход в тест</h2>
-    <p class="muted">${esc(TEST.subtitle)}</p>
-    <label class="f" for="inName">Фамилия и имя</label>
-    <input type="text" id="inName" autocomplete="off" maxlength="60" placeholder="Например: Попеску Андрей">
-    <label class="f" for="inCls">Класс</label>
-    <select id="inCls"><option value="">— выберите класс —</option>
-      ${TEST.classes.map((c) => `<option>${esc(c)}</option>`).join("")}</select>
-    <div class="err" id="err"></div>
-    <button class="btn" id="btnNext" style="margin-top:8px">Далее →</button>
-  </div>`;
-  $("#btnNext").onclick = () => {
-    const name = $("#inName").value.trim().replace(/\s+/g, " ");
-    const cls = $("#inCls").value;
-    if (name.split(" ").length < 2 || name.length < 5) return ($("#err").textContent = "Введите фамилию и имя полностью.");
-    if (!cls) return ($("#err").textContent = "Выберите класс.");
-    showRules(name, cls);
-  };
+// ---------- список вариантов (если открыли math5/div/ без ?v=) ----------
+function showList() {
+  $("#hWho").textContent = (ME ? ME.name + " · " + ME.cls + " · " : "") + "Глава 3 «Делимость»";
+  const best = (v) => { try { const d = JSON.parse(localStorage.getItem(`techlab_math5_div_t${v.id}`) || "null"); return d && d.done && ME && d.name === ME.name ? d.pct : null; } catch (e) { return null; } };
+  app.innerHTML = `<div class="card"><div class="tr-ribbon">🎯 Тренажёры · математика 5</div>
+    <h2>Делимость: 10 тренажёров</h2>
+    <p class="muted">Каждый вариант — отдельный модуль главы 3. Сначала короткая теория, потом задания с мгновенной проверкой и объяснением.
+      Вариант открывается, когда его откроет учитель.</p></div>
+    <div class="tr-grid">${VARIANTS.map((v) => { const b = best(v); return `<a class="tr-v${v.id === 10 ? " fin" : ""}" href="?v=${v.id}${PREVIEW ? "&preview=1" : ""}">
+      <div class="cv"><div class="n">Вариант ${v.id}</div><div class="m">${fmt(v.module)}</div></div>
+      <div class="b"><div class="t">${fmt(v.title)}</div><div class="s">${v.questions.length} заданий · ${maxOf(v)} баллов${b != null ? ` · последний результат: <b>${b}%</b>` : ""}</div></div></a>`; }).join("")}</div>`;
 }
 
-function showRules(name, cls) {
-  app.innerHTML = `
-  <div class="card center" style="max-width:680px">
-    <h2>⚠️ Внимательно прочитайте правила</h2>
-    <p><b>${esc(name)}</b>, ${esc(cls)}. На работу даётся <b>${TEST.minutes} минут</b>. В тесте 10 заданий, максимум — ${TEST.max} баллов.</p>
-    <ul class="rules">
-      <li>Тест откроется во <b>весь экран</b>. Не выходите из полноэкранного режима.</li>
-      <li>Если вы <b>перейдёте на другую вкладку, в другое окно или программу, свернёте браузер</b> — работа будет <b>сдана автоматически</b> с тем, что вы успели ответить. Вернуться к ней будет нельзя.</li>
-      <li>Копирование, вставка текста, правая кнопка мыши и инструменты разработчика заблокированы. <b>Все попытки фиксируются</b> и видны учителю.</li>
-      <li>Не обновляйте и не закрывайте страницу — закрытие тоже приводит к автосдаче.</li>
-      <li>Ответы сохраняются автоматически. Когда время закончится, работа сдастся сама.</li>
-      <li>Каждый получает <b>свой вариант</b> — списывать у соседа бесполезно.</li>
-    </ul>
-    <label class="check"><input type="checkbox" id="agree"> <span>Я прочитал(а) правила и понимаю, что за их нарушение работа будет сдана автоматически.</span></label>
+function showNoLogin() {
+  app.innerHTML = `<div class="card center"><div class="tr-ribbon">🎯 Тренажёр · вариант ${V.id}</div>
+    <h2>Войди по своему коду</h2>
+    <p>Тренажёры открываются только по <b>личному коду ученика</b> — так результат попадёт в твою комнату и к учителю.</p>
+    <p class="muted">Открой стартовую страницу TechLab, введи код и вернись сюда.</p>
+    <a class="btn" href="../../">На стартовую страницу</a></div>`;
+}
+
+function introHtml() {
+  const kinds = [...new Set(V.questions.map((q) => q.t))];
+  const short = { choice: "выбор ответа", multi: "несколько ответов", tf: "верно/неверно", num: "ввод числа", set: "ввод множества", order: "перетаскивание: порядок", bins: "перетаскивание: группы", match: "соотнесение" };
+  return `<div class="tr-mod">${fmt(V.module)}</div>
+    <h2>Вариант ${V.id}. ${fmt(V.title)}</h2>
+    <div class="muted" style="font-size:14px">${fmt(V.pages)}</div>
+    <div class="tr-theory"><h3>Коротко о главном</h3><ul>${V.theory.map((t) => `<li>${fmt(t)}</li>`).join("")}</ul></div>
+    <div class="tr-plan"><span>${V.questions.length} заданий</span><span>${maxOf(V)} баллов</span>${kinds.map((k) => `<span>${short[k]}</span>`).join("")}</div>
+    <p class="muted" style="font-size:14px">Простые задания — 1 балл, составные — 2 балла (1 балл, если ровно одна ошибка). После каждого ответа — объяснение.
+      Перетаскивать можно мышью или пальцем — или нажми на фишку, а потом на место, куда её поставить.</p>`;
+}
+
+function showIntro(hasResult) {
+  app.innerHTML = `<div class="card tr-wide"><div class="tr-ribbon">🎯 Тренажёр · математика 5</div>${introHtml()}
+    ${hasResult && S ? `<p>Твой последний результат: <b>${S.pts} из ${S.max}</b> (${S.pct}%), отметка <b>${S.grade}</b>.</p>` : ""}
     <div class="err" id="err"></div>
-    <button class="btn" id="btnStart" disabled>Начать тест</button>
-    <button class="btn ghost" id="btnBack">Назад</button>
-  </div>`;
-  $("#agree").onchange = (e) => ($("#btnStart").disabled = !e.target.checked);
-  $("#btnBack").onclick = showLogin;
-  $("#btnStart").onclick = async () => {
-    const b = $("#btnStart"); b.disabled = true; b.textContent = "Подключение…";
-    try {
-      const open = (await get(ref(db, `settings/${TEST.id}/open`))).val();
-      if (!open) { $("#err").textContent = "Тест ещё не открыт учителем. Подождите и нажмите ещё раз."; b.disabled = false; b.textContent = "Начать тест"; return; }
-      await enterFullscreen();
-      const variant = 1 + Math.floor(Math.random() * VARIANTS.length);
-      const now = Date.now();
-      const rec = {
-        name, cls, variant, status: "in_progress", startedAt: now, deadline: now + TEST.minutes * 60000,
-        updatedAt: serverTimestamp(), violations: 0, answers: {}, ua: navigator.userAgent.slice(0, 120),
-      };
-      const r = push(ref(db, resultsPath));
-      await set(r, rec);
-      localStorage.setItem(LS_KEY, r.key);
-      S = { id: r.key, name, cls, variant, deadline: rec.deadline, answers: {}, viol: 0 };
-      startTest();
-    } catch (e) {
-      console.error(e);
-      $("#err").textContent = "Ошибка подключения к серверу. Сообщите учителю.";
-      b.disabled = false; b.textContent = "Начать тест";
+    <div class="tr-actions"><button class="btn" id="go">${hasResult ? "Пройти ещё раз" : "Начать"}</button>
+      <a class="btn ghost" href="./">Все варианты</a></div></div>`;
+  $("#go").onclick = begin;
+}
+
+function showResume() {
+  app.innerHTML = `<div class="card tr-wide"><div class="tr-ribbon">🎯 Тренажёр · математика 5</div>${introHtml()}
+    <p><b>У тебя есть незаконченная попытка:</b> выполнено ${S.i} из ${S.order.length} заданий.</p>
+    <div class="tr-actions"><button class="btn" id="cont">Продолжить</button><button class="btn ghost" id="again">Начать заново</button></div></div>`;
+  $("#cont").onclick = () => question();
+  $("#again").onclick = begin;
+}
+
+async function begin() {
+  const b = $("#go") || $("#again"); const err = $("#err");
+  if (b) { b.disabled = true; b.textContent = "Подключение…"; }
+  try {
+    if (!db) throw new Error("no db");
+    if (!(await isOpen())) {
+      if (b) { b.disabled = false; b.textContent = "Начать"; }
+      if (err) err.textContent = "Этот тренажёр ещё не открыт учителем. Подожди и нажми ещё раз.";
+      else app.insertAdjacentHTML("afterbegin", `<div class="card center err">Этот тренажёр ещё не открыт учителем.</div>`);
+      return;
     }
-  };
+    const rec = await startRecord();
+    S = { name: ME.name, cls: ME.cls, rec, order: shuffle(V.questions.map((_, k) => k)), i: 0, score: {}, wrong: [], streak: 0, best: 0,
+      startedAt: Date.now(), done: false, sent: false, mood: "" };
+    save(); question();
+  } catch (e) {
+    console.error(e);
+    if (b) { b.disabled = false; b.textContent = "Начать"; }
+    const m = /permission|denied/i.test(String(e?.code || e?.message)) ? "Нет доступа к базе. Сообщи учителю." : "Нет связи с сервером. Проверь интернет и нажми ещё раз.";
+    if (err) err.textContent = m;
+  }
 }
 
-function resume(r) {
-  if (Date.now() >= r.deadline) { S.answers = r.answers || {}; return finish("timeout"); }
-  app.innerHTML = `<div class="card center"><h2>Продолжение работы</h2>
-    <p>${esc(r.name)}, ${esc(r.cls)}. Ваши ответы сохранены. Нажмите кнопку, чтобы продолжить (откроется полноэкранный режим).</p>
-    <button class="btn" id="btnCont">Продолжить</button></div>`;
-  $("#btnCont").onclick = async () => { await enterFullscreen(); startTest(); };
+// =====================================================================
+//  Задание
+// =====================================================================
+let R = null;          // текущее задание: { q, k, answer, checked, retry }
+let RETRY = null;      // работа над ошибками: { list[], i, ok }
+
+function headerScore() {
+  const h = $("#hScore"); if (!S || RETRY) { h.hidden = true; return; }
+  const t = totals(); h.hidden = false; h.textContent = `${t.pts} / ${t.max}`;
 }
 
-// ---------- тест ----------
-function startTest() {
-  const v = VARIANTS.find((x) => x.id === S.variant);
-  $("#hWho").textContent = `${S.name} · ${S.cls} · вариант ${S.variant}`;
-  app.innerHTML = v.tasks.map(renderTask).join("");
-  for (const t of v.tasks) bindTask(t);
-  $("#bottomBar").hidden = false;
-  $("#timer").hidden = false;
-  $("#btnSubmit").onclick = askSubmit;
-  active = true; finishing = false;
-  tick(); clearInterval(timerId); timerId = setInterval(tick, 1000);
-  updateProgress();
-  watchRecord();
+function question() {
+  const retry = !!RETRY;
+  const k = retry ? RETRY.list[RETRY.i] : S.order[S.i];
+  const q = V.questions[k];
+  const n = retry ? RETRY.list.length : S.order.length, idx = retry ? RETRY.i : S.i;
+  R = { q, k, answer: null, checked: false, retry };
+  headerScore();
+  app.innerHTML = `<div class="card">
+    <div class="tr-top"><span class="tr-meta">${retry ? "Работа над ошибками · " : ""}Задание ${idx + 1} из ${n}</span>
+      <div class="tr-prog"><i style="width:${Math.round(idx / n * 100)}%"></i></div>
+      <span class="tr-streak">${!retry && S.streak >= 2 ? "🔥 " + S.streak + " подряд" : ""}</span></div>
+    <span class="tr-type">${TYPE[q.t]}</span>${retry ? "" : `<span class="tr-pts">${MAXP[q.t]} ${MAXP[q.t] === 1 ? "балл" : "балла"}</span>`}
+    <div class="tr-q">${fmt(q.q)}</div>
+    <div id="area"></div>
+    <div class="tr-fb" id="fb"></div>
+    <div class="tr-actions"><button class="btn" id="bCheck">Проверить</button>
+      ${retry ? `<button class="btn ghost" id="bStop">Закончить</button>` : ""}</div></div>`;
+  RENDER[q.t](q, $("#area"));
+  $("#bCheck").onclick = () => (R.checked ? next() : check());
+  if (retry) $("#bStop").onclick = () => { RETRY = null; showResult(); };
   window.scrollTo(0, 0);
 }
 
-function head(t) {
-  return `<div class="task-head"><span class="task-num">Задание ${t.n}</span><span class="pts">${t.points} б.</span></div>
-          <p class="task-title">${esc(t.title)}</p>`;
+// ---------- перетаскивание: мышь, палец или «нажми — нажми» ----------
+let drag = null, picked = null;
+function draggable(chip, onDrop, onTap) {
+  chip.addEventListener("pointerdown", (ev) => {
+    if (R.checked || ev.button > 0) return;
+    ev.preventDefault();
+    const r = chip.getBoundingClientRect();
+    drag = { chip, sx: ev.clientX, sy: ev.clientY, dx: ev.clientX - r.left, dy: ev.clientY - r.top, moved: false, ghost: null, over: null };
+    try { chip.setPointerCapture(ev.pointerId); } catch (e) {}
+  });
+  chip.addEventListener("pointermove", (ev) => {
+    if (!drag || drag.chip !== chip) return;
+    if (!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < 6) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      const g = chip.cloneNode(true); g.classList.add("tr-ghost"); g.classList.remove("picked");
+      g.style.width = chip.offsetWidth + "px"; document.body.appendChild(g); drag.ghost = g; chip.style.opacity = ".35";
+    }
+    drag.ghost.style.left = ev.clientX - drag.dx + "px"; drag.ghost.style.top = ev.clientY - drag.dy + "px";
+    const t = targetAt(ev.clientX, ev.clientY);
+    if (drag.over && drag.over !== t) drag.over.classList.remove("over");
+    if (t) t.classList.add("over"); drag.over = t;
+  });
+  const end = (ev, cancel) => {
+    if (!drag || drag.chip !== chip) return;
+    const d = drag; drag = null;
+    if (d.over) d.over.classList.remove("over");
+    if (d.ghost) { d.ghost.remove(); chip.style.opacity = ""; if (!cancel) { const t = targetAt(ev.clientX, ev.clientY); if (t) onDrop(chip, t); } return; }
+    if (cancel) return;
+    if (onTap && onTap(chip)) return;                     // нажатие без движения
+    if (picked === chip) { chip.classList.remove("picked"); picked = null; }
+    else { if (picked) picked.classList.remove("picked"); picked = chip; chip.classList.add("picked"); }
+  };
+  chip.addEventListener("pointerup", (ev) => end(ev, false));
+  chip.addEventListener("pointercancel", (ev) => end(ev, true));
 }
+function targetAt(x, y) { const el = document.elementFromPoint(x, y); return el ? el.closest("[data-drop]") : null; }
 
-function renderTask(t) {
-  const A = S.answers;
-  let body = "";
-  if (t.type === "tf") {
-    const a = A.t1 || {};
-    body = t.items.map((it) => {
-      const v = a[it.id]?.v;
-      return `<div class="tf-item" data-item="${it.id}">
-        <div><span class="concept">${it.id}) ${esc(it.concept)}</span> — ${esc(it.text)}</div>
-        <div class="tf-row">
-          <label class="pill ${v === "T" ? "on" : ""}"><input type="radio" name="t1_${it.id}" value="T" ${v === "T" ? "checked" : ""}> Верно</label>
-          <label class="pill ${v === "F" ? "on" : ""}"><input type="radio" name="t1_${it.id}" value="F" ${v === "F" ? "checked" : ""}> Неверно</label>
-        </div>
-        <div class="fix" ${v === "F" ? "" : "hidden"}>
-          <input type="text" data-fix="${it.id}" maxlength="300" placeholder="Напишите правильный вариант утверждения" value="${esc(a[it.id]?.fix || "")}">
-        </div></div>`;
-    }).join("");
-  } else if (t.type === "classify") {
-    const a = A.t2 || {};
-    const chip = (c) => `<div class="chip" draggable="true" data-chip="${c.id}">${esc(c.text)}</div>`;
-    body = `<div class="bank" data-col="-1">${t.chips.filter((c) => a[c.id] == null || a[c.id] < 0).map(chip).join("")}</div>
-      <div class="cols">${t.columns.map((col, i) => `<div class="col" data-col="${i}"><h4>${esc(col)}</h4>
-        <div class="drop">${t.chips.filter((c) => Number(a[c.id]) === i && a[c.id] != null).map(chip).join("")}</div></div>`).join("")}</div>`;
-  } else if (t.type === "mcq") {
-    body = t.options.map((o) => `<label class="opt ${A.t3 === o.id ? "on" : ""}"><input type="radio" name="t3" value="${o.id}" ${A.t3 === o.id ? "checked" : ""}> <span>${esc(o.text)}</span></label>`).join("");
-  } else if (t.type === "chart") {
-    body = `<div class="chart-box ${t.chart.kind === "pie" ? "pie" : ""}"><canvas id="ch${t.n}"></canvas></div>
-      <textarea data-open="t${t.n}" maxlength="3000" placeholder="Ваш ответ: опишите диаграмму, используя данные, и объясните причины">${esc(A["t" + t.n] || "")}</textarea>`;
-  } else if (t.type === "open") {
-    body = `<textarea data-open="t${t.n}" maxlength="3000" placeholder="Ваш развёрнутый ответ">${esc(A["t" + t.n] || "")}</textarea>`;
-  } else if (t.type === "mapid") {
-    const a = A.t9 || {};
-    body = `<div class="map-box" id="mapBox"></div><div class="grid2" style="margin-top:12px">
-      ${t.markers.map((m) => `<label><b>${m.letter}</b> — <select data-map="${m.letter}"><option value="">— выберите страну —</option>
-        ${t.options.map((o) => `<option ${a[m.letter] === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label>`).join("")}</div>`;
-  } else if (t.type === "mapcalc") {
-    const a = A.t10 || {};
-    body = `<p class="muted">Страна E отмечена на карте в задании 9.</p>
-      <div class="formula">D = Np / St, где Np — численность населения, St — площадь территории</div>
-      <div class="grid2">
-        <label>а) Плотность, чел./км²<input type="text" data-calc="d" inputmode="decimal" maxlength="20" value="${esc(a.d || "")}" placeholder="например 125,4"></label>
-        <label>б) Категория по легенде<select data-calc="cat"><option value="">— выберите —</option>
-          ${TEST.cats.map((c) => `<option value="${c.c}" ${a.cat === c.c ? "selected" : ""}>${c.c} — ${esc(c.label)}</option>`).join("")}</select></label>
-      </div>
-      <label class="f">в) Объяснение</label>
-      <textarea data-calc="why" maxlength="1500" style="min-height:80px">${esc(a.why || "")}</textarea>`;
-  }
-  return `<section class="card task" id="task${t.n}">${head(t)}${body}</section>`;
-}
-
-function bindTask(t) {
-  const sec = $(`#task${t.n}`);
-  const A = S.answers;
-  if (t.type === "tf") {
-    sec.querySelectorAll("input[type=radio]").forEach((r) => r.onchange = () => {
-      const id = r.name.slice(3);
-      A.t1 = A.t1 || {}; A.t1[id] = A.t1[id] || {}; A.t1[id].v = r.value;
-      const item = r.closest(".tf-item");
-      item.querySelectorAll(".pill").forEach((p) => p.classList.toggle("on", p.contains(r)));
-      item.querySelector(".fix").hidden = r.value !== "F";
-      changed();
-    });
-    sec.querySelectorAll("[data-fix]").forEach((inp) => inp.oninput = () => {
-      const id = inp.dataset.fix; A.t1 = A.t1 || {}; A.t1[id] = A.t1[id] || {}; A.t1[id].fix = inp.value; changed();
-    });
-  } else if (t.type === "classify") {
-    let sel = null;
-    const place = (chipEl, col) => {
-      const target = col < 0 ? sec.querySelector(".bank") : sec.querySelector(`.col[data-col="${col}"] .drop`);
-      target.appendChild(chipEl);
-      A.t2 = A.t2 || {}; A.t2[chipEl.dataset.chip] = col;
-      chipEl.classList.remove("sel"); sel = null;
-      sec.querySelectorAll(".col").forEach((c) => c.classList.remove("target"));
-      changed();
+const RENDER = {
+  choice(q, el) {
+    const ord = shuffle(q.o.map((_, i) => i));
+    el.innerHTML = `<div class="tr-opts">${ord.map((i) => `<button type="button" class="tr-opt" data-i="${i}"><span class="mk"></span><span>${fmt(q.o[i])}</span></button>`).join("")}</div>`;
+    el.querySelectorAll(".tr-opt").forEach((b) => (b.onclick = () => { if (R.checked) return;
+      el.querySelectorAll(".tr-opt").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); R.answer = +b.dataset.i; }));
+  },
+  multi(q, el) {
+    const ord = shuffle(q.o.map((_, i) => i));
+    el.innerHTML = `<div class="tr-opts${q.o.every((o) => o.length <= 8) ? " short" : ""}">${ord.map((i) => `<button type="button" class="tr-opt sq" data-i="${i}"><span class="mk"></span><span>${fmt(q.o[i])}</span></button>`).join("")}</div>`;
+    R.answer = new Set();
+    el.querySelectorAll(".tr-opt").forEach((b) => (b.onclick = () => { if (R.checked) return;
+      const i = +b.dataset.i; if (R.answer.has(i)) { R.answer.delete(i); b.classList.remove("sel"); } else { R.answer.add(i); b.classList.add("sel"); } }));
+  },
+  tf(q, el) {
+    el.innerHTML = `<div class="tr-tf"><button type="button" class="tr-opt" data-v="1"><span class="mk"></span>Верно</button><button type="button" class="tr-opt" data-v="0"><span class="mk"></span>Неверно</button></div>`;
+    el.querySelectorAll(".tr-opt").forEach((b) => (b.onclick = () => { if (R.checked) return;
+      el.querySelectorAll(".tr-opt").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); R.answer = b.dataset.v === "1"; }));
+  },
+  num(q, el) {
+    el.innerHTML = `<input type="text" class="tr-inp" id="inp" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Ответ"><div class="tr-hint">Одно число. Нажми «Проверить» или Enter.</div>`;
+    const i = $("#inp"); i.focus(); i.onkeydown = (e) => { if (e.key === "Enter") $("#bCheck").click(); };
+  },
+  set(q, el) {
+    el.innerHTML = `<input type="text" class="tr-inp" id="inp" autocomplete="off" maxlength="120" placeholder="например: 1, 2, 4, 8"><div class="tr-hint">Числа через запятую, в любом порядке. Фигурные скобки можно не ставить.</div>`;
+    const i = $("#inp"); i.focus(); i.onkeydown = (e) => { if (e.key === "Enter") $("#bCheck").click(); };
+  },
+  order(q, el) {
+    let cur = shuffle(q.items.map((_, i) => i));
+    while (q.items.length > 1 && cur.every((x, i) => x === i)) cur = shuffle(cur);
+    const line = q.items.every((t) => plain(t).length <= 4);
+    const draw = () => {
+      R.answer = cur.slice(); picked = null;
+      el.innerHTML = line
+        ? `<div class="tr-oline">${cur.map((k, p) => `<span class="tr-chip" data-drop="1" data-p="${p}">${fmt(q.items[k])}</span>`).join("")}</div>
+           <div class="tr-hint">Перетащи фишку на место другой — или нажми на одну фишку, потом на другую, чтобы поменять их местами.</div>`
+        : `<div class="tr-olist">${cur.map((k, p) => `<div class="tr-oi" data-drop="1" data-p="${p}"><span class="no">${p + 1}.</span><span class="tr-chip">${fmt(q.items[k])}</span>
+             <span class="ar"><button type="button" data-up="${p}" ${p === 0 ? "disabled" : ""} aria-label="Выше">▲</button><button type="button" data-dn="${p}" ${p === cur.length - 1 ? "disabled" : ""} aria-label="Ниже">▼</button></span></div>`).join("")}</div>
+           <div class="tr-hint">Перетащи строку или используй стрелки ▲▼.</div>`;
+      el.querySelectorAll("[data-up]").forEach((b) => (b.onclick = () => { if (R.checked) return; const p = +b.dataset.up; [cur[p - 1], cur[p]] = [cur[p], cur[p - 1]]; draw(); }));
+      el.querySelectorAll("[data-dn]").forEach((b) => (b.onclick = () => { if (R.checked) return; const p = +b.dataset.dn; [cur[p + 1], cur[p]] = [cur[p], cur[p + 1]]; draw(); }));
+      el.querySelectorAll(".tr-chip").forEach((ch) => {
+        const from = +(ch.dataset.p ?? ch.closest("[data-p]").dataset.p);
+        draggable(ch, (c, t) => { const to = +t.dataset.p; if (to === from) return; const [x] = cur.splice(from, 1); cur.splice(to, 0, x); draw(); },
+          () => {
+            if (picked && picked !== ch && picked.isConnected) {
+              const a = +(picked.dataset.p ?? picked.closest("[data-p]").dataset.p);
+              [cur[a], cur[from]] = [cur[from], cur[a]]; draw(); return true;
+            }
+            return false;
+          });
+      });
     };
-    sec.addEventListener("click", (e) => {
-      const chip = e.target.closest(".chip");
-      if (chip) {
-        e.stopPropagation();
-        if (sel === chip) { chip.classList.remove("sel"); sel = null; sec.querySelectorAll(".col").forEach((c) => c.classList.remove("target")); return; }
-        sec.querySelectorAll(".chip.sel").forEach((c) => c.classList.remove("sel"));
-        chip.classList.add("sel"); sel = chip;
-        sec.querySelectorAll(".col").forEach((c) => c.classList.add("target"));
-        return;
-      }
-      const zone = e.target.closest("[data-col]");
-      if (zone && sel) place(sel, Number(zone.dataset.col));
+    draw();
+  },
+  bins(q, el) {
+    const where = q.items.map(() => -1);
+    R.answer = where;
+    el.innerHTML = `<div class="tr-pool" data-drop="1" data-b="-1"></div>
+      <div class="tr-bins">${q.b.map((nm, bi) => `<div class="tr-bin" data-drop="1" data-b="${bi}"><h4>${fmt(nm)}</h4><div class="dz"></div></div>`).join("")}</div>
+      <div class="tr-hint">Перетащи каждую фишку в нужную группу — или нажми на фишку, потом на группу.</div>`;
+    const place = (chip, b) => { where[+chip.dataset.k] = b; (b < 0 ? $(".tr-pool", el) : $(`.tr-bin[data-b="${b}"] .dz`, el)).appendChild(chip); };
+    shuffle(q.items.map((_, i) => i)).forEach((k) => {
+      const c = document.createElement("span"); c.className = "tr-chip"; c.dataset.k = k; c.innerHTML = fmt(q.items[k][0]);
+      $(".tr-pool", el).appendChild(c);
+      draggable(c, (chip, t) => place(chip, +t.dataset.b));
     });
-    sec.addEventListener("dragstart", (e) => { const c = e.target.closest(".chip"); if (c) e.dataTransfer.setData("text/plain", c.dataset.chip); });
-    sec.querySelectorAll("[data-col]").forEach((z) => {
-      z.addEventListener("dragover", (e) => { e.preventDefault(); z.classList.add("over"); });
-      z.addEventListener("dragleave", () => z.classList.remove("over"));
-      z.addEventListener("drop", (e) => {
-        e.preventDefault(); z.classList.remove("over");
-        const c = sec.querySelector(`[data-chip="${e.dataTransfer.getData("text/plain")}"]`);
-        if (c) place(c, Number(z.dataset.col));
-      });
-    });
-  } else if (t.type === "mcq") {
-    sec.querySelectorAll("input").forEach((r) => r.onchange = () => {
-      A.t3 = r.value;
-      sec.querySelectorAll(".opt").forEach((o) => o.classList.toggle("on", o.contains(r)));
-      changed();
-    });
-  } else if (t.type === "chart" || t.type === "open") {
-    if (t.type === "chart") drawChart(`ch${t.n}`, t.chart);
-    const ta = sec.querySelector("textarea");
-    ta.oninput = () => { A[ta.dataset.open] = ta.value; changed(); };
-  } else if (t.type === "mapid") {
-    const v = VARIANTS.find((x) => x.id === S.variant);
-    const t10 = v.tasks.find((x) => x.type === "mapcalc");
-    drawMap($("#mapBox"), [...t.markers, t10.marker]);
-    sec.querySelectorAll("select").forEach((s) => s.onchange = () => { A.t9 = A.t9 || {}; A.t9[s.dataset.map] = s.value; changed(); });
-  } else if (t.type === "mapcalc") {
-    sec.querySelectorAll("[data-calc]").forEach((el) => {
-      const h = () => { A.t10 = A.t10 || {}; A.t10[el.dataset.calc] = el.value; changed(); };
-      el.oninput = h; el.onchange = h;
-    });
-  }
-}
-
-// ---------- диаграммы ----------
-const PALETTE = ["#1f6f5c", "#d98a2b", "#3d7cc9", "#b8455a", "#7a5cc0", "#6b8e23", "#999"];
-const valuesPlugin = {
-  id: "values",
-  afterDatasetsDraw(chart) {
-    const { ctx } = chart; const pie = chart.config.type === "pie";
-    ctx.save(); ctx.font = "600 12px Segoe UI, Arial"; ctx.fillStyle = "#1d2733";
-    chart.data.datasets.forEach((ds, di) => {
-      chart.getDatasetMeta(di).data.forEach((el, i) => {
-        const val = ds.data[i]; const label = String(val).replace(".", ",") + (pie ? "%" : "");
-        if (pie) {
-          const p = el.tooltipPosition(); ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(label, p.x, p.y);
-        } else if (chart.options.indexAxis === "y") {
-          ctx.textAlign = "left"; ctx.fillText(label, el.x + 4, el.y + 4);
-        } else {
-          ctx.textAlign = "center"; ctx.fillText(label, el.x, el.y - 6);
-        }
-      });
-    });
-    ctx.restore();
+    el.querySelectorAll("[data-drop]").forEach((t) => t.addEventListener("click", (e) => {
+      if (R.checked || !picked || e.target.closest(".tr-chip")) return;
+      picked.classList.remove("picked"); place(picked, +t.dataset.b); picked = null;
+    }));
+  },
+  match(q, el) {
+    const ord = shuffle(q.r.map((_, i) => i));
+    el.innerHTML = `<div class="tr-match">${q.l.map((l, li) => `<div class="l">${fmt(l)}</div>
+      <select data-l="${li}"><option value="">— выбери —</option>${ord.map((ri) => `<option value="${ri}">${esc(plain(q.r[ri]))}</option>`).join("")}</select>`).join("")}</div>`;
+    R.answer = q.l.map(() => null);
+    el.querySelectorAll("select").forEach((s) => (s.onchange = () => { R.answer[+s.dataset.l] = s.value === "" ? null : +s.value; }));
   },
 };
-function drawChart(id, c) {
-  const Chart = window.Chart;
-  if (!Chart) { document.getElementById(id).parentElement.innerHTML = '<p class="muted">Не удалось загрузить диаграмму. Обновите страницу.</p>'; return; }
-  const type = c.kind === "barh" ? "bar" : c.kind;
-  const pie = type === "pie";
-  const datasets = c.series.map((s, i) => ({
-    label: s.name, data: s.data,
-    backgroundColor: pie ? PALETTE.slice(0, s.data.length) : PALETTE[i],
-    borderColor: pie ? "#fff" : PALETTE[i], borderWidth: pie ? 2 : 2, tension: 0.25, pointRadius: 4, fill: false,
-  }));
-  const ch = new Chart(document.getElementById(id), {
-    type, data: { labels: c.labels, datasets }, plugins: [valuesPlugin],
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
-      indexAxis: c.kind === "barh" ? "y" : "x",
-      layout: { padding: { top: 18, right: c.kind === "barh" ? 50 : 10 } },
-      plugins: { title: { display: true, text: c.title, font: { size: 15 } },
-                 legend: { display: pie || c.series.length > 1, position: pie ? "right" : "top" } },
-      scales: pie ? {} : { [c.kind === "barh" ? "x" : "y"]: { beginAtZero: true, title: { display: true, text: c.unit } } },
-    },
-  });
-  charts.push(ch);
-}
 
-// ---------- сохранение ----------
-function changed() {
-  updateProgress();
-  $("#savedState").textContent = "сохранение…";
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNow, 1200);
-}
-async function saveNow() {
-  if (!S || finishing) return;
-  try {
-    await update(ref(db, `${resultsPath}/${S.id}`), { answers: S.answers, updatedAt: serverTimestamp() });
-    $("#savedState").textContent = "✓ сохранено";
-  } catch (e) { $("#savedState").textContent = "⚠ нет связи, ответы сохранятся позже"; }
-}
-function updateProgress() {
-  const A = S.answers; let n = 0;
-  if (A.t1 && Object.values(A.t1).filter((x) => x.v).length === 3) n++;
-  if (A.t2 && Object.values(A.t2).filter((x) => x >= 0).length >= 6) n++;
-  if (A.t3) n++;
-  for (const k of ["t4", "t5", "t6", "t7", "t8"]) if ((A[k] || "").trim()) n++;
-  if (A.t9 && Object.values(A.t9).filter(Boolean).length === 4) n++;
-  if (A.t10 && A.t10.d && A.t10.cat && (A.t10.why || "").trim()) n++;
-  $("#progress").textContent = `Выполнено заданий: ${n} из 10`;
-  return n;
-}
+// ---------- проверка ----------
+const numsSpaced = (s) => (String(s).match(/\d[\d ]*/g) || []).map((x) => parseInt(x.replace(/ /g, ""), 10)).filter(Number.isFinite);   // «3 050» = 3050
+const numsSet = (s) => (String(s).match(/\d+/g) || []).map((x) => parseInt(x, 10));                                                         // любые разделители
+const by2 = (errors) => (errors === 0 ? 2 : errors === 1 ? 1 : 0);
 
-// ---------- таймер ----------
-function tick() {
-  const left = Math.max(0, S.deadline - Date.now());
-  const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
-  const el = $("#timer");
-  el.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  el.classList.toggle("low", left < 5 * 60000);
-  if (left <= 0) finish("timeout");
-}
-
-// ---------- сдача ----------
-function askSubmit() {
-  const n = updateProgress();
-  modal(`<h2>Сдать работу?</h2><p>Выполнено заданий: <b>${n} из 10</b>.${n < 10 ? " Некоторые задания не заполнены." : ""}</p>
-    <p class="muted">После сдачи изменить ответы будет нельзя.</p>
-    <button class="btn" id="mYes">Да, сдать</button> <button class="btn ghost" id="mNo">Вернуться к тесту</button>`);
-  $("#mYes").onclick = () => finish("manual");
-  $("#mNo").onclick = closeModal;
-}
-
-const REASONS = {
-  manual: "Работа сдана.",
-  timeout: "Время вышло — работа сдана автоматически.",
-  tab: "Вы перешли на другую вкладку или окно — работа сдана автоматически.",
-  blur: "Вы переключились на другое окно или программу — работа сдана автоматически.",
-  close: "Страница была закрыта или обновлена — работа сдана автоматически.",
-  teacher: "Работа завершена учителем.",
-};
-
-async function finish(reason, evType) {
-  if (finishing || !S) return;
-  const payloadEv = {};
-  if (evType && active) {
-    S.viol = (S.viol || 0) + 1;
-    payloadEv.violations = S.viol;
-    payloadEv[`events/${push(ref(db, `${resultsPath}/${S.id}/events`)).key}`] = { type: evType, at: Date.now() };
-  }
-  finishing = true; active = false;
-  clearInterval(timerId); clearTimeout(saveTimer); clearTimeout(blurTimer);
-  try {
-    await update(ref(db, `${resultsPath}/${S.id}`), {
-      answers: S.answers, status: "submitted", reason, submittedAt: serverTimestamp(), updatedAt: serverTimestamp(), ...payloadEv,
-    });
-  } catch (e) { console.error(e); }
-  showDone(reason);
-}
-
-function showDone(reason) {
-  active = false;
-  charts.forEach((c) => c.destroy()); charts = [];
-  closeModal();
-  $("#bottomBar").hidden = true; $("#timer").hidden = true;
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  const auto = reason && reason !== "manual";
-  app.innerHTML = `<div class="card center">
-    <h2>${auto ? "⚠️ Работа сдана автоматически" : "✅ Работа сдана"}</h2>
-    <p>${esc(REASONS[reason] || REASONS.manual)}</p>
-    <p class="muted">${S ? esc(S.name) + ", " + esc(S.cls) + " · вариант " + S.variant : ""}</p>
-    <p>Результат сообщит учитель. Эту вкладку можно закрыть.</p></div>`;
-  watchRecord();
-}
-
-// Учитель может разрешить продолжить или завершить работу
-let unwatch = null;
-function watchRecord() {
-  if (!S || unwatch) return;
-  unwatch = onValue(ref(db, `${resultsPath}/${S.id}`), (snap) => {
-    const r = snap.val(); if (!r) return;
-    if (r.status === "in_progress" && !active && !finishing) {
-      S.deadline = r.deadline; S.answers = r.answers || S.answers;
-      resume(r);
-    } else if (r.status === "in_progress" && finishing) {
-      // учитель разрешил продолжить после автосдачи
-      finishing = false; S.deadline = r.deadline; S.answers = r.answers || S.answers; S.viol = r.violations || S.viol; resume(r);
-    } else if (r.status === "submitted" && active) {
-      if (S?.answers) update(ref(db, `${resultsPath}/${S.id}`), { answers: S.answers }).catch(() => {});   // последние ответы — учителю
-      finishing = true; active = false; clearInterval(timerId); showDone(r.reason || "teacher");
+function evaluate(q, el) {
+  // возвращает { ready, pts, key }  (key — правильный ответ текстом)
+  switch (q.t) {
+    case "choice": {
+      if (R.answer === null) return { ready: false };
+      el.querySelectorAll(".tr-opt").forEach((b) => { const i = +b.dataset.i; b.disabled = true; if (i === q.a) b.classList.add("ok"); else if (i === R.answer) b.classList.add("bad"); });
+      return { ready: true, pts: R.answer === q.a ? 1 : 0, key: q.o[q.a] };
     }
-  });
-}
-
-// ---------- защита ----------
-async function enterFullscreen() {
-  try { if (document.documentElement.requestFullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen(); }
-  catch (e) { /* браузер может не поддерживать */ }
-}
-function logViolation(type) {
-  if (!S || !active) return;
-  S.viol = (S.viol || 0) + 1;
-  const evKey = push(ref(db, `${resultsPath}/${S.id}/events`)).key;
-  update(ref(db, `${resultsPath}/${S.id}`), { violations: S.viol, [`events/${evKey}`]: { type, at: Date.now() } })
-    .catch(() => { /* не мешаем тесту */ });
-}
-
-document.addEventListener("visibilitychange", () => {
-  if (active && document.visibilityState === "hidden") { finish("tab", "уход со вкладки"); }
-});
-window.addEventListener("blur", () => {
-  if (!active) return;
-  clearTimeout(blurTimer);
-  blurTimer = setTimeout(() => {
-    if (active && !document.hasFocus()) { finish("blur", "переключение на другое окно"); }
-  }, 400);
-});
-window.addEventListener("focus", () => clearTimeout(blurTimer));
-window.addEventListener("pagehide", () => { if (active) finish("close", "закрытие/обновление страницы"); });
-window.addEventListener("beforeunload", (e) => { if (active) { e.preventDefault(); e.returnValue = ""; } });
-
-document.addEventListener("fullscreenchange", () => {
-  if (active && !document.fullscreenElement) {
-    logViolation("выход из полноэкранного режима");
-    modal(`<h2>Вернитесь в полноэкранный режим</h2>
-      <p>Выход из полноэкранного режима зафиксирован. Помните: переход на другую вкладку или окно приведёт к автосдаче.</p>
-      <button class="btn" id="mFs">Вернуться к тесту</button>`);
-    $("#mFs").onclick = async () => { closeModal(); await enterFullscreen(); };
+    case "tf": {
+      if (R.answer === null) return { ready: false };
+      el.querySelectorAll(".tr-opt").forEach((b) => { const v = b.dataset.v === "1"; b.disabled = true; if (v === q.a) b.classList.add("ok"); else if (v === R.answer) b.classList.add("bad"); });
+      return { ready: true, pts: R.answer === q.a ? 1 : 0, key: q.a ? "Верно" : "Неверно" };
+    }
+    case "multi": {
+      if (!R.answer.size) return { ready: false };
+      const need = new Set(q.a);
+      const errors = [...need].filter((i) => !R.answer.has(i)).length + [...R.answer].filter((i) => !need.has(i)).length;
+      el.querySelectorAll(".tr-opt").forEach((b) => { const i = +b.dataset.i; b.disabled = true; if (need.has(i)) b.classList.add("ok"); else if (R.answer.has(i)) b.classList.add("bad"); });
+      return { ready: true, pts: by2(errors), key: q.a.map((i) => q.o[i]).join("; ") };
+    }
+    case "num": {
+      const inp = $("#inp"), v = numsSpaced(inp.value);
+      if (!v.length) return { ready: false };
+      const pts = v.length === 1 && v[0] === q.a ? 1 : 0;
+      inp.disabled = true; inp.classList.add(pts ? "ok" : "bad");
+      return { ready: true, pts, key: String(q.a) };
+    }
+    case "set": {
+      const inp = $("#inp");
+      if (!inp.value.trim()) return { ready: false };
+      const given = new Set(numsSet(inp.value)), need = new Set(q.a);
+      const errors = [...need].filter((x) => !given.has(x)).length + [...given].filter((x) => !need.has(x)).length;
+      const pts = by2(errors);
+      inp.disabled = true; inp.classList.add(pts === 2 ? "ok" : pts ? "part" : "bad");
+      return { ready: true, pts, key: "{" + q.a.slice().sort((a, b) => a - b).join(", ") + "}" };
+    }
+    case "order": {
+      const mis = R.answer.filter((k, p) => k !== p).length;          // одна перестановка двух соседей = 2 ошибочных места
+      el.querySelectorAll(".tr-chip").forEach((c, p) => c.classList.add(R.answer[p] === p ? "ok" : "bad"));
+      el.querySelectorAll("button").forEach((b) => (b.disabled = true));
+      const sep = q.items.every((t) => t.length === 1) ? "" : q.items.every((t) => plain(t).length <= 4) ? ", " : " → ";
+      return { ready: true, pts: mis === 0 ? 2 : mis <= 2 ? 1 : 0, key: q.items.join(sep) };
+    }
+    case "bins": {
+      if (R.answer.some((b) => b < 0)) return { ready: false, msg: "Разложи все фишки по группам." };
+      const errors = q.items.filter((it, k) => R.answer[k] !== it[1]).length;
+      el.querySelectorAll(".tr-chip").forEach((c) => { const k = +c.dataset.k; c.classList.add(R.answer[k] === q.items[k][1] ? "ok" : "bad"); });
+      return { ready: true, pts: by2(errors), key: q.b.map((nm, bi) => nm + ": " + q.items.filter((it) => it[1] === bi).map((it) => it[0]).join(", ")).join(" | ") };
+    }
+    case "match": {
+      if (R.answer.some((a) => a === null)) return { ready: false, msg: "Выбери пару для каждой строки." };
+      const errors = R.answer.filter((r, li) => r !== q.a[li]).length;
+      el.querySelectorAll("select").forEach((s) => { const li = +s.dataset.l; s.disabled = true; s.classList.add(R.answer[li] === q.a[li] ? "ok" : "bad"); });
+      return { ready: true, pts: by2(errors), key: q.l.map((l, li) => l + " — " + q.r[q.a[li]]).join("; ") };
+    }
   }
-});
-document.addEventListener("contextmenu", (e) => { if (active) { e.preventDefault(); } });
-for (const ev of ["copy", "cut", "paste", "drop"]) {
-  document.addEventListener(ev, (e) => {
-    if (!active) return;
-    if (ev === "drop" && e.target.closest?.("[data-col]")) return; // перетаскивание карточек разрешено
-    e.preventDefault();
-    if (ev !== "drop") logViolation(ev === "paste" ? "попытка вставки текста" : "попытка копирования");
-  });
+  return { ready: false };
 }
-document.addEventListener("keydown", (e) => {
-  if (!active) return;
-  const k = e.key.toLowerCase(), ctrl = e.ctrlKey || e.metaKey;
-  const devtools = k === "f12" || (ctrl && e.shiftKey && ["i", "j", "c", "k"].includes(k)) || (ctrl && k === "u");
-  const blocked = ctrl && ["c", "v", "x", "s", "p", "f", "g", "h", "o", "n", "t"].includes(k);
-  if (devtools || blocked) {
-    e.preventDefault(); e.stopPropagation();
-    if (devtools) logViolation("попытка открыть инструменты разработчика");
-  }
-}, true);
-document.addEventListener("keyup", (e) => { if (active && e.key === "PrintScreen") logViolation("снимок экрана (PrintScreen)"); });
 
-// ---------- модальное окно ----------
-function modal(html) {
-  closeModal();
-  const o = document.createElement("div"); o.className = "overlay"; o.id = "overlay";
-  o.innerHTML = `<div class="card">${html}</div>`;
-  document.body.appendChild(o);
+function check() {
+  const q = R.q, fb = $("#fb");
+  const res = evaluate(q, $("#area"));
+  if (!res.ready) { fb.className = "tr-fb bad"; fb.innerHTML = `<span class="h">Сначала дай ответ.</span>${res.msg ? esc(res.msg) : ""}`; return; }
+  R.checked = true;
+  const max = MAXP[q.t], full = res.pts === max;
+  if (R.retry) { if (full) RETRY.ok++; }
+  else {
+    S.score["q" + (R.k + 1)] = res.pts;
+    if (full) { S.streak++; S.best = Math.max(S.best, S.streak); } else { S.streak = 0; S.wrong.push(R.k); }
+    S.i++; save(); progress(); headerScore();
+  }
+  const praise = ["Верно!", "Правильно!", "Отлично!", "Так держать!", "Молодец!"];
+  fb.className = "tr-fb " + (full ? "ok" : res.pts > 0 ? "part" : "bad");
+  fb.innerHTML = `<span class="h">${full ? praise[Math.floor(Math.random() * praise.length)] : res.pts > 0 ? `Почти! ${res.pts} из ${max} баллов — одна ошибка.` : "Неверно."}</span>
+    ${full ? "" : `<div>Правильный ответ: <b>${fmt(res.key)}</b></div>`}<div>${fmt(q.e)}</div>`;
+  const last = R.retry ? RETRY.i >= RETRY.list.length - 1 : S.i >= S.order.length;
+  $("#bCheck").textContent = last ? "Результат" : "Дальше →";
+  $("#bCheck").focus();
 }
-function closeModal() { $("#overlay")?.remove(); }
+
+function next() {
+  if (R.retry) { RETRY.i++; return RETRY.i < RETRY.list.length ? question() : showRetryDone(); }
+  if (S.i < S.order.length) return question();
+  finish();
+}
+
+// =====================================================================
+//  Итог
+// =====================================================================
+async function finish() {
+  const t = totals();
+  Object.assign(S, { done: true, pts: t.pts, max: t.max, pct: t.pct, grade: t.grade }); save();
+  showResult();
+  await sendResult();
+}
+async function sendResult() {
+  const box = $("#sent"); if (box) { box.className = "tr-sent"; box.textContent = "⏳ Отправляю результат учителю…"; }
+  try { await submit(); S.sent = true; save(); }
+  catch (e) { console.error(e); S.sent = false; save(); }
+  paintSent();
+}
+function paintSent() {
+  const box = $("#sent"); if (!box) return;
+  if (S.sent) { box.className = "tr-sent ok"; box.textContent = "✓ Результат отправлен учителю"; }
+  else { box.className = "tr-sent bad"; box.innerHTML = `Не получилось отправить результат. Проверь интернет. <button class="btn small" id="bResend">Отправить ещё раз</button>`; $("#bResend").onclick = sendResult; }
+}
+
+function showResult() {
+  headerScore();
+  const stars = S.pct >= 90 ? 3 : S.pct >= 60 ? 2 : S.pct >= 30 ? 1 : 0;
+  const msg = S.pct === 100 ? "Безупречно! Все задания решены верно." : S.pct >= 85 ? "Очень хорошо! До идеала совсем чуть-чуть."
+    : S.pct >= 60 ? "Хорошо, но есть над чем поработать." : "Повтори правила и пройди работу над ошибками.";
+  const wrong = [...new Set(S.wrong)];
+  app.innerHTML = `<div class="card tr-wide tr-res">
+    <div class="tr-mod">${fmt(V.module)}</div>
+    <h2>Вариант ${V.id} пройден</h2>
+    <div class="muted">Отметка по 10-балльной шкале</div>
+    <div class="tr-mark">${S.grade}</div>
+    <div class="tr-stars">${"★".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+    <div class="tr-stats"><div><b>${S.pts} из ${S.max}</b>баллов</div><div><b>${S.pct}%</b>результат</div><div><b>${S.best}</b>лучшая серия</div></div>
+    <p>${msg}</p>
+    <div class="tr-sent" id="sent"></div>
+    <p class="muted" style="margin:14px 0 4px">Как тебе тренажёр?</p>
+    <div class="tr-mood">${MOODS.map((m) => `<button type="button" data-m="${esc(m[1])}" aria-pressed="${S.mood === m[1]}">${m[0]} ${esc(m[1])}</button>`).join("")}</div>
+    <div class="tr-actions" style="justify-content:center">
+      ${wrong.length ? `<button class="btn" id="bFix" style="background:#E08A1E">Работа над ошибками (${wrong.length})</button>` : ""}
+      <button class="btn ghost" id="bAgain">Пройти заново</button><a class="btn ghost" href="./">Все варианты</a></div>
+    ${wrong.length ? `<div class="tr-errs"><h3>Где были ошибки</h3>${wrong.map((k) => { const q = V.questions[k]; return `<div class="e"><div class="q">${fmt(q.q)}</div>
+      <div class="k">Твой балл: ${S.score["q" + (k + 1)] ?? 0} из ${MAXP[q.t]}</div><div class="x">${fmt(q.e)}</div></div>`; }).join("")}</div>` : ""}
+  </div>`;
+  paintSent();
+  app.querySelectorAll(".tr-mood button").forEach((b) => (b.onclick = () => {
+    S.mood = b.dataset.m; save();
+    app.querySelectorAll(".tr-mood button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    if (S.rec && db) update(ref(db, `${P}/${S.rec}`), { mood: S.mood, updatedAt: serverTimestamp() }).catch(() => {});
+  }));
+  if ($("#bFix")) $("#bFix").onclick = () => { RETRY = { list: shuffle(wrong), i: 0, ok: 0 }; question(); };
+  $("#bAgain").onclick = () => showIntro(true);
+}
+
+function showRetryDone() {
+  const n = RETRY.list.length, ok = RETRY.ok; RETRY = null; headerScore();
+  app.innerHTML = `<div class="card center tr-res"><div class="tr-ribbon">Работа над ошибками</div>
+    <h2>${ok === n ? "Все ошибки исправлены!" : "Работа над ошибками завершена"}</h2>
+    <p>Решено верно: <b>${ok} из ${n}</b>.</p>
+    <p class="muted">Отметка за вариант не меняется — она ставится по первой попытке. Чтобы улучшить отметку, пройди вариант заново.</p>
+    <div class="tr-actions" style="justify-content:center"><button class="btn" id="bBack">К результату</button><a class="btn ghost" href="./">Все варианты</a></div></div>`;
+  $("#bBack").onclick = showResult;
+}

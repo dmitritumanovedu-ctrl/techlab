@@ -8,6 +8,7 @@ import { tb, itemLabels } from "../engine/b-i18n.js?v=1";
 import { mountLangSwitch, subjName, gradeLabel } from "../engine/i18n.js?v=1";
 import { CLASSES } from "../engine/people.js?v=2";
 import { SUBJECTS } from "../tests.js?v=8";
+import { isStaffPreview } from "../engine/preview-auth.js?v=1";
 
 const $ = (s, el = document) => el.querySelector(s);
 const app = $("#app");
@@ -35,6 +36,7 @@ async function init() {
   const s = SUBJECTS.find((x) => x.id === TEST.subject);
   $("#hWho").textContent = [s ? subjName(s) : "", TEST.grade ? gradeLabel(TEST.grade) : ""].filter(Boolean).join(" · ");
 
+  if (await isStaffPreview()) return showPreview(1);     // учитель смотрит содержание — без входа и без записи
   const saved = localStorage.getItem(LS_KEY);
   if (saved) {
     try {
@@ -54,6 +56,19 @@ async function init() {
     localStorage.removeItem(LS_KEY);
   }
   showLogin();
+}
+
+// ---------- просмотр учителя: все задания варианта сразу, только для чтения ----------
+function showPreview(v) {
+  const n = Math.max(1, Number(TEST.variants) || 1);
+  V = variantOf(TEST, v);
+  const items = V.order.map((id) => TEST.items.find((x) => x.id === id)).filter(Boolean);
+  app.innerHTML = `<div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <b>👁 Просмотр учителя</b><span class="muted">${items.length} заданий · ${esc(TEST.minutes)} мин</span>
+      <label style="margin-left:auto">Вариант <select id="pvVar">${Array.from({ length: n }, (_, i) => `<option${i + 1 === v ? " selected" : ""}>${i + 1}</option>`).join("")}</select></label></div>
+    ${items.map((it, i) => renderItem(it, V.per[it.id], undefined, i + 1, L, { disabled: true })).join("")}<div style="height:40px"></div>`;
+  $("#pvVar").onchange = (e) => showPreview(Number(e.target.value));
+  const sb = $("#btnSubmit"); if (sb) sb.hidden = true;
 }
 
 function fatal(msg) { app.innerHTML = `<div class="card center"><h2>TechLab</h2><p>${esc(msg)}</p><a class="btn" href="../">${esc(tb("p_home"))}</a></div>`; }

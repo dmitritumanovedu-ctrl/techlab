@@ -6,7 +6,8 @@
 // =====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff.js?v=2";
+import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff.js?v=3";
+import { startNotify } from "../engine/notify.js?v=2";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, KINDS } from "../tests.js?v=8";
@@ -22,7 +23,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const SITE = new URL("../", location.href).href;
 const L = itemLabels();
 const fmt = (n) => String(Math.round((n || 0) * 10) / 10).replace(".", ",");
-const fmtDT = (ms) => ms ? new Date(ms).toLocaleString(LOCALE, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+const fmtDT = (ms) => ms ? new Date(ms).toLocaleString(LOCALE, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const KINDS_T = KINDS.map(kindT);
 
@@ -43,6 +44,7 @@ onAuthStateChanged(auth, async (user) => {
   $("#logout").onclick = (e) => { e.preventDefault(); signOut(auth); };
   ROLE = await roleOf(db, user);
   if (ROLE === "pending") { app.innerHTML = pendingHtml(user, esc); return; }
+  startNotify(db, user, ROLE, { base: "../" });   // 🔔 коллеге: «вам открыли тест/материал»
   try {
     // владелец видит все тесты; коллега — только свои (+ общая папка)
     const mine = ROLE === "admin" ? ref(db, "builder") : query(ref(db, "builder"), orderByChild("owner"), equalTo(user.uid));
@@ -169,15 +171,17 @@ async function createTest() {
     shuffle: false, protect: { fullscreen: true, autosubmit: true }, items: [newItem("choice")], createdAt: Date.now(), updatedAt: Date.now(),
     owner: USER.uid, ownerName: USER.displayName || USER.email || "" };
   await set(ref(db, `builder/${id}`), t);
+  logAction(db, USER, `Создан новый тест (${subjOf(t.subject)?.name || t.subject}, ${t.grade} кл.)`, "test");
   ALL[id] = t; location.hash = `#/e/${id}`;
 }
 
 async function listAction(act, id, btn) {
   const t = ALL[id];
-  if (act === "open") { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); return showList(); }
+  if (act === "open") { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); logAction(db, USER, `${v ? "Открыл(а)" : "Закрыл(а)"} для учеников тест «${t.title}»`, "test"); return showList(); }
   if (act === "now") {
     await set(ref(db, "settings/current"), { id, title: t.title, path: `b/?t=${id}`, subject: t.subject, grade: t.grade || "", at: Date.now() });
     await update(ref(db, `settings/${id}`), { open: true });
+    logAction(db, USER, `Запустил(а) на уроке тест «${t.title}» (${t.grade} кл.)`, "test");
     return showList();
   }
   if (act === "link") { const url = `${SITE}b/?t=${id}`; try { await navigator.clipboard.writeText(url); btn.textContent = tb("b_copied"); } catch (e) { prompt(tb("b_link"), url); } return; }
@@ -185,7 +189,7 @@ async function listAction(act, id, btn) {
     const nid = "b" + Date.now().toString(36);
     const c = JSON.parse(JSON.stringify(t)); c.id = nid; c.title = t.title + " · " + tb("b_copy"); delete c.pubAt; c.createdAt = c.updatedAt = Date.now();
     c.owner = USER.uid; c.ownerName = USER.displayName || USER.email || ""; c.shared = false;
-    await set(ref(db, `builder/${nid}`), c); ALL[nid] = c; return showList();
+    await set(ref(db, `builder/${nid}`), c); ALL[nid] = c; logAction(db, USER, `Сделал(а) копию теста «${t.title}»`, "test"); return showList();
   }
   if (act === "take") {                     // из общей папки — себе в «Мои тесты»
     const src = SHARED[id]; if (!src) return;
@@ -193,12 +197,12 @@ async function listAction(act, id, btn) {
     const c = JSON.parse(JSON.stringify(src)); c.id = nid; delete c.pubAt; c.createdAt = c.updatedAt = Date.now();
     c.owner = USER.uid; c.ownerName = USER.displayName || USER.email || ""; c.shared = false; c.from = src.ownerName || "";
     try { await set(ref(db, `builder/${nid}`), c); } catch (e) { return alert(e.message); }
-    ALL[nid] = c; LTAB = "mine"; btn.textContent = "✓ Скопировано"; location.hash = `#/e/${nid}`; return;
+    ALL[nid] = c; LTAB = "mine"; btn.textContent = "✓ Скопировано"; logAction(db, USER, `Взял(а) себе тест «${src.title}» из общей папки (автор: ${src.ownerName || "—"})`, "test"); location.hash = `#/e/${nid}`; return;
   }
   if (act === "share") {
     const v = !t.shared;
     await update(ref(db, `builder/${id}`), { shared: v, owner: t.owner || USER.uid, ownerName: t.ownerName || USER.displayName || USER.email || "" }).catch((e) => alert(e.message));
-    t.shared = v; t.owner = t.owner || USER.uid; return showList();
+    t.shared = v; t.owner = t.owner || USER.uid; logAction(db, USER, `${v ? "Положил(а) в общую папку" : "Убрал(а) из общей папки"} тест «${t.title}»`, "test"); return showList();
   }
   if (act === "del") {
     if (!confirm(tb("b_delAsk", { t: t.title }))) return;
@@ -206,6 +210,7 @@ async function listAction(act, id, btn) {
     await Promise.all([remove(ref(db, `pub/${id}`)), remove(ref(db, `pubIndex/${id}`)), remove(ref(db, `keys/${id}`)), remove(ref(db, `results/${id}`)),
       remove(ref(db, `settings/${id}`)), SET.current?.id === id ? remove(ref(db, "settings/current")) : null].filter(Boolean)).catch((e) => console.warn(e));
     await remove(ref(db, `builder/${id}`)).catch((e) => alert(e.message));
+    logAction(db, USER, `Удалил(а) тест «${t.title}»`, "test");
     delete ALL[id]; return showList();
   }
 }
@@ -624,7 +629,7 @@ async function openResults(id) {
     <div id="rStats"></div><div id="rTable"></div></div>`;
   const setOpenBtn = () => { const o = !!SET[id]?.open; $("#rOpen").textContent = o ? tb("b_close") : tb("b_open"); $("#rOpen").classList.toggle("ghost", o); };
   setOpenBtn();
-  $("#rOpen").onclick = async () => { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); SET[id] = { ...(SET[id] || {}), open: v }; setOpenBtn(); };
+  $("#rOpen").onclick = async () => { const v = !SET[id]?.open; await update(ref(db, `settings/${id}`), { open: v }); SET[id] = { ...(SET[id] || {}), open: v }; setOpenBtn(); logAction(db, USER, `${v ? "Открыл(а)" : "Закрыл(а)"} для учеников тест «${ALL[id]?.title || id}»`, "test"); };
   $("#rCls").onchange = (e) => { filterCls = e.target.value; renderRes(); };
   $("#rAi").onclick = () => { for (const [rid, r] of Object.entries(RES)) if (needsAi(r)) queueAi(rid); };
   $("#rCsv").onclick = csv;
@@ -654,12 +659,13 @@ function renderRes() {
     <div class="bd-stat"><b>${done.length}</b><span>${esc(tb("r_submitted"))}</span></div>
     <div class="bd-stat"><b>${done.length ? avg.toFixed(0) + "%" : "—"}</b><span>${esc(tb("r_avg"))}</span></div>
     <div class="bd-stat wide"><span>${esc(tb("r_perTask"))}</span><div class="bd-bars">${per.map((p, i) => `<div class="bd-bar1" title="${esc(L.task)} ${i + 1}: ${p ?? "—"}%"><i style="height:${p ?? 0}%"></i><small>${i + 1}</small></div>`).join("")}</div></div></div>`;
-  $("#rTable").innerHTML = rows.length ? `<div class="table-wrap"><table class="bd-table"><thead><tr><th>${esc(tb("r_name"))}</th><th>${esc(tb("p_cls"))}</th><th>${esc(tb("variant"))}</th><th>${esc(tb("r_status"))}</th><th>${esc(tb("r_score"))}</th><th>${esc(tb("r_grade"))}</th><th>${esc(tb("r_viol"))}</th><th>${esc(tb("r_ai"))}</th><th></th></tr></thead><tbody>
+  $("#rTable").innerHTML = rows.length ? `<div class="table-wrap"><table class="bd-table"><thead><tr><th>${esc(tb("r_name"))}</th><th>${esc(tb("p_cls"))}</th><th>${esc(tb("variant"))}</th><th>${esc(tb("r_status"))}</th><th>${esc(tb("r_score"))}</th><th>${esc(tb("r_grade"))}</th><th>${esc(tb("r_viol"))}</th><th>Дата сдачи</th><th>${esc(tb("r_ai"))}</th><th></th></tr></thead><tbody>
     ${rows.map(([rid, r]) => { const g = gradeAttempt(KEY, r), sub = r.status === "submitted";
       return `<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.variant}</td>
         <td>${sub ? `<span class="chip-st st-pub">${esc(tb("r_done"))}</span>${r.reason && r.reason !== "manual" ? `<small class="muted"> · ${esc(tb("rs_" + r.reason))}</small>` : ""}` : `<span class="chip-st st-open">${esc(tb("r_inProg"))}</span>`}</td>
-        <td>${fmt(g.total)} / ${fmt(g.max)}${g.pending ? ` <small class="muted">(${esc(tb("r_pending", { n: g.pending }))})</small>` : ""}</td>
+        <td data-sort="${g.total ?? ""}">${fmt(g.total)} / ${fmt(g.max)}${g.pending ? ` <small class="muted">(${esc(tb("r_pending", { n: g.pending }))})</small>` : ""}</td>
         <td>${sub ? gradeCell(g) : "—"}</td><td>${r.violations ? `<span class="bd-viol">${r.violations}</span>` : "0"}</td>
+        <td data-sort="${r.submittedAt || r.startedAt || 0}" style="white-space:nowrap"><small>${esc(fmtDT(sub ? r.submittedAt : r.startedAt))}</small></td>
         <td><small>${r.aiStatus === "done" ? "✓" : r.aiStatus === "error" ? "⚠" : aiQueue.includes(rid) ? "…" : needsAi(r) ? tb("r_aiNeed") : "—"}</small></td>
         <td><button type="button" class="btn small ghost" data-open="${rid}">${esc(tb("r_open"))}</button></td></tr>`; }).join("")}</tbody></table></div>`
     : `<div class="card center"><p class="muted">${esc(tb("r_empty"))}</p><p class="bd-url">${esc(SITE)}b/?t=${esc(KEY.id)}</p></div>`;

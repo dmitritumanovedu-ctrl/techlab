@@ -1,7 +1,7 @@
 /* TechLab · страница администратора */
-:root { --ink: #0B1A3B; --blue: #2E4BFF; --bg: #F2F5FB; --line: #DCE4F2; --muted: #66748F; --green: #0B8A5A; --red: #C2253B; --amber: #B7791F; }
+:root { --ink: #1A2340; --blue: #2E4BFF; --bg: #F5F7FC; --line: #E1E6F0; --muted: #5B6478; --green: #0B8A5A; --red: #C2253B; --amber: #B7791F; }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: Roboto, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--bg); font-size: 15px; }
+body { margin: 0; font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--bg); font-size: 15px; }
 a { color: var(--blue); }
 .muted { color: var(--muted); }
 .mono { font-family: "Roboto Mono", monospace; }
@@ -114,3 +114,40 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 .ok-t { color: var(--green); font-weight: 700; } .bad-t { color: var(--red); font-weight: 700; }
 
 @media (max-width: 860px) { .two { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr 1fr; } }
+
+/* ===== раскладка с меню сбоку ===== */
+.ad-app { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; align-items: start; background: linear-gradient(90deg, #1A2340 264px, transparent 264px); }
+.ad-side { background: #1A2340; color: #C9D0E0; padding: 18px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+.ad-side .ad-brand { display: flex; gap: 12px; align-items: center; text-decoration: none; color: #fff; padding: 2px 8px 16px; border-bottom: 1px solid #2E3A57; }
+.ad-side .ad-brand b { display: block; font-size: 18px; } .ad-side .ad-brand small { color: #9AA6C2; font-size: 12.5px; }
+.ad-nav { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; flex: 1; }
+.ad-nav a { display: flex; align-items: center; gap: 10px; color: #C9D0E0; text-decoration: none; font-weight: 600; font-size: 14px; padding: 10px 12px; border-radius: 11px; }
+.ad-nav a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.ad-nav a.on { background: #fff; color: #1A2340; }
+.ad-nav i { margin-left: auto; font-style: normal; background: #E07B39; color: #fff; border-radius: 999px; padding: 0 8px; font-size: 12px; }
+.ad-nav i:empty { display: none; }
+.ad-grp { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7D88A3; margin: 16px 12px 4px; }
+.ad-me { border-top: 1px solid #2E3A57; padding: 12px 8px 0; font-size: 12.5px; color: #9AA6C2; word-break: break-all; } .ad-me a { color: #fff; }
+.ad-main { padding: 24px 30px 40px; max-width: 1280px; width: 100%; }
+.ad-sec { display: none; } .ad-sec.on { display: block; }
+.kpi::after { opacity: .9; }
+.bar i { background: linear-gradient(180deg, #5B74FF, var(--blue)); }
+.foot-note { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 28px; }
+@media (max-width: 900px) { .ad-app { grid-template-columns: 1fr; } .ad-side { position: static; height: auto; } .ad-main { padding: 16px; } }
+
+.sh-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.sh-list { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; padding: 4px 10px; }
+.btn.green:disabled { opacity: .5; }
+
+/* страницы учителя внутри панели */
+.ad-main:has(.ad-frame) { max-width: none; padding: 0; }
+.ad-frame { display: block; width: 100%; height: 100vh; border: 0; background: #F5F7FC; }
+/* активность коллег */
+.act-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 14px; }
+.act-h { display: flex; gap: 12px; align-items: center; }
+.act-av { width: 46px; height: 46px; border-radius: 50%; background: #5B6478; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 19px; position: relative; }
+.act-av.on::after { content: ""; position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; border-radius: 50%; background: #2E8B57; border: 2px solid #fff; }
+.act-k { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.act-k div { background: #F5F7FC; border-radius: 12px; padding: 8px 10px; } .act-k b { display: block; font-size: 22px; } .act-k span { font-size: 12px; color: var(--muted); }
+.act-t { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid #EEF2F8; font-size: 14px; }
+.act-tags { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
