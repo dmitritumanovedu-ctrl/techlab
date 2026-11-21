@@ -83,7 +83,8 @@ export async function requireStudent() {
 export async function isAdmin() {
   const u = await currentUser();
   if (!u) return false;
-  try { return (await get(ref(db, "sec/admins/" + u.uid))).val() === true; }
+  // Раздел sec/catalog целиком может прочитать только учитель — так решают правила
+  try { await get(ref(db, "sec/catalog")); return true; }
   catch { return false; }
 }
 
