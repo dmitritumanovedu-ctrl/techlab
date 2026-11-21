@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<script src="../../../engine/guard.js?v=3"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1B1446">
+<title>Миссия · ОС: центр управления · 7 класс</title>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800;900&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#140F3A; --bg2:#1F1760; --panel:#FFFFFF; --ink:#1A1440; --muted:#6A6496;
+  --pink:#FF4FB8; --cyan:#29E3FF; --lime:#B6FF3B; --gold:#FFC93C; --orange:#FF8A3D; --violet:#8B5CFF; --red:#FF4D6D; --ok:#12B76A;
+  --display:"Unbounded",system-ui,sans-serif; --body:"Manrope",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--body);color:#fff;background:radial-gradient(1200px 600px at 20% -10%,#3B2BB0 0,transparent 60%),radial-gradient(900px 500px at 110% 10%,#B0237F 0,transparent 55%),var(--bg);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.stars-bg{position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20% 30%,#fff8,transparent),radial-gradient(1.5px 1.5px at 70% 20%,#fff9,transparent),
+  radial-gradient(2px 2px at 40% 80%,#fff6,transparent),radial-gradient(1.5px 1.5px at 85% 65%,#fff8,transparent),radial-gradient(1px 1px at 10% 70%,#fff8,transparent);opacity:.8}
+
+/* ---------- старт ---------- */
+#start{min-height:100vh;display:grid;place-items:center;padding:24px 16px;position:relative}
+.start-card{width:min(560px,100%);background:linear-gradient(160deg,#2A2080,#1A1352);border:2px solid #4B3CD0;border-radius:28px;padding:30px;box-shadow:0 0 0 6px #ffffff10,0 30px 80px #0008,0 0 80px #8B5CFF55;position:relative;z-index:1}
+.logo{font-family:var(--display);font-weight:900;font-size:44px;line-height:1;letter-spacing:-.02em;margin:6px 0 4px;
+  background:linear-gradient(90deg,var(--cyan),var(--pink),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #0006)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--lime);text-transform:uppercase}
+.lead{color:#D8D2FF;margin:10px 0 18px}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{font-weight:700;font-size:14px;color:#D8D2FF}
+.field input,.field select{font:inherit;font-size:17px;padding:13px 14px;border-radius:14px;border:2px solid #5A4BE0;background:#0F0B33;color:#fff}
+.field input:focus,.field select:focus{outline:none;border-color:var(--cyan)}
+.err{color:#FF9FB3;min-height:1.3em;font-weight:700;font-size:14px}
+.btn{border:0;border-radius:16px;padding:14px 22px;font-weight:800;font-size:17px;color:#1A1440;background:linear-gradient(180deg,#FFE27A,var(--gold));box-shadow:0 6px 0 #B9861A;transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #B9861A}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.cyan{background:linear-gradient(180deg,#8FF3FF,var(--cyan));box-shadow:0 6px 0 #0F9BB3}
+.btn.pink{background:linear-gradient(180deg,#FF9AD8,var(--pink));box-shadow:0 6px 0 #B02579;color:#fff}
+.btn.ghost{background:#ffffff18;color:#fff;box-shadow:none;border:2px solid #ffffff40}
+.big{width:100%;font-size:20px;padding:16px}
+
+/* ---------- HUD ---------- */
+#game{max-width:1080px;margin:0 auto;padding:12px 14px 40px;position:relative;z-index:1}
+.hud{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#0E0A2Cdd;border:2px solid #3B2EA8;border-radius:20px;padding:10px 14px;position:sticky;top:8px;z-index:20;backdrop-filter:blur(6px)}
+.hud .who{font-weight:800}.hud .who small{display:block;font-family:var(--mono);font-size:11px;color:var(--lime);letter-spacing:.1em}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#ffffff14;border-radius:999px;padding:6px 12px;font-weight:800;font-family:var(--mono)}
+.chip.gold{color:var(--gold)}.chip.cyan{color:var(--cyan)}.chip.pink{color:var(--pink)}
+.xp{flex:1 1 180px;max-width:260px}.xp .bar{height:10px;background:#ffffff22;border-radius:999px;overflow:hidden}.xp .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));transition:width .6s}
+.xp small{font-family:var(--mono);font-size:11px;color:#CFC8FF}
+
+/* ---------- карта уровней ---------- */
+.map{position:relative;margin-top:18px;background:linear-gradient(180deg,#2A1F86,#1B1460);border:2px solid #4B3CD0;border-radius:28px;padding:26px 18px 30px;overflow:hidden}
+.map h1{font-family:var(--display);font-size:28px;margin:0 0 4px}.map p{color:#D8D2FF;margin:0 0 18px}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;position:relative}
+.node{position:relative;text-align:left;border:0;border-radius:22px;padding:16px;min-height:170px;color:#1A1440;background:#fff;box-shadow:0 8px 0 #0004;display:flex;flex-direction:column;gap:6px;transition:transform .15s}
+.node:hover:not(:disabled){transform:translateY(-4px) rotate(-.5deg)}
+.node .n{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--violet)}
+.node .t{font-family:var(--display);font-weight:800;font-size:17px;line-height:1.2;padding-right:46px}
+.node .d{font-size:13px;color:var(--muted)}
+.node .st{margin-top:auto;font-size:20px;letter-spacing:2px}
+.node .ic{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:24px}
+.node.lock{background:#ffffff1a;color:#ffffff99;box-shadow:none;border:2px dashed #ffffff40}
+.node.lock .n,.node.lock .d{color:#ffffff88}
+.node.done{outline:4px solid var(--lime)}
+.node.boss{background:linear-gradient(160deg,#FFE27A,#FF8A3D)}
+.node.fin{background:linear-gradient(160deg,#8FF3FF,#8B5CFF);color:#fff}.node.fin .n,.node.fin .d{color:#fff}
+
+/* ---------- сцена уровня ---------- */
+.stage{margin-top:18px;background:var(--panel);color:var(--ink);border-radius:28px;padding:22px;box-shadow:0 20px 60px #0006}
+.lv-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.lv-badge{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.1em;background:var(--ink);color:var(--lime);padding:6px 12px;border-radius:999px}
+.lv-head h2{font-family:var(--display);font-size:24px;margin:0;flex:1 1 300px}
+.lv-help{background:#F3F0FF;border-radius:16px;padding:12px 14px;color:#3B2F86;margin-bottom:14px}
+.back{background:#EEEAFE;color:#3B2F86;border:0;border-radius:12px;padding:9px 14px;font-weight:800}
+.prog{font-family:var(--mono);font-weight:700;color:var(--violet)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.imgbox{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.imgbox canvas{width:100%;height:100%;display:block}
+.imgbox .lbl{position:absolute;top:10px;left:10px;background:#000a;color:#fff;font-family:var(--mono);font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;z-index:2}
+.vig::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,#000d 100%);pointer-events:none}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.choice{border:3px solid #E3DEFF;background:#fff;border-radius:16px;padding:14px;font-weight:800;color:var(--ink);text-align:left;transition:transform .1s,border-color .1s}
+.choice:hover:not(:disabled){transform:translateY(-2px);border-color:var(--violet)}
+.choice.right{border-color:var(--ok);background:#E5F9EF}.choice.wrong{border-color:var(--red);background:#FFE7EC}
+.choice small{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:2px}
+.feedback{min-height:1.6em;font-weight:800;margin-top:10px}
+.feedback.ok{color:var(--ok)}.feedback.bad{color:var(--red)}
+
+/* аркада */
+.arcade{position:relative;border-radius:22px;overflow:hidden;background:#0B0830;border:4px solid var(--ink)}
+.arcade canvas{display:block;width:100%;height:auto;max-height:52vh;object-fit:contain;touch-action:none}
+.arc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ink);color:#fff;padding:10px 14px}
+.arc-top .target{font-weight:800}.arc-top .target b{color:var(--gold)}
+.hearts{font-size:20px;letter-spacing:2px}
+.pad{display:flex;justify-content:center;gap:18px;margin-top:14px;flex-wrap:wrap}
+.joy{width:96px;height:96px;border-radius:50%;border:0;font-size:38px;color:#fff;background:radial-gradient(circle at 35% 30%,#A99BFF,var(--violet));box-shadow:0 8px 0 #4B2FB8,0 0 0 6px #8B5CFF33;user-select:none;-webkit-user-select:none;touch-action:none}
+.joy:active,.joy.on{transform:translateY(5px);box-shadow:0 3px 0 #4B2FB8}
+.keys{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+.overlay-msg{position:absolute;inset:0;display:grid;place-items:center;background:#0B0830d9;text-align:center;padding:20px}
+.overlay-msg h3{font-family:var(--display);font-size:26px;margin:0 0 8px;color:var(--gold)}
+.overlay-msg p{color:#E4DFFF;margin:0 0 14px}
+
+/* слайдеры */
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;margin-top:14px}
+.sl{display:grid;gap:4px}.sl label{display:flex;justify-content:space-between;font-weight:800;font-size:14px}
+.sl input{width:100%;accent-color:var(--violet)}
+.meter{height:14px;background:#EEEAFE;border-radius:999px;overflow:hidden;margin-top:12px}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--ok));transition:width .3s}
+
+/* клиенты */
+.client{display:flex;gap:14px;align-items:flex-start;background:#F7F5FF;border-radius:18px;padding:14px;margin-bottom:6px}
+.avatar{width:62px;height:62px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:22px;color:#fff}
+.bubble{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:12px 14px;font-weight:600}
+.bubble b{color:var(--violet)}
+
+/* босс */
+.fx-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.fx{border:3px solid #E3DEFF;background:#fff;border-radius:999px;padding:9px 14px;font-weight:800;color:var(--ink)}
+.fx[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.cover-title{position:absolute;left:0;right:0;bottom:8%;text-align:center;font-family:var(--display);font-weight:900;font-size:clamp(20px,4vw,40px);color:#fff;text-shadow:0 3px 0 #000a,0 0 20px #000a;padding:0 10px;z-index:2;pointer-events:none}
+textarea,.tin{width:100%;font:inherit;font-size:16px;border:2px solid #DCD5FF;border-radius:14px;padding:12px;color:var(--ink)}
+textarea{min-height:110px;resize:vertical}
+textarea:focus,.tin:focus{outline:none;border-color:var(--violet)}
+
+/* результат уровня */
+.win-pop{position:fixed;inset:0;background:#0B0830cc;display:grid;place-items:center;z-index:100;padding:16px}
+.win-box{background:linear-gradient(160deg,#2A2080,#1A1352);border:3px solid var(--gold);border-radius:28px;padding:28px;text-align:center;width:min(420px,100%);animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.win-box h3{font-family:var(--display);font-size:28px;margin:0 0 6px}
+.win-stars{font-size:52px;letter-spacing:6px;margin:8px 0}
+.win-stars .off{filter:grayscale(1);opacity:.3}
+.win-box p{color:#D8D2FF}
+
+/* финиш */
+.qual{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.qual-badge{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;align-content:center;color:#fff;background:conic-gradient(var(--lime),var(--cyan),var(--violet),var(--pink),var(--lime));padding:8px}
+.qual-badge div{width:100%;height:100%;border-radius:50%;background:var(--ink);display:grid;place-items:center;align-content:center}
+.qual-badge b{font-family:var(--display);font-size:52px;line-height:1}.qual-badge small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--lime)}
+.scale{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.scale div{border:2px solid #E3DEFF;border-radius:14px;padding:10px;text-align:center;font-size:13px;color:var(--muted)}
+.scale div b{display:block;font-family:var(--display);font-size:22px;color:var(--ink)}
+.scale div.on{border-color:var(--violet);background:#F3F0FF}
+table.tbl{width:100%;border-collapse:collapse;margin-top:10px}table.tbl td,table.tbl th{padding:8px 10px;border-bottom:1px solid #EEEAFE;text-align:left}
+table.tbl th{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mood{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.mood button{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink)}
+.mood button[aria-pressed="true"]{border-color:var(--violet);background:#F3F0FF}
+.sent{background:var(--ink);color:#CFE6FF;font-family:var(--mono);border-radius:14px;padding:14px;margin-top:12px}
+.sent .g{color:var(--lime)}.sent .r{color:#FF9FB3}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border:2px solid var(--lime);padding:10px 18px;border-radius:999px;font-weight:800;opacity:0;transition:opacity .2s;z-index:200;pointer-events:none}
+#toast.on{opacity:1}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:150}
+@media (max-width:600px){.logo{font-size:34px}.lv-head h2{font-size:20px}.scale{grid-template-columns:repeat(2,1fr)}.joy{width:84px;height:84px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ---------- чат-квест: цепочка, корзины, профиль, телефон ---------- */
+.chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.chain .arr{font-size:22px;color:var(--violet);font-weight:800}
+.slot{min-width:150px;min-height:56px;border:3px dashed #CFC6FF;border-radius:16px;background:#F7F5FF;font-weight:800;color:var(--ink);padding:8px 12px}
+.slot i{font-style:normal;font-family:var(--mono);color:#B3A9F5;font-size:20px}
+.slot.on{border-style:solid;border-color:var(--violet);background:#fff}.slot.right{border-color:var(--ok);background:#E5F9EF}.slot.wrong{border-color:var(--red);background:#FFE7EC}
+.cards{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;min-height:52px}
+.card{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:11px 14px;font-weight:800;color:var(--ink);box-shadow:0 4px 0 #E3DEFF;transition:transform .1s}
+.card:hover{transform:translateY(-2px)}.card.sel{border-color:var(--violet);background:#F3F0FF;box-shadow:0 4px 0 var(--violet)}
+.card.in{display:block;width:100%;text-align:left;margin-top:6px;box-shadow:none;font-size:14px;padding:8px 10px}
+.card.right{border-color:var(--ok);background:#E5F9EF}.card.wrong{border-color:var(--red);background:#FFE7EC}
+.bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.bin{border:3px solid #DCD5FF;border-radius:20px;padding:12px;min-height:200px;background:#FBFAFF;cursor:pointer}
+.bin:hover{border-color:var(--violet)}
+.bin-h{display:grid;text-align:center;gap:2px;margin-bottom:6px}.bin-h b{font-size:26px}.bin-h span{font-family:var(--display);font-weight:800}.bin-h small{color:var(--muted)}
+.tf .choice small{font-size:13px}
+.profile{display:flex;gap:16px;align-items:flex-start;background:#F7F5FF;border-radius:20px;padding:16px;margin-top:10px}
+.pf-av{width:76px;height:76px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:38px}
+.pf-b b{font-family:var(--display);font-size:20px}.pf-b small{display:block;color:var(--muted);font-family:var(--mono);font-size:12px}
+.phone{max-width:430px;margin:12px auto 0;border:10px solid var(--ink);border-radius:36px;overflow:hidden;background:#E9F1FF;box-shadow:0 16px 40px #0003}
+.ph-top{display:flex;gap:10px;align-items:center;background:var(--ink);color:#fff;padding:10px 14px}.ph-top small{margin-left:auto;color:var(--lime);font-family:var(--mono);font-size:11px}
+.ph-av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800}
+.ph-body{height:270px;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#EAF2FF,#F7F5FF)}
+.msg{max-width:82%;padding:9px 12px;border-radius:16px;font-weight:600;color:var(--ink);font-size:15px;animation:pop .25s}
+.msg.in{background:#fff;align-self:flex-start;border-bottom-left-radius:4px}.msg.out{background:#D9FDD3;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.old{opacity:.55}
+.typing{display:flex;gap:4px}.typing i{width:8px;height:8px;border-radius:50%;background:#9A93C9;animation:blink 1s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px}
+.rule{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:12px 14px;font-weight:700;color:var(--ink);text-align:left}
+.rule[aria-pressed="true"]{border-color:var(--violet);background:#F3F0FF}.rule[aria-pressed="true"]::before{content:"✓ ";color:var(--violet)}
+.rule.right{border-color:var(--ok);background:#E5F9EF}.rule.wrong{border-color:var(--red);background:#FFE7EC}.rule.miss{border-style:dashed;border-color:var(--ok)}
+/* ---------- ОС: теория, диспетчер задач, бонусы ---------- */
+.slide{font-size:18px;line-height:1.6;background:#F7F5FF;border-radius:20px;padding:18px 22px;margin:12px 0}
+.slide p{margin:8px 0}
+.dots{display:flex;gap:6px;margin:4px 0}.dots i{width:28px;height:6px;border-radius:9px;background:#E3DEFF}.dots i.on{background:var(--violet)}
+.anal{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.anal>div{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:10px 16px;display:grid;gap:4px;text-align:center;min-width:150px}.anal span{background:#F3F0FF;border-radius:8px;padding:2px 8px}
+.oses{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:8px 0}
+.oses div{background:#fff;border:2px solid #E3DEFF;border-radius:16px;padding:12px;text-align:center;font-size:30px;display:grid}.oses b{font-size:17px}.oses small{font-size:13px;color:var(--muted)}
+.fns{display:grid;gap:8px}.fns div{background:#fff;border:2px solid #E3DEFF;border-radius:14px;padding:10px 14px;font-size:24px;display:grid;grid-template-columns:40px 1fr;align-items:center;column-gap:8px}
+.fns b{font-size:17px}.fns small{grid-column:2;font-size:15px;color:var(--muted)}
+.boot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}.boot span{background:#fff;border:2px solid #E3DEFF;border-radius:12px;padding:8px 12px;font-weight:700;font-size:15px}.boot i{font-style:normal;color:var(--violet);font-weight:800}
+.kbd{display:inline-block;background:#fff;border:2px solid #CFC6FF;border-bottom-width:4px;border-radius:8px;padding:2px 10px;font-family:var(--mono);font-weight:700;color:var(--ink)}
+.tmwin{border:3px solid var(--ink);border-radius:16px;overflow:hidden;margin-top:12px;background:#fff}
+.tm-top{display:flex;justify-content:space-between;background:var(--ink);color:#fff;padding:8px 14px;font-weight:800;font-family:var(--mono)}
+.tm-top .hot{color:#FF9FB3}
+table.tm{width:100%;border-collapse:collapse}table.tm th,table.tm td{padding:9px 12px;text-align:left;border-bottom:1px solid #EEEAFE;font-size:15px}
+table.tm th{font-family:var(--mono);font-size:12px;color:var(--muted)}table.tm tr[data-r]{cursor:pointer}table.tm tr[data-r]:hover{background:#F7F5FF}
+table.tm tr.hang td{color:#B42318;font-weight:700}table.tm tr.sel{background:#E9E4FF!important;outline:2px solid var(--violet)}table.tm tr.killed td{text-decoration:line-through;opacity:.5}
+.tm-bot{padding:10px 14px;display:flex;justify-content:flex-end;background:#F7F5FF}
+.node.bonusn{background:linear-gradient(160deg,#FFF8D6,#FFE7A8)}
+.scale10{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin:14px 0}
+.scale10 div{border:2px solid #E3DEFF;border-radius:10px;padding:6px 2px;text-align:center;font-size:11px;color:var(--muted)}.scale10 b{display:block;font-family:var(--display);font-size:18px;color:var(--ink)}
+.scale10 div.on{border-color:var(--violet);background:#F3F0FF}
+@media (max-width:600px){.scale10{grid-template-columns:repeat(5,1fr)}}
+.pline{cursor:pointer;border-radius:8px;padding:0 6px;margin:2px 0}.pline:hover{background:#FFF3C4}
+.pline.mk{background:#FFE0E6;text-decoration:underline wavy #E5484D}.pline.good{background:#E5F9EF;text-decoration:none}.pline.bad{background:#FFE7EC;outline:2px solid #E5484D}
+.pline small{color:#0E8F52;font-size:15px;line-height:1.4;display:inline-block}
+/* ---------- журнал, конспект ---------- */
+.node.brief{background:linear-gradient(160deg,#B6FF3B,#29E3FF)}
+.node .tm{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted)}
+.brief-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.box{background:#F7F5FF;border-radius:18px;padding:16px 18px}
+.box h3{font-family:var(--display);font-size:17px;margin:0 0 8px}
+.box ol,.box ul{margin:0;padding-left:20px}.box li{margin:4px 0}
+.topic{font-family:var(--display);font-weight:800;font-size:22px;color:var(--violet);margin:2px 0 10px}
+.notebook{background:#FFFDF3;border:2px solid #F0E3B0;border-radius:18px;padding:18px 22px 18px 52px;position:relative;
+  background-image:repeating-linear-gradient(transparent 0 31px,#E8DFC0 31px 32px);line-height:32px;font-size:17px}
+.notebook::before{content:"";position:absolute;left:36px;top:0;bottom:0;width:2px;background:#FF9FB3}
+.notebook h3{font-family:var(--display);font-size:18px;margin:0;line-height:32px;color:#B02579}
+.notebook p{margin:0}.notebook b{color:#1A1440}
+.notebook .key{background:#FFE27A;border-radius:6px;padding:0 4px}
+.copy-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.ring{font-family:var(--mono);font-weight:700;color:var(--violet)}
+.plan{display:grid;gap:6px}.plan div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #DCD5FF;padding:3px 0;font-size:15px}
+.plan span{font-family:var(--mono);color:var(--muted);font-size:13px;white-space:nowrap}
+.hud-btn{background:#ffffff18;color:#fff;border:2px solid #ffffff40;border-radius:999px;padding:6px 12px;font-weight:800}
+/* лупа и сетка */
+.zoomwrap{max-width:640px;margin:0 auto;position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.zoomwrap canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.grid-px{display:grid;gap:2px;background:#1A1440;padding:2px;border-radius:10px;width:min(100%,420px);margin:0 auto}
+.grid-px i{display:block;aspect-ratio:1}
+/* RGB */
+.swatches{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sw{border-radius:20px;aspect-ratio:16/7;display:grid;place-items:end start;padding:12px;font-family:var(--mono);font-weight:700;color:#fff;text-shadow:0 1px 3px #000a;border:4px solid var(--ink)}
+.sl.r input{accent-color:#FF2D55}.sl.g input{accent-color:#12B76A}.sl.b input{accent-color:#2E6BFF}
+.rgbtip{font-size:14px;color:var(--muted);margin-top:8px}
+/* размер */
+.rs-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-top:12px}
+.rs-row .field{margin:0}.rs-row input{width:130px;font:inherit;font-size:20px;font-weight:800;padding:10px 12px;border-radius:14px;border:2px solid #DCD5FF;color:var(--ink)!important;background:#fff!important}
+.rs-row label{color:var(--ink)!important}
+.lock{border:3px solid #E3DEFF;background:#fff;border-radius:14px;padding:10px 14px;font-weight:800;color:var(--ink);font-size:18px}
+.lock[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink)}
+.frame{background:repeating-conic-gradient(#EEE 0 25%,#fff 0 50%) 0 0/20px 20px;border-radius:18px;height:300px;display:grid;place-items:center;border:2px solid #E3DEFF;overflow:hidden}
+.frame canvas{display:block;box-shadow:0 6px 20px #0003;border-radius:4px}
+.dims{font-family:var(--mono);font-weight:700;color:var(--violet);margin-top:6px}
+/* температура */
+.tint{position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;z-index:1}
+/* блиц */
+.blitz{font-family:var(--display);font-size:clamp(20px,3vw,28px);font-weight:800;text-align:center;padding:28px 16px;background:#F7F5FF;border-radius:20px;min-height:130px;display:grid;place-items:center}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.tf .choice{text-align:center;font-size:22px;padding:18px}
+/* боcс */
+.steps{display:grid;gap:8px;margin:8px 0 14px}
+.step{display:flex;gap:10px;align-items:center;background:#F7F5FF;border-radius:14px;padding:10px 14px;font-weight:700}
+.step.ok{background:#E5F9EF}.step .m{font-size:20px}
+/* дескрипторы */
+.desc{display:grid;gap:8px;margin:12px 0}
+.desc div{display:flex;gap:12px;align-items:center;border:2px solid #EEEAFE;border-radius:14px;padding:10px 14px}
+.desc .ic{font-size:22px}.desc .lvl{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:12px;white-space:nowrap}
+.desc .y{border-color:#9BE7C3;background:#F0FBF5}.desc .h{border-color:#FFE08A;background:#FFFBEA}.desc .n{border-color:#FFC2CF;background:#FFF5F7}
+</style>
+</head>
+<body>
+<div class="stars-bg"></div>
+
+<section id="start">
+  <div class="start-card">
+    <div class="eyebrow">Информатика · 7 класс · 26.11</div>
+    <div class="logo">ОС: ЦЕНТР УПРАВЛЕНИЯ</div>
+    <div style="font-family:var(--display);font-weight:700;font-size:18px">Функции операционной системы</div>
+    <p class="lead">Сначала — теория и короткий конспект в тетрадь. Потом 7 уровней: загрузка компьютера, ОС или программа, Диспетчер задач, функции ОС, блиц, ошибки Пети и босс. Для самых быстрых — ⭐ бонусы. В конце — отметка по 10-балльной шкале.</p>
+    <div class="field"><label for="fio">Фамилия и имя</label><input id="fio" autocomplete="off" maxlength="60" placeholder="Например: Руссу Анна"></div>
+    <div class="field"><label for="cls">Класс</label>
+      <select id="cls"><option value="">выбери…</option><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div>
+    <div class="err" id="err"></div>
+    <button class="btn big" id="go" type="button">▶ НАЧАТЬ УРОК</button>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="hud">
+    <div class="who" id="who"></div>
+    <div class="xp"><small id="xpTxt">УРОВЕНЬ ИГРОКА 1</small><div class="bar"><i id="xpBar" style="width:0"></i></div></div>
+    <div class="chips"><button class="hud-btn" type="button" id="hudNote">📒 Конспект</button><span class="chip gold" title="Монеты">🪙 <span id="coins">0</span></span><span class="chip cyan" title="Звёзды">⭐ <span id="stars">0</span>/27</span><span class="chip pink" title="Время урока">⏱ <span id="clock">00:00</span></span></div>
+  </div>
+  <div id="view"></div>
+</section>
+<div id="toast" role="status"></div>
+<canvas class="confetti" id="confetti"></canvas>
+
+<script>window.TL_READY=new Promise(r=>window.__tlr=r);</script>
+<script src="../../../engine/preview.js?v=1"></script>
+<script type="module">
+/* Связь с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "inf7-os-m1";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Бортовой журнал", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+<script>
+"use strict";
+const $=(id)=>document.getElementById(id);
+const esc=(s)=>String(s??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const TL=()=>window.TL_READY;
+const rnd=(n)=>Math.floor(Math.random()*n);
+const shuffle=(a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const num=(n)=>Number(n).toLocaleString("ru-RU");
+
+/* ===================== СОСТОЯНИЕ ===================== */
+const KEY="techlab_inf7_os1";
+const LEVELS=[
+  {k:"q1",ic:"🔌",bg:"#E0F9FF",t:"Загрузка компьютера",d:"Порядок загрузки и роль ОС",max:5,tm:"4 мин"},
+  {k:"q2",ic:"💿",bg:"#EFE9FF",t:"ОС или программа?",d:"16 названий — есть ловушки",max:6,tm:"4 мин"},
+  {k:"q3",ic:"⚙",bg:"#FFF3D6",t:"Диспетчер задач",d:"4 ситуации: думай, прежде чем закрывать",max:6,tm:"5 мин"},
+  {k:"q4",ic:"🧩",bg:"#E5F9EF",t:"Кто за что отвечает?",d:"10 ситуаций — какая функция ОС",max:8,tm:"5 мин"},
+  {k:"q5",ic:"⚡",bg:"#FFE3F3",t:"Блиц 45 секунд",d:"12 утверждений: верно или неверно",max:6,tm:"2 мин"},
+  {k:"q6",ic:"🔎",bg:"#FFE9E3",t:"Найди ошибки Пети",d:"В конспекте одноклассника 4 ошибки",max:5,tm:"4 мин"},
+  {k:"q7",ic:"👑",bg:"",t:"Босс: помоги Мише",d:"Ответь другу и объясни своими словами",max:5,boss:true,tm:"8 мин"},
+];
+// бонусы для быстрых: к итогу добавляется не больше BONUS_CAP баллов (и не выше 100 %)
+const BONUS=[
+  {k:"b1",ic:"⌨",bg:"#FFF3D6",t:"Горячие клавиши",d:"8 сочетаний клавиш ОС",max:4,bonus:true},
+  {k:"b2",ic:"📄",bg:"#E0F9FF",t:"Чем открыть файл?",d:"Расширения файлов",max:3,bonus:true},
+  {k:"b3",ic:"🐧",bg:"#E5F9EF",t:"Угадай ОС",d:"Windows, Linux, Android…",max:3,bonus:true},
+];
+const BONUS_CAP=2;
+const ALLL=[...LEVELS,...BONUS];
+const FIN_MIN=40;            // финиш (и отправка учителю) — не раньше 40-й минуты от входа в миссию
+const MAXALL=LEVELS.reduce((s,l)=>s+l.max,0)+4; // + объяснение Мише (ИИ) 4 б.
+let S=fresh("","");
+function fresh(fio,cls){return {fio,cls,start:Date.now(),brief:0,noteAt:0,score:{},stars:{},coins:0,open:{o1:""},boss:{},mood:"",sent:0,rec:""};}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(v&&v.fio&&Date.now()-(v.start||0)<4*3600*1000)S=Object.assign(fresh("",""),v);else localStorage.removeItem(KEY);}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+  if(S.rec)TL().then(t=>t.progress(S.rec,{score:S.score,open:S.open,stage:stageLabel(),doneCount:Object.keys(S.score).length})).catch(()=>{});}
+function stageLabel(){if(!S.brief)return "Бортовой журнал";const n=LEVELS.filter(l=>S.score[l.k]!=null).length;return n>=LEVELS.length?"Финиш":"Уровень "+(n+1);}
+const starsOf=(pts,max)=>pts<=0?0:pts/max>=.9?3:pts/max>=.6?2:1;
+function totalStars(){return Object.values(S.stars).reduce((a,b)=>a+b,0);}
+function minutes(){return Math.max(1,Math.round((Date.now()-S.start)/60000));}
+
+/* ===================== ЗВУК, ТОСТ, КОНФЕТТИ ===================== */
+let AC=null;
+function beep(f=660,d=.08,type="square",v=.05){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
+const sGood=()=>{beep(660,.07);setTimeout(()=>beep(990,.09),70);};
+const sBad=()=>beep(160,.18,"sawtooth",.05);
+const sWin=()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,"triangle",.06),i*110));
+
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1600);}
+function confetti(){const cv=$("confetti"),c=cv.getContext("2d");cv.width=innerWidth;cv.height=innerHeight;
+  const P=Array.from({length:120},()=>({x:innerWidth/2,y:innerHeight/3,vx:(Math.random()-.5)*14,vy:-Math.random()*12-4,c:["#FF4FB8","#29E3FF","#B6FF3B","#FFC93C","#8B5CFF"][rnd(5)],s:6+rnd(6)}));
+  let n=0;(function f(){c.clearRect(0,0,cv.width,cv.height);for(const p of P){p.vy+=.35;p.x+=p.vx;p.y+=p.vy;c.fillStyle=p.c;c.fillRect(p.x,p.y,p.s,p.s*.6);}if(++n<90)requestAnimationFrame(f);else c.clearRect(0,0,cv.width,cv.height);})();}
+
+/* ===================== HUD ===================== */
+function hud(){
+  $("who").innerHTML=`<small>ИГРОК</small>${esc(S.fio)} · ${esc(S.cls)}`;
+  $("coins").textContent=S.coins;$("stars").textContent=totalStars();
+  const xp=S.coins,lvl=1+Math.floor(xp/100);$("xpTxt").textContent=`УРОВЕНЬ ИГРОКА ${lvl} · ${xp} XP`;$("xpBar").style.width=(xp%100)+"%";
+}
+setInterval(()=>{if(!S.fio)return;const s=Math.floor((Date.now()-S.start)/1000);$("clock").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");},1000);
+
+function finishLevel(k,pts){
+  const L=ALLL.find(l=>l.k===k);pts=Math.max(0,Math.min(L.max,Math.round(pts*2)/2));
+  const st=starsOf(pts,L.max),gain=pts*10+st*10;
+  const better=S.score[k]==null||pts>S.score[k];
+  if(better){S.coins+=gain-(S.score[k]!=null?S.score[k]*10+(S.stars[k]||0)*10:0);S.score[k]=pts;S.stars[k]=st;}
+  save();hud();if(st>=2)confetti();sWin();
+  const o=document.createElement("div");o.className="win-pop";
+  o.innerHTML=`<div class="win-box"><div class="eyebrow">УРОВЕНЬ ПРОЙДЕН</div><h3>${esc(L.t)}</h3>
+    <div class="win-stars">${[1,2,3].map(i=>`<span class="${i<=st?"":"off"}">⭐</span>`).join("")}</div>
+    <p>Баллы: <b>${pts} / ${L.max}</b> · монеты: <b>+${gain} 🪙</b>${better?"":" (твой прошлый результат был лучше — он сохранён)"}</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+      <button class="btn" type="button" id="wMap">🗺 На карту</button>${st<3&&!L.boss&&!L.bonus?`<button class="btn ghost" type="button" id="wAgain">↻ Ещё раз</button>`:""}</div></div>`;
+  document.body.appendChild(o);
+  $("wMap").onclick=()=>{o.remove();showMap();};
+  $("wAgain")?.addEventListener("click",()=>{o.remove();openLevel(k);});
+}
+
+/* ===================== БОРТОВОЙ ЖУРНАЛ: тема, цели, задачи, конспект ===================== */
+const PV=()=>S.rec==="preview";      // просмотр учителя: без ожидания
+const NOTE_SEC=240;     // конспект: кнопка «Я записал(а)» — через 4 минуты // кнопка «Я записал(а)» включается через 3 минуты — успеть переписать
+const NOTE=`<div class="notebook">
+  <h3>26.11 · Функции операционной системы</h3>
+  <p>1. <b>Операционная система (ОС)</b> — главная программа, которая управляет компьютером и всеми остальными программами.</p>
+  <p>2. <b>Примеры:</b> Windows, Linux, macOS (компьютеры); Android, iOS (телефоны).</p>
+  <p>3. <b>Функции ОС:</b> <span class="key">управляет программами и памятью · файлами и папками · устройствами · даёт интерфейс · обеспечивает безопасность</span></p>
+  <p>4. <b>ОС ≠ прикладная программа</b>: Word, Chrome, Paint работают <b>внутри</b> ОС.</p>
+  <p>5. Зависла программа → <b>Диспетчер задач</b> (Ctrl + Shift + Esc) → «Снять задачу».</p>
+</div>`;
+const SLIDES=[
+  {ic:"🧠",t:"Что такое операционная система",b:`<p><b>Операционная система (ОС)</b> — главная программа компьютера. Она запускается <b>первой</b> и управляет всем остальным: устройствами, программами и файлами.</p>
+    <div class="anal"><div><b>🏫 Школа</b><span>директор</span><span>учителя</span><span>кабинеты</span></div><div style="font-size:28px">=</div><div><b>💻 Компьютер</b><span>ОС</span><span>программы</span><span>устройства</span></div></div>
+    <p>Без ОС компьютер — просто «железо»: ему нечем запускать программы.</p>`},
+  {ic:"💿",t:"Примеры операционных систем",b:`<div class="oses"><div>🪟<b>Windows</b><small>компьютеры</small></div><div>🐧<b>Linux</b><small>компьютеры, серверы</small></div><div>🍏<b>macOS</b><small>компьютеры Apple</small></div><div>🤖<b>Android</b><small>телефоны</small></div><div>📱<b>iOS</b><small>iPhone</small></div></div>
+    <p><b>Word, Chrome, Paint, Telegram</b> — это не ОС, а <b>прикладные программы</b>. Они работают <b>внутри</b> операционной системы.</p>`},
+  {ic:"⚙",t:"Пять функций ОС",b:`<div class="fns">
+    <div>⚙<b>Программы и память</b><small>запускает и закрывает программы, делит между ними процессор и память</small></div>
+    <div>📁<b>Файлы и папки</b><small>создаёт, сохраняет, копирует, удаляет</small></div>
+    <div>🖨<b>Устройства</b><small>через <b>драйвер</b> «знакомится» с флешкой, принтером, наушниками</small></div>
+    <div>🪟<b>Интерфейс</b><small>окна, значки, меню, рабочий стол — чтобы человеку было удобно</small></div>
+    <div>🔐<b>Безопасность</b><small>пароли, учётные записи, антивирус, обновления</small></div></div>`},
+  {ic:"🔌",t:"Как загружается компьютер",b:`<div class="boot">${["🔌 Кнопка питания","🔍 Проверка устройств","💿 Загрузка ОС","🔐 Вход (пароль)","🖥 Рабочий стол"].map(x=>`<span>${x}</span>`).join("<i>→</i>")}</div>
+    <p>ОС загружается <b>раньше всех программ</b> — и только потом мы можем запускать браузер, игры и Word.</p>`},
+  {ic:"🛠",t:"Диспетчер задач",b:`<p>Клавиши <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">Esc</span> открывают <b>Диспетчер задач</b>. Он показывает, сколько <b>процессора (ЦП)</b> и <b>памяти</b> занимает каждая программа.</p>
+    <p>Если программа <b>«не отвечает»</b> — выдели её и нажми «Снять задачу». <b>Системные</b> процессы (Проводник, антивирус) закрывать не надо!</p>`},
+];
+const SLIDE_SEC=25;        // каждый слайд — хотя бы 20 секунд, чтобы прочитать
+function showBrief(){
+  hud();
+  if(!S.slide)S.slide=0;
+  const theory=!S.theoryDone&&!PV();
+  if(theory||S.view==="theory")return showTheory();
+  const left=()=>Math.max(0,NOTE_SEC-Math.floor((Date.now()-(S.noteAt||Date.now()))/1000));
+  if(!S.noteAt){S.noteAt=Date.now();save();}
+  $("view").innerHTML=`<section class="stage">
+    <div class="lv-head"><span class="lv-badge">БОРТОВОЙ ЖУРНАЛ</span><h2>📒 Тема и цели урока</h2>${S.brief||PV()?`<button class="back" type="button" id="back">🗺 Карта</button>`:""}</div>
+    <div class="topic">Функции операционной системы</div>
+    <div class="brief-grid">
+      <div class="box"><h3>🎯 Цель урока</h3>Понять, что такое <b>операционная система</b>, какие у неё <b>функции</b>, и научиться пользоваться ими: управлять программами, окнами и Диспетчером задач.</div>
+      <div class="box"><h3>✅ Задачи: сегодня я…</h3><ol>
+        <li>узнаю, что такое ОС и как загружается компьютер;</li>
+        <li>отличу ОС от прикладных программ;</li>
+        <li>назову 5 функций ОС и приведу примеры;</li>
+        <li>закрою зависшую программу через Диспетчер задач;</li>
+        <li>объясню другу своими словами, зачем нужна ОС.</li></ol></div>
+      <div class="box"><h3>🗺 План урока</h3><div class="plan"><div>📖 Теория, конспект и проверка<span>10 мин</span></div>
+        ${LEVELS.map((l,i)=>`<div>${l.ic} ${i+1}. ${esc(l.t)}<span>${l.tm}</span></div>`).join("")}<div>⭐ Бонусы для быстрых<span>до 40-й мин</span></div><div>🏁 Финиш: отметка (с 40-й мин)<span>3 мин</span></div></div></div>
+    </div>
+    <div class="copy-bar" style="margin-top:14px"><button class="btn ghost" style="color:var(--ink);border-color:#DCD5FF" type="button" id="reTheory">📖 Ещё раз теория</button></div>
+    <h3 style="font-family:var(--display);margin:16px 0 8px">✍ Запиши в тетрадь — это конспект урока</h3>
+    ${NOTE}
+    <div class="copy-bar">${S.brief?`<button class="btn" type="button" id="toMap">🗺 На карту уровней</button>`:
+      `<button class="btn" type="button" id="wrote" disabled>✓ Я записал(а) конспект</button><span class="ring" id="noteT"></span>`}</div>
+  </section>`;
+  $("back")&&($("back").onclick=showMap);
+  $("toMap")&&($("toMap").onclick=showMap);
+  $("reTheory").onclick=()=>{S.view="theory";S.slide=0;showTheory();};
+  const b=$("wrote");
+  if(b){
+    const tick=()=>{if(!$("wrote")){clearInterval(t);return;}const l=left();$("noteT").textContent=l>0?`Пиши аккуратно — кнопка откроется через ${Math.floor(l/60)}:${String(l%60).padStart(2,"0")}`:"Готово? Нажимай!";b.disabled=l>0&&!PV();if(l<=0)clearInterval(t);};
+    const t=setInterval(tick,1000);tick();
+    b.onclick=()=>noteCheck();
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+// проверка конспекта: 3 вопроса, без баллов, нужно ответить верно (можно заглянуть в тетрадь)
+const NCHK=[
+  {q:"Что такое операционная система?",o:["Главная программа, которая управляет компьютером и другими программами","Любая программа для работы с текстом","Устройство внутри компьютера","Папка с системными файлами"]},
+  {q:"Какие клавиши открывают Диспетчер задач?",o:["Ctrl + Shift + Esc","Ctrl + Alt + Z","Alt + F4","Win + D"]},
+  {q:"Сколько функций ОС записано в конспекте и какая из них про пароли?",o:["Пять; безопасность","Три; интерфейс","Пять; управление файлами","Две; устройства"]},
+];
+function noteCheck(r=0){
+  if(r>=NCHK.length){S.brief=1;S.coins+=20;save();hud();sWin();toast("📒 +20 🪙 за конспект");return showMap();}
+  const X=NCHK[r],order=shuffle([0,1,2,3]);
+  $("view").innerHTML=`<section class="stage"><div class="lv-head"><span class="lv-badge">ПРОВЕРКА КОНСПЕКТА · ${r+1} / 3</span><h2>📒 Загляни в тетрадь</h2></div>
+    <div class="lv-help">Ответь на 3 вопроса по своему конспекту. Баллов здесь нет, но без верных ответов дальше не пройти.</div>
+    <h3 style="font-family:var(--display);font-size:19px;margin:14px 0 0">${esc(X.q)}</h3>
+    <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.o[j])}</button>`).join("")}</div>
+    <div class="feedback" id="fb"></div></section>`;
+  document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const good=Number(b.dataset.j)===0;
+    if(good){b.classList.add("right");sGood();setTimeout(()=>noteCheck(r+1),700);}
+    else{b.classList.add("wrong");b.disabled=true;sBad();$("fb").className="feedback bad";$("fb").textContent="Неверно. Посмотри в конспект (кнопка 📒 вверху) и попробуй ещё раз.";}});
+}
+// теория: 5 слайдов, «Дальше» открывается через 20 секунд
+function showTheory(){
+  hud();const n=S.slide||0,X=SLIDES[n],t0=Date.now(),seen=(S.seenSl||0)>n;
+  $("view").innerHTML=`<section class="stage">
+    <div class="lv-head"><span class="lv-badge">ТЕОРИЯ · ${n+1} / ${SLIDES.length}</span><h2>${X.ic} ${esc(X.t)}</h2>${S.brief||PV()?`<button class="back" type="button" id="back">🗺 Карта</button>`:""}</div>
+    <div class="dots">${SLIDES.map((_,j)=>`<i class="${j<=n?"on":""}"></i>`).join("")}</div>
+    <div class="slide">${X.b}</div>
+    <div class="copy-bar">${n>0?`<button class="btn ghost" style="color:var(--ink);border-color:#DCD5FF" type="button" id="prev">← Назад</button>`:""}
+      <button class="btn" type="button" id="next">${n<SLIDES.length-1?"Дальше →":"✍ К конспекту"}</button><span class="ring" id="slT"></span></div></section>`;
+  $("back")&&($("back").onclick=()=>{S.view="";showMap();});
+  $("prev")&&($("prev").onclick=()=>{S.slide=n-1;save();showTheory();});
+  const nb=$("next");
+  const tick=()=>{if(!$("next")||$("next")!==nb){clearInterval(t);return;}const l=Math.max(0,SLIDE_SEC-Math.floor((Date.now()-t0)/1000));
+    const free=seen||PV();nb.disabled=l>0&&!free;$("slT").textContent=l>0&&!free?`Читай внимательно — ещё ${l} с`:"";if(l<=0||free)clearInterval(t);};
+  const t=setInterval(tick,500);tick();
+  nb.onclick=()=>{S.seenSl=Math.max(S.seenSl||0,n+1);if(n<SLIDES.length-1){S.slide=n+1;save();showTheory();}else{S.theoryDone=1;S.view="";save();showBrief();}};
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function showNote(){
+  const o=document.createElement("div");o.className="win-pop";
+  o.innerHTML=`<div class="stage" style="max-width:760px;width:100%;max-height:90vh;overflow:auto;margin:0">${NOTE}<div style="text-align:center;margin-top:14px"><button class="btn" type="button">Закрыть</button></div></div>`;
+  o.querySelector("button").onclick=()=>o.remove();o.onclick=(e)=>{if(e.target===o)o.remove();};
+  document.body.appendChild(o);
+}
+$("hudNote").onclick=showNote;
+
+/* ===================== КАРТА ===================== */
+function unlocked(i){return i===0?!!S.brief:S.score[LEVELS[i-1].k]!=null;}
+const bonusOpen=()=>S.score.q7!=null;
+const finLeft=()=>Math.max(0,FIN_MIN-Math.floor((Date.now()-S.start)/60000));
+const finOpen=()=>LEVELS.every(l=>S.score[l.k]!=null)&&(finLeft()<=0||PV());
+function node(L,i,lock,label){const done=S.score[L.k]!=null;
+  return `<button type="button" class="node ${lock?"lock":""} ${done?"done":""} ${L.boss?"boss":""} ${L.bonus?"bonusn":""}" data-l="${L.k}" ${lock?"disabled":""}>
+    <span class="ic" style="background:${L.bg||"#fff6"}">${lock?"🔒":L.ic}</span>
+    <span class="n">${label}${L.tm?` <span class="tm">· ${L.tm}</span>`:""}</span><span class="t">${esc(L.t)}</span><span class="d">${esc(L.d)}</span>
+    <span class="st">${done?[1,2,3].map(s=>s<=S.stars[L.k]?"⭐":"☆").join(""):lock?"":"▶ играть"}</span></button>`;}
+function showMap(){
+  hud();
+  const mainDone=LEVELS.every(l=>S.score[l.k]!=null),fo=finOpen();
+  $("view").innerHTML=`<section class="map">
+    <h1>🗺 Карта уровней</h1><p>Проходи уровни по порядку. Можно переиграть уровень, чтобы получить больше звёзд — засчитывается лучший результат.</p>
+    <div class="road">
+      <button type="button" class="node brief ${S.brief?"done":""}" id="toBrief"><span class="ic" style="background:#fff8">📖</span>
+        <span class="n">СТАРТ</span><span class="t">Теория и конспект</span><span class="d">Тема, цели, 5 слайдов и конспект</span><span class="st">${S.brief?"✓ записано":"▶ открыть"}</span></button>
+      ${LEVELS.map((L,i)=>node(L,i,!unlocked(i),"УРОВЕНЬ "+(i+1))).join("")}
+    </div>
+    <h1 style="font-size:22px;margin-top:22px">⭐ Бонусы</h1><p>${bonusOpen()?`Дополнительные баллы: к итогу добавится не больше +${BONUS_CAP}. Финиш откроется на 40-й минуте — успей собрать ⭐⭐⭐ везде!`:"Откроются после босса."}</p>
+    <div class="road">${BONUS.map((L,i)=>node(L,i,!bonusOpen()&&!PV(),"БОНУС "+(i+1))).join("")}
+      <button type="button" class="node fin" id="toFin" ${fo?"":"disabled"}><span class="ic" style="background:#fff3">🏁</span><span class="n">ФИНИШ</span>
+        <span class="t">Отметка и дескрипторы</span><span class="d">${fo?"Узнай отметку и отправь учителю":!mainDone?"Пройди все 7 уровней":`Откроется через ${finLeft()} мин. Пока — бонусы ⭐ и переигровка уровней на ⭐⭐⭐`}</span></button>
+    </div></section>`;
+  document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>openLevel(b.dataset.l));
+  $("toBrief").onclick=showBrief;$("toFin").onclick=showFin;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function lvHead(i,L,help){return `<div class="lv-head"><span class="lv-badge">${L.bonus?"⭐ БОНУС":"УРОВЕНЬ "+(i+1)}</span><h2>${L.ic} ${esc(L.t)}</h2><button class="back" type="button" id="back">🗺 Карта</button></div>
+  <div class="lv-help">${help}</div>`;}
+function openLevel(k){const i=ALLL.findIndex(l=>l.k===k);({q1:lv1,q2:lv2,q3:lv3,q4:lv4,q5:lv5,q6:lv6,q7:lv7,b1,b2,b3})[k](i,ALLL[i]);const b=$("back");if(b)b.onclick=showMap;
+  if(S.rec)TL().then(t=>t.progress(S.rec,{stage:ALLL[i].bonus?"Бонус: "+ALLL[i].t:"Уровень "+(i+1)})).catch(()=>{});window.scrollTo({top:0,behavior:"smooth"});}
+function answerRound(ok,expl,next,delayOk=1300,delayBad=2600){
+  const fb=$("fb");fb.className="feedback "+(ok?"ok":"bad");fb.innerHTML=(ok?"Верно! ":"Не совсем. ")+expl;(ok?sGood:sBad)();setTimeout(next,ok?delayOk:delayBad);
+}
+
+/* ===================== ОБЩИЙ КВИЗ (для уровней и бонусов) ===================== */
+// Q: [{q, opts:[...], a:index, ex}]; per — баллов за верный ответ
+function quizLevel(i,L,help,Q,per,key){
+  let r=0,ok=0;
+  function round(){
+    const X=Q[r],order=shuffle(X.opts.map((_,j)=>j));
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,help)}
+      <div class="prog">Вопрос ${r+1} из ${Q.length} · верно: ${ok}</div>
+      ${X.vis?`<div style="margin-top:10px">${X.vis}</div>`:""}
+      <h3 style="font-family:var(--display);font-size:19px;margin:14px 0 0">${X.q}</h3>
+      <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.opts[j])}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+      const good=Number(b.dataset.j)===X.a;
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(Number(x.dataset.j)===X.a)x.classList.add("right");});
+      if(good)ok++;else b.classList.add("wrong");
+      answerRound(good,X.ex,()=>{r++;if(r<Q.length)round();else finishLevel(key,ok*per);},1500,3600);
+    });
+  }
+  round();
+}
+
+/* ===================== УРОВЕНЬ 1: Загрузка компьютера ===================== */
+const BOOT=["Нажимаем кнопку питания","Компьютер проверяет устройства","Загружается операционная система","Вход в систему (пароль)","Появляется рабочий стол"];
+const BOOT_IC=["🔌","🔍","💿","🔐","🖥"];
+function lv1(i,L){
+  const pool=shuffle(BOOT.map((_,j)=>j)),slots=[];let pts=0;
+  function seq(){
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Что происходит, когда включаешь компьютер? Нажимай на карточки <b>по порядку</b> — от кнопки питания до рабочего стола. Нажми на карточку в цепочке, чтобы убрать её.")}
+      <div class="prog">Часть 1 из 2 · собери порядок загрузки</div>
+      <div class="chain">${BOOT.map((_,j)=>`<button type="button" class="slot ${slots[j]!=null?"on":""}" data-s="${j}">${slots[j]!=null?`${BOOT_IC[slots[j]]} ${esc(BOOT[slots[j]])}`:`<i>${j+1}</i>`}</button>`).join('<span class="arr">→</span>')}</div>
+      <div class="cards">${pool.filter(x=>!slots.includes(x)).map(x=>`<button type="button" class="card" data-c="${x}">${BOOT_IC[x]} ${esc(BOOT[x])}</button>`).join("")}</div>
+      <div style="margin-top:14px"><button class="btn" type="button" id="chk" ${slots.filter(x=>x!=null).length===5?"":"disabled"}>✓ Проверить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{let j=0;while(slots[j]!=null)j++;slots[j]=Number(b.dataset.c);beep(520,.05);seq();});
+    document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{const j=Number(b.dataset.s);if(slots[j]!=null){slots[j]=null;seq();}});
+    $("chk").onclick=()=>{const right=BOOT.filter((_,j)=>slots[j]===j).length,p=right===5?2:right>=3?1:0;pts=p;$("chk").disabled=true;
+      document.querySelectorAll("[data-s]").forEach((b,j)=>b.classList.add(slots[j]===j?"right":"wrong"));
+      answerRound(p===2,`Порядок: <b>${BOOT.join(" → ")}</b>. ОС загружается <b>раньше всех программ</b>. На местах: ${right} из 5 → +${p} б.`,()=>quiz(0),1800,4200);};
+  }
+  const Q=[
+    {q:"Что из этого <b>НЕ</b> является задачей операционной системы?",opts:["Написать за ученика текст реферата","Распределить память между программами","Показать флешку в «Этот компьютер»","Проверить пароль при входе"],a:0,ex:"Текст реферата пишет <b>человек</b> в прикладной программе (Word). ОС управляет памятью, устройствами и безопасностью."},
+    {q:"У кого из них есть операционная система: телефон, умные часы, банкомат?",opts:["У всех трёх","Только у телефона","Только у компьютера, их тут нет","Ни у кого"],a:0,ex:"ОС есть почти у любого «умного» устройства: телефоны, часы, банкоматы, телевизоры, автомобили."},
+    {q:"Почему операционная система загружается <b>раньше</b> программ?",opts:["Программы работают внутри ОС и пользуются её функциями","Так быстрее включается экран","Чтобы проверить интернет","Это просто привычка разработчиков"],a:0,ex:"Программам нужны память, файлы, устройства — всё это им «выдаёт» ОС. Поэтому она должна запуститься первой."},
+  ];
+  let ok=0;
+  function quiz(r){
+    if(r>=Q.length)return finishLevel("q1",pts+ok);
+    const X=Q[r],order=shuffle([0,1,2,3]);
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Теперь три вопроса о том, что ты увидел(а).")}
+      <div class="prog">Часть 2 · вопрос ${r+1} из 3 · баллы: ${pts+ok}</div>
+      <h3 style="font-family:var(--display);font-size:19px;margin:14px 0 0">${X.q}</h3>
+      <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.opts[j])}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const good=Number(b.dataset.j)===X.a;
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(Number(x.dataset.j)===X.a)x.classList.add("right");});
+      if(good)ok++;else b.classList.add("wrong");answerRound(good,X.ex,()=>quiz(r+1));});
+  }
+  seq();
+}
+
+/* ===================== УРОВЕНЬ 2: ОС или программа? ===================== */
+const OSAPP=[["Windows","os"],["Linux","os"],["macOS","os"],["Android","os"],["iOS","os"],["Ubuntu","os"],["ChromeOS","os"],["HarmonyOS","os"],["Photoshop","app"],["Microsoft Teams","app"],
+  ["Word","app"],["Google Chrome","app"],["Paint","app"],["Telegram","app"],["Scratch","app"],["Minecraft","app"]];
+function lv2(i,L){
+  const cards=shuffle(OSAPP),put={};let sel=null,checked=false;
+  const BX=[["os","💿","Операционные системы","управляют компьютером"],["app","🧩","Прикладные программы","решают задачи пользователя"]];
+  function draw(){
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Нажми на карточку, потом — на корзину. Разложи все 16 названий (осторожно, есть малоизвестные ОС): где <b>операционная система</b>, а где <b>прикладная программа</b>, которая работает внутри ОС.")}
+      <div class="prog">Разложено: ${Object.keys(put).length} из ${cards.length}</div>
+      <div class="cards">${cards.filter(([t])=>!put[t]).map(([t])=>`<button type="button" class="card ${sel===t?"sel":""}" data-c="${esc(t)}">${esc(t)}</button>`).join("")||'<span>Все карточки разложены 👍</span>'}</div>
+      <div class="bins">${BX.map(([k,ic,n,d])=>`<div class="bin" data-b="${k}"><div class="bin-h"><b>${ic}</b><span>${n}</span><small>${d}</small></div>
+        ${cards.filter(([t])=>put[t]===k).map(([t,a])=>`<button type="button" class="card in ${checked?(a===k?"right":"wrong"):""}" data-back="${esc(t)}">${esc(t)}</button>`).join("")}</div>`).join("")}</div>
+      <div style="margin-top:14px"><button class="btn" type="button" id="chk" ${Object.keys(put).length===cards.length&&!checked?"":"disabled"}>✓ Проверить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{sel=b.dataset.c;beep(600,.04);draw();});
+    document.querySelectorAll("[data-b]").forEach(b=>b.onclick=()=>{if(!sel||checked)return;put[sel]=b.dataset.b;sel=null;beep(440,.05);draw();});
+    document.querySelectorAll("[data-back]").forEach(b=>b.onclick=(e)=>{if(checked||sel)return;e.stopPropagation();delete put[b.dataset.back];draw();});
+    $("chk").onclick=()=>{checked=true;const ok=cards.filter(([t,a])=>put[t]===a).length;draw();$("chk").disabled=true;
+      answerRound(ok>=15,`Верно ${ok} из ${cards.length}. <b>ОС:</b> Windows, Linux, Ubuntu (это тоже Linux), macOS, ChromeOS (ноутбуки Chromebook), HarmonyOS (телефоны Huawei), Android, iOS. Остальное — прикладные программы.`,()=>finishLevel("q2",ok*6/cards.length),2600,6500);};
+  }
+  draw();
+}
+
+/* ===================== УРОВЕНЬ 3: Диспетчер задач ===================== */
+const TM=[
+  {task:"Компьютер сильно тормозит. Две программы пишут «не отвечает». В Word у тебя открыт <b>несохранённый реферат</b>. Что снять?",
+   rows:[["Word · Реферат.docx*","не отвечает",4,260,"app"],["Fortnite","не отвечает",86,3100,"app"],["Проводник","система",1,70,"sys"],["Spotify","работает",2,210,"app"]],a:1,
+   ex:"Word «задумался» ненадолго (всего 4 % ЦП) — подожди и сохрани реферат. Тормозит всё <b>игра</b>: 86 % процессора."},
+  {task:"Не хватает оперативной памяти. Закрой <b>одну прикладную</b> программу, которая освободит больше всего памяти.",
+   rows:[["Проводник","система",1,90,"sys"],["Google Chrome · 30 вкладок","работает",9,2600,"app"],["Paint","работает",0,95,"app"],["Служба Windows Update","система",4,300,"sys"],["Word","работает",1,210,"app"]],a:1,
+   ex:"Браузер с 30 вкладками занимает 2600 МБ. ОС <b>делит память</b> между программами — закрыв лишнее, ты освобождаешь её."},
+  {task:"Компьютер стал медленным: процессор загружен почти на 100 %. Подумай, нужно ли вообще что-то снимать.",
+   rows:[["Обновление Windows","система",88,400,"sys"],["Word","работает",2,200,"app"],["Проводник","система",1,80,"sys"],["Калькулятор","работает",0,30,"app"]],a:-1,
+   ex:"Нагрузку даёт <b>системное обновление</b>. Его нельзя прерывать — это функция безопасности ОС. Правильно — <b>ничего не снимать и подождать</b>."},
+  {task:"Ты не устанавливал(а) никаких новых программ, но в списке появилось что-то странное и грузит процессор.",
+   rows:[["Google Chrome","работает",6,700,"app"],["free_robux_gen.exe","работает",63,150,"app"],["Антивирус","система",3,160,"sys"],["Проводник","система",1,80,"sys"]],a:1,
+   ex:"Неизвестная программа <b>free_robux_gen.exe</b> — похоже на вирус. Сними задачу, проверь компьютер антивирусом и скажи взрослым."},
+  {task:"Хочешь, чтобы игра работала быстрее. Какую <b>одну</b> программу полезнее всего закрыть?",
+   rows:[["Minecraft","работает",38,1800,"app"],["Музыкальный плеер","работает",2,90,"app"],["Google Chrome · видео 4K","работает",41,1500,"app"],["Антивирус","система",2,150,"sys"]],a:2,
+   ex:"Больше всего процессора (41 %) тратит браузер с видео 4K. Плеер почти ничего не занимает — его закрывать бесполезно."},
+  {task:"Калькулятор «не отвечает». Рядом работают системные процессы. Что снять?",
+   rows:[["Проводник","система",4,95,"sys"],["Калькулятор","не отвечает",40,60,"app"],["Google Chrome","работает",6,700,"app"],["Антивирус","система",2,150,"sys"]],a:1,
+   ex:"Системные процессы закрывать не надо — пропадёт рабочий стол или защита. Закрываем <b>только зависшую программу</b>."},
+];
+function lv3(i,L){
+  const T=shuffle(TM).slice(0,4);let r=0,pts=0;
+  function round(){
+    const X=T[r];let sel=-1,tries=0,cpu=X.rows.reduce((a,x)=>a+x[2],0);
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Диспетчер задач (<b>Ctrl + Shift + Esc</b>) показывает все запущенные программы: сколько процессора (ЦП) и памяти они занимают. Выдели строку и нажми «Снять задачу» — или «Ничего не снимать», если закрывать ничего не нужно. 4 ситуации: с первой попытки — 1,5 балла, со второй — 0,5.")}
+      <div class="prog">Ситуация ${r+1} из 4 · баллы: ${pts}</div>
+      <div class="lv-help" style="background:#FFF3D6;color:#5A4300;margin-top:10px">${X.task}</div>
+      <div class="tmwin"><div class="tm-top"><span>⚙ Диспетчер задач</span><span id="cpu" class="${cpu>80?"hot":""}">ЦП ${Math.min(99,cpu)} %</span></div>
+        <table class="tm"><thead><tr><th>Имя</th><th>Состояние</th><th>ЦП</th><th>Память</th></tr></thead><tbody>
+        ${X.rows.map((x,j)=>`<tr data-r="${j}"><td>${x[4]==="sys"?"🛡":"🪟"} ${esc(x[0])}</td><td>${esc(x[1])}</td><td>${x[2]} %</td><td>${num(x[3])} МБ</td></tr>`).join("")}</tbody></table>
+        <div class="tm-bot"><button class="btn ghost" style="color:var(--ink);border-color:#DCD5FF" type="button" id="none">✋ Ничего не снимать</button><button class="btn" type="button" id="kill">⛔ Снять задачу</button></div></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll("[data-r]").forEach(tr=>tr.onclick=()=>{sel=Number(tr.dataset.r);document.querySelectorAll("[data-r]").forEach(x=>x.classList.toggle("sel",x===tr));beep(600,.03);});
+    const decide=(pick)=>{
+      if(pick===-2){$("fb").className="feedback bad";$("fb").textContent="Сначала выдели строку в таблице.";return;}
+      tries++;const good=pick===X.a;
+      if(good||tries>=2){const p=good?(tries===1?1.5:0.5):0;pts+=p;$("kill").disabled=$("none").disabled=true;
+        if(X.a>=0){document.querySelector(`[data-r="${X.a}"]`).classList.add("killed");$("cpu").textContent="ЦП "+Math.max(3,cpu-X.rows[X.a][2])+" %";$("cpu").classList.remove("hot");}
+        answerRound(good,X.ex+` +${p} б.`,()=>{r++;if(r<4)round();else finishLevel("q3",pts);},1800,4500);}
+      else{sBad();$("fb").className="feedback bad";$("fb").textContent=pick===-1?"Здесь всё-таки надо что-то закрыть. Посмотри на ЦП и память. Осталась 1 попытка.":X.rows[pick][4]==="sys"?"Это системный процесс — его закрывать нельзя! Осталась 1 попытка.":"Подумай ещё: посмотри на нагрузку и на условие. Осталась 1 попытка.";}
+    };
+    $("kill").onclick=()=>decide(sel<0?-2:sel);
+    $("none").onclick=()=>decide(-1);
+  }
+  round();
+}
+
+/* ===================== УРОВЕНЬ 4: Кто за что отвечает? ===================== */
+const FN={prog:["⚙","Программы и память"],files:["📁","Файлы и папки"],dev:["🖨","Устройства"],ui:["🪟","Интерфейс"],sec:["🔐","Безопасность"]};
+const SIT=[["Подключил флешку — она появилась в «Этот компьютер»","dev"],["Открыл одновременно музыку, браузер и игру","prog"],["Переименовал папку «Новая папка» в «Проекты»","files"],
+  ["Ввёл пароль при входе в Windows","sec"],["Нажал на значок на рабочем столе — открылось окно","ui"],["Принтер начал печатать документ","dev"],["Удалил старый файл в Корзину","files"],
+  ["Зависшую игру закрыли через Диспетчер задач","prog"],["Встроенный антивирус заблокировал опасный файл","sec"],["Перетащил окно и изменил его размер мышкой","ui"],
+  ["Подключил наушники — звук пошёл в них","dev"],["Скопировал фото из папки «Загрузки» в «Документы»","files"],
+  ["Windows сама установила обновление, которое закрывает «дыру» для вирусов","sec"],["Слушаешь музыку и одновременно печатаешь реферат — обе программы работают","prog"],
+  ["Подключил новую мышь — внизу надпись «Установка драйвера устройства…»","dev"],["Создал отдельную учётную запись с паролем для младшего брата","sec"],
+  ["Увеличил размер значков и текста на экране в «Параметрах»","ui"],["Свернул окно Word — оно спряталось на панель задач","ui"],
+  ["Игре не хватает памяти — ОС переносит часть данных фоновых программ на диск","prog"],["Поиск в Проводнике нашёл файл «Реферат» среди 3000 файлов","files"]];
+function lv4(i,L){
+  const S8=shuffle(SIT).slice(0,10);let r=0,ok=0;
+  function round(){
+    const [t,a]=S8[r];
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Прочитай ситуацию и выбери, <b>какая функция ОС</b> сработала. 10 ситуаций — по 0,8 балла. Будь внимателен: некоторые ситуации похожи!")}
+      <div class="prog">Ситуация ${r+1} из 10 · верно: ${ok}</div>
+      <div class="blitz" style="margin-top:10px">${esc(t)}</div>
+      <div class="choices">${Object.entries(FN).map(([k,[ic,n]])=>`<button class="choice" type="button" data-f="${k}">${ic} ${esc(n)}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const good=b.dataset.f===a;
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(x.dataset.f===a)x.classList.add("right");});
+      if(good)ok++;else b.classList.add("wrong");
+      answerRound(good,`Здесь работает функция «<b>${FN[a][1]}</b>».`,()=>{r++;if(r<10)round();else finishLevel("q4",ok*0.8);},1200,2800);});
+  }
+  round();
+}
+
+/* ===================== УРОВЕНЬ 5: Блиц 60 секунд ===================== */
+const BLITZ=[["Операционная система загружается раньше всех программ.",1],["Word — это операционная система.",0],["Android — операционная система для телефонов.",1],
+  ["ОС управляет файлами: создаёт, копирует, удаляет.",1],["Диспетчер задач открывается клавишами Ctrl + Shift + Esc.",1],["Без ОС можно спокойно запускать игры.",0],
+  ["Драйвер помогает ОС работать с устройством.",1],["Linux — это браузер.",0],["Окна, значки и меню — это интерфейс ОС.",1],["Системные процессы лучше закрывать, чтобы компьютер работал быстрее.",0],
+  ["ОС делит память между запущенными программами.",1],["iOS работает на телефонах Samsung.",0],["Пароль при входе — это функция безопасности ОС.",1],["Прикладные программы работают внутри операционной системы.",1],
+  ["Драйвер — это вид операционной системы.",0],["Linux можно установить бесплатно.",1],["Маленькая программа может работать совсем без ОС на обычном компьютере.",0],
+  ["Многозадачность — это когда ОС позволяет работать нескольким программам одновременно.",1],["Расширение .exe обычно у документов Word.",0],["У банкомата тоже есть операционная система.",1],
+  ["Рабочий стол и панель задач — это части интерфейса ОС.",1],["Если закрыть Проводник, пропадёт только одна папка.",0]];
+function lv5(i,L){
+  const qs=shuffle(BLITZ).slice(0,12);let r=0,ok=0,t0=0,timer=0,over=false;
+  $("view").innerHTML=`<section class="stage">${lvHead(i,L,"12 утверждений за <b>45 секунд</b>. Жми «Верно» / «Неверно» или клавиши <b>←</b> и <b>→</b>. Каждый верный ответ — 0,5 балла.")}
+    <div class="prog" id="bp">Готов?</div><div class="blitz" id="bq"><button class="btn cyan" type="button" id="bgo">▶ СТАРТ</button></div>
+    <div class="tf"><button class="choice" type="button" id="bt" disabled>✓ Верно</button><button class="choice" type="button" id="bf" disabled>✗ Неверно</button></div>
+    <div class="feedback" id="fb"></div></section>`;
+  const kd=(e)=>{if(e.key==="ArrowLeft"){e.preventDefault();ans(1);}if(e.key==="ArrowRight"){e.preventDefault();ans(0);}};
+  const stop=()=>{over=true;clearInterval(timer);removeEventListener("keydown",kd);};
+  $("back").onclick=()=>{stop();showMap();};
+  const show=()=>{if(!$("bq")){stop();return;}$("bq").textContent=qs[r][0];const left=Math.max(0,45-Math.floor((Date.now()-t0)/1000));$("bp").textContent=`Вопрос ${r+1} из 12 · верно: ${ok} · ⏱ ${left} с`;};
+  const end=()=>{if(over)return;stop();$("bt").disabled=$("bf").disabled=true;$("bq").textContent=`Готово! Верно: ${ok} из 12`;setTimeout(()=>finishLevel("q5",ok*0.5),900);};
+  const ans=(v)=>{if(over||!t0)return;const good=v===qs[r][1];if(good){ok++;sGood();}else sBad();
+    $("fb").className="feedback "+(good?"ok":"bad");$("fb").textContent=good?"✓ Верно!":`✗ Это ${qs[r][1]?"верно":"неверно"}.`;r++;if(r>=qs.length)end();else show();};
+  $("bgo").onclick=()=>{t0=Date.now();$("bt").disabled=$("bf").disabled=false;addEventListener("keydown",kd);show();timer=setInterval(()=>{if(Date.now()-t0>=45000)end();else show();},500);};
+  $("bt").onclick=()=>ans(1);$("bf").onclick=()=>ans(0);
+}
+
+/* ===================== УРОВЕНЬ 6: Найди ошибки Пети ===================== */
+const PETYA=[["ОС — это главная программа компьютера, она загружается первой.",1,""],["Word и Google Chrome — это операционные системы.",0,"Word и Chrome — <b>прикладные программы</b>."],
+  ["Через драйвер ОС работает с принтером и флешкой.",1,""],["Диспетчер задач открывается клавишами Ctrl + Alt + Z.",0,"Правильно: <b>Ctrl + Shift + Esc</b>."],
+  ["Если компьютер тормозит, надо сразу закрыть Проводник и антивирус.",0,"Системные процессы закрывать <b>нельзя</b> — закрывают зависшую или «тяжёлую» прикладную программу."],
+  ["Окна, значки и меню — это интерфейс ОС.",1,""],["iOS работает на всех телефонах, а Android — только на iPhone.",0,"Наоборот: <b>iOS — только iPhone</b>, Android — телефоны многих фирм."],
+  ["ОС делит процессор и память между запущенными программами.",1,""]];
+function lv6(i,L){
+  const rows=shuffle(PETYA),mark=new Set();let checked=false;
+  function draw(){
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"Петя переписал конспект с ошибками. Нажми на <b>все неверные</b> предложения (их 4), потом «Проверить». Баллы — за каждое предложение, которое ты оценил(а) правильно.")}
+      <div class="notebook" style="padding-left:52px">${rows.map(([t,ok,fix],j)=>`<p class="pline ${mark.has(j)?"mk":""} ${checked?(mark.has(j)===!ok?"good":"bad"):""}" data-p="${j}">${j+1}. ${esc(t)}${checked&&!ok?`<br><small>✏ ${fix}</small>`:""}</p>`).join("")}</div>
+      <div class="prog" style="margin-top:8px">Отмечено ошибок: ${mark.size}</div>
+      <div style="margin-top:10px"><button class="btn" type="button" id="chk" ${checked?"disabled":""}>✓ Проверить</button></div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    if(!checked)document.querySelectorAll("[data-p]").forEach(p=>p.onclick=()=>{const j=Number(p.dataset.p);mark.has(j)?mark.delete(j):mark.add(j);beep(520,.04);draw();});
+    $("chk").onclick=()=>{checked=true;const right=rows.filter(([,ok],j)=>mark.has(j)===!ok).length;draw();
+      answerRound(right===8,`Верно оценено ${right} из 8 предложений. Красным — где ты ошибся(лась); под неверными фразами — исправление.`,()=>finishLevel("q6",right*5/8),2500,7000);};
+  }
+  draw();
+}
+
+/* ===================== УРОВЕНЬ 7: Босс — помоги другу ===================== */
+const MISHA=[
+  {m:"Привет! Слушай, а зачем вообще нужна операционная система? 🤔",o:["Она управляет компьютером: запускает программы, работает с файлами и устройствами","Чтобы играть в игры","Это просто красивые обои на рабочем столе"]},
+  {m:"У меня на телефоне Android. Это программа, как Telegram?",o:["Нет, Android — операционная система, а Telegram — программа внутри неё","Да, это одна и та же программа","Android — это марка телефона"]},
+  {m:"Вставил флешку — и она сама появилась в «Этот компьютер». Как так? 😮",o:["ОС управляет устройствами: через драйвер она «узнаёт» флешку","Флешка сама себя показывает","Это делает браузер"]},
+  {m:"Игра зависла и не закрывается крестиком 😩 Что делать?",o:["Открыть Диспетчер задач (Ctrl+Shift+Esc) и снять задачу","Выдернуть компьютер из розетки","Удалить Windows"]},
+  {m:"А можно запустить Word, если на компьютере нет ОС?",o:["Нет, Word работает только внутри операционной системы","Да, Word сам всё умеет","Можно, если быстро нажать"]},
+];
+function lv7(i,L){
+  let r=0,ok=0;
+  function chat(){
+    const X=MISHA[r],order=shuffle([0,1,2]);
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"👑 <b>Финальный босс!</b> Одноклассник Миша пропустил урок и засыпал тебя вопросами. Сначала ответь на 5 вопросов, потом напиши ему объяснение своими словами — его проверит ИИ.")}
+      <div class="prog">Вопрос Миши ${r+1} из 5 · верно: ${ok}</div>
+      <div class="phone"><div class="ph-top"><span class="ph-av" style="background:#2E4BFF">М</span><b>Миша · 7 класс</b><small>в сети</small></div>
+        <div class="ph-body" id="pb"><div class="msg in">${esc(X.m)}</div></div></div>
+      <div class="choices">${order.map(j=>`<button class="choice" type="button" data-j="${j}">${esc(X.o[j])}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div></section>`;
+    $("back").onclick=showMap;
+    document.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const j=Number(b.dataset.j),good=j===0;
+      document.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(Number(x.dataset.j)===0)x.classList.add("right");});
+      if(good)ok++;else b.classList.add("wrong");
+      $("pb").insertAdjacentHTML("beforeend",`<div class="msg out">${esc(X.o[j])}</div><div class="msg in">${good?"Понял, спасибо! 👍":"Хм… кажется, это не так 🤔"}</div>`);
+      answerRound(good,good?"Миша понял!":"Правильно было: «"+esc(X.o[0])+"».",()=>{r++;if(r<5)chat();else write();},1500,3500);});
+  }
+  function write(){
+    $("view").innerHTML=`<section class="stage">${lvHead(i,L,"✍ Последний шаг: напиши Мише объяснение <b>своими словами</b>.")}
+      <div class="prog">Ответы Мише: ${ok} из 5</div>
+      <label for="o1" style="display:block;font-weight:800;margin:12px 0 6px">Что такое операционная система и зачем она нужна? Назови <b>3 функции ОС</b> и к каждой приведи пример из жизни. Объясни, чем ОС отличается от прикладной программы. (5–7 предложений, это проверит ИИ — до 4 баллов)</label>
+      <textarea id="o1" maxlength="1500" placeholder="Операционная система — это … . Она нужна, чтобы … . Например, функция … : когда я … .">${esc(S.open.o1||"")}</textarea>
+      <div class="steps" id="steps"></div>
+      <div class="feedback" id="fb"></div>
+      <button class="btn pink big" type="button" id="done" style="margin-top:10px">📨 Отправить Мише</button></section>`;
+    $("back").onclick=showMap;
+    const wc=()=>(S.open.o1||"").trim().split(/\s+/).filter(Boolean).length;
+    const upd=()=>{$("steps").innerHTML=`<div class="step ${wc()>=40?"ok":""}"><span class="m">${wc()>=40?"✅":"⬜"}</span>Слов: ${wc()} (нужно от 40)</div>`;};
+    $("o1").oninput=(e)=>{S.open.o1=e.target.value;upd();};$("o1").onchange=save;upd();
+    $("done").onclick=()=>{if(wc()<40){$("fb").className="feedback bad";$("fb").textContent="Напиши подробнее — 5–7 предложений (от 40 слов).";sBad();return;}save();finishLevel("q7",ok);};
+  }
+  chat();
+}
+
+/* ===================== БОНУСЫ ===================== */
+const KEYS=[["Ctrl + C","Копировать"],["Ctrl + V","Вставить"],["Ctrl + Z","Отменить действие"],["Alt + Tab","Переключиться между окнами"],["Win + D","Показать рабочий стол"],
+  ["Ctrl + Shift + Esc","Открыть Диспетчер задач"],["Win + L","Заблокировать компьютер"],["Alt + F4","Закрыть окно"],["Win + E","Открыть Проводник"],["Ctrl + S","Сохранить файл"]];
+function b1(i,L){const P=shuffle(KEYS).slice(0,8);
+  quizLevel(i,L,"⭐ Бонус: горячие клавиши ОС экономят время. Что делает это сочетание? (+0,5 балла за ответ)",
+    P.map(([k,a])=>({vis:`<div class="blitz"><span class="kbd">${esc(k)}</span></div>`,q:"Что делает это сочетание клавиш?",opts:[a,...shuffle(KEYS.filter(x=>x[1]!==a)).slice(0,3).map(x=>x[1])],a:0,ex:`<b>${esc(k)}</b> — ${esc(a.toLowerCase())}.`})),0.5,"b1");}
+const EXT=[[".docx","Word (текстовый документ)"],[".mp3","Проигрыватель музыки"],[".jpg","Просмотр фото / Paint"],[".pdf","Программа для чтения PDF"],[".pptx","PowerPoint (презентация)"],
+  [".exe","Это сама программа для Windows (запускается)"],[".apk","Установщик приложения для Android"],[".mp4","Видеопроигрыватель"],[".xlsx","Excel (таблица)"],[".zip","Архиватор (сжатые файлы)"]];
+function b2(i,L){const P=shuffle(EXT).slice(0,6);
+  quizLevel(i,L,"⭐ Бонус: ОС узнаёт тип файла по <b>расширению</b> — буквам после точки — и выбирает, чем его открыть. (+0,5 балла за ответ)",
+    P.map(([e,a])=>({vis:`<div class="blitz">📄 Отчёт${esc(e)}</div>`,q:`Что откроет файл с расширением <b>${esc(e)}</b>?`,opts:[a,...shuffle(EXT.filter(x=>x[1]!==a)).slice(0,3).map(x=>x[1])],a:0,ex:`<b>${esc(e)}</b> — ${esc(a)}.`})),0.5,"b2");}
+const CLUE=[["Самая популярная ОС для домашних и школьных компьютеров, есть кнопка «Пуск».","Windows"],["Бесплатная ОС с открытым кодом, талисман — пингвин Тукс 🐧.","Linux"],
+  ["ОС для компьютеров Apple (MacBook, iMac).","macOS"],["Самая популярная ОС для телефонов разных фирм: Samsung, Xiaomi…","Android"],["ОС только для iPhone.","iOS"],["Популярная версия Linux с оранжевым логотипом.","Ubuntu"]];
+function b3(i,L){
+  quizLevel(i,L,"⭐ Бонус: угадай операционную систему по подсказке. (+0,5 балла за ответ)",
+    shuffle(CLUE).map(([c,a])=>({vis:`<div class="blitz">🔎 ${esc(c)}</div>`,q:"Какая это ОС?",opts:[a,...shuffle(CLUE.filter(x=>x[1]!==a)).slice(0,3).map(x=>x[1])],a:0,ex:`Это <b>${esc(a)}</b>.`})),0.5,"b3");}
+
+/* ===================== ФИНИШ: отметка по 10-балльной шкале и дескрипторы ===================== */
+const MSCALE=[[95,10],[85,9],[75,8],[65,7],[55,6],[45,5],[35,4],[25,3],[15,2],[0,1]];
+const markOf=(p)=>{for(const [m,g] of MSCALE)if(p>=m)return g;return 1;};
+const NAMES={q1:"Загрузка компьютера",q2:"ОС или программа?",q3:"Диспетчер задач",q4:"Кто за что отвечает?",q5:"Блиц 45 секунд",q6:"Ошибки Пети",q7:"Босс: ответы Мише",b1:"⭐ Горячие клавиши",b2:"⭐ Чем открыть файл?",b3:"⭐ Угадай ОС"};
+const DESC=[
+  ["Объясняю, что такое операционная система и как загружается компьютер",["q1"]],
+  ["Отличаю операционную систему от прикладных программ",["q2"]],
+  ["Управляю программами через Диспетчер задач",["q3"]],
+  ["Называю функции ОС и узнаю их в жизненных ситуациях",["q4","q5"]],
+  ["Нахожу и исправляю ошибки в утверждениях об ОС",["q6"]],
+  ["Объясняю другому, зачем нужна ОС",["q7"]],
+];
+function descState(ks){const got=ks.reduce((a,k)=>a+(S.score[k]||0),0),max=ks.reduce((a,k)=>a+ALLL.find(l=>l.k===k).max,0),p=got/max;
+  return p>=.75?["y","✅","умею"]:p>=.4?["h","🟡","почти умею"]:["n","🔴","пока не получается"];}
+const MOODS=[["🟢","Мне всё понятно, могу объяснить другу"],["🟡","Понятно, но есть вопросы"],["🔴","Нужна помощь"]];
+function showFin(){
+  const main=LEVELS.reduce((s,l)=>s+(S.score[l.k]||0),0),bonusRaw=BONUS.reduce((s,l)=>s+(S.score[l.k]||0),0),bonus=Math.min(BONUS_CAP,bonusRaw);
+  const maxAuto=MAXALL-4,auto=Math.min(maxAuto,main+bonus),pct=Math.round(auto/maxAuto*100),mark=markOf(pct);
+  $("view").innerHTML=`<section class="stage">
+    <div class="lv-head"><span class="lv-badge">ФИНИШ</span><h2>🏁 Система управляется!</h2><button class="back" type="button" id="back">🗺 Карта</button></div>
+    <div class="qual"><div class="qual-badge"><div><small>ПРЕДВАРИТЕЛЬНО</small><b>${mark}</b><small>ИЗ 10</small></div></div>
+      <div><div style="font-family:var(--display);font-size:34px;font-weight:800">${auto}<span style="font-size:18px;color:var(--muted)"> / ${maxAuto} баллов за игру</span></div>
+        <div style="color:var(--muted)">уровни ${main} + бонусы ${bonus}${bonusRaw>bonus?` (набрано ${bonusRaw}, в зачёт до +${BONUS_CAP})`:""} · ${pct}% · ⭐ ${totalStars()} / 27 · время ≈ ${minutes()} мин</div>
+        <div style="color:var(--muted);font-size:14px;margin-top:4px">+ до 4 баллов за объяснение Мише — его проверит ИИ. Окончательную отметку поставит учитель.</div></div></div>
+    <div class="scale10">${MSCALE.map(([m,g])=>`<div class="${g===mark?"on":""}"><b>${g}</b>${m?`от ${m}%`:"<15%"}</div>`).join("")}</div>
+    <h3 style="font-family:var(--display);margin:18px 0 4px">🎯 Мои дескрипторы</h3>
+    <div class="desc">${DESC.map(([t,ks])=>{const [c,ic,l]=descState(ks);return `<div class="${c}"><span class="ic">${ic}</span><span>${esc(t)}</span><span class="lvl">${l}</span></div>`;}).join("")}</div>
+    <table class="tbl"><thead><tr><th>УРОВЕНЬ</th><th>ЗВЁЗДЫ</th><th>БАЛЛЫ</th></tr></thead><tbody>
+      ${ALLL.map(l=>`<tr><td>${esc(NAMES[l.k])}</td><td>${[1,2,3].map(s=>s<=(S.stars[l.k]||0)?"⭐":"☆").join("")}</td><td>${S.score[l.k]??"—"} ${l.bonus?"(+"+l.max+")":"/ "+l.max}</td></tr>`).join("")}</tbody></table>
+    <h3 style="font-family:var(--display);margin:20px 0 4px">Как прошёл урок для тебя?</h3>
+    <div class="mood" id="mood">${MOODS.map(m=>`<button type="button" aria-pressed="${S.mood===m[1]}" data-m="${m[1]}">${m[0]} ${m[1]}</button>`).join("")}</div>
+    <button class="btn cyan big" type="button" id="send" ${S.mood&&!S.sent?"":"disabled"}>${S.sent?"✓ Отправлено учителю":"↑ Отправить учителю"}</button>
+    <div id="sendOut">${S.sent?sentHTML(true):""}</div></section>`;
+  $("back").onclick=showMap;
+  document.querySelectorAll("#mood button").forEach(b=>b.onclick=()=>{S.mood=b.dataset.m;save();document.querySelectorAll("#mood button").forEach(x=>x.setAttribute("aria-pressed",x===b));if(!S.sent)$("send").disabled=false;});
+  $("send").onclick=()=>{
+    const btn=$("send");btn.disabled=true;btn.textContent="Отправляю…";
+    const desc={};DESC.forEach(([t,ks],j)=>{desc["d"+(j+1)]=descState(ks)[2];});
+    const data={score:S.score,open:S.open,points:auto,bonus,max:MAXALL,percent:pct,grade:mark,stars:totalStars(),coins:S.coins,descriptors:desc,minutes:minutes(),mood:S.mood,stage:"Финиш",doneCount:LEVELS.length};
+    const ok=()=>{S.sent=1;save();$("sendOut").innerHTML=sentHTML(true);btn.textContent="✓ Отправлено учителю";confetti();toast("✓ Отправлено учителю");};
+    const fail=()=>{$("sendOut").innerHTML=sentHTML(false);btn.disabled=false;btn.textContent="↑ Отправить учителю";};
+    if(!S.rec){fail();return;}
+    TL().then(t=>t.submit(S.rec,data)).then(ok).catch(fail);
+  };
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function sentHTML(ok){return ok?`<div class="sent"><span class="g">✓ результат передан учителю</span><br>Отличная работа! Проверь, что конспект есть в тетради. Следующий урок — «Файлы и папки. Внешние устройства».</div>`
+  :`<div class="sent"><span class="r">✗ Не получилось отправить.</span> Проверь интернет и нажми ещё раз или позови учителя.</div>`;}
+
+/* ===================== СТАРТ ===================== */
+$("go").onclick=async()=>{
+  const fio=$("fio").value.trim().replace(/\s+/g," "),cls=$("cls").value,err=$("err");
+  if(fio.split(" ").length<2||fio.length<5){err.textContent="Напиши фамилию и имя полностью, через пробел.";$("fio").focus();return;}
+  if(!cls){err.textContent="Выбери свой класс.";return;}
+  err.textContent="Подключаюсь…";$("go").disabled=true;
+  try{
+    const t=await Promise.race([TL(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),8000))]);
+    if(!(await t.isOpen())){err.textContent="Учитель ещё не открыл миссию. Подожди и нажми ещё раз.";$("go").disabled=false;return;}
+    S=fresh(fio,cls);S.rec=await t.start({name:fio,cls});err.textContent="";save();openApp();
+  }catch(e){err.textContent="Нет связи с сервером. Проверь интернет или позови учителя.";$("go").disabled=false;}
+};
+function openApp(){$("start").hidden=true;$("game").hidden=false;hud();S.brief?showMap():showBrief();}
+setInterval(()=>{if(S.fio&&$("toFin")&&$("toFin").disabled&&finOpen())showMap();},30000);   // финиш открылся по времени
+load();
+if(S.fio)openApp();
+</script>
+<script type="module" src="../../../engine/autofill.js?v=3"></script>
+</body>
+</html>
