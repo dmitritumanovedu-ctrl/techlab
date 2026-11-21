@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — мои тесты</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="row" style="margin-bottom:16px">
+    <div><h1 id="hello">Мои тесты</h1><div class="muted" id="cls"></div></div>
+    <div style="flex:0"><button class="ghost" id="out">Выйти</button></div>
+  </div>
+  <div id="list"><p class="muted">Загрузка…</p></div>
+</div>
+<script type="module">
+import { requireStudent, logout, db, el } from "./guard.js";
+import { SUBJECTS } from "./firebase-config.js";
+import { ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+document.getElementById("out").onclick = () => logout();
+const p = await requireStudent();
+document.getElementById("hello").textContent = p.name;
+document.getElementById("cls").textContent = p.cls ? "Класс: " + p.cls : "";
+
+const list = document.getElementById("list");
+list.replaceChildren();
+const keys = Object.keys(p.access || {});
+if (!keys.length) list.append(el("div", { class: "card muted" }, "Учитель ещё не открыл вам ни одного предмета."));
+
+for (const subj of keys) {
+  const card = el("div", { class: "card" }, el("h2", {}, SUBJECTS[subj] || subj));
+  list.append(card);
+  // Ученик может прочитать только каталог своих предметов — так решают правила на сервере
+  const snap = await get(ref(db, "catalog/" + subj));
+  const tests = snap.val() || {};
+  const ids = Object.keys(tests).filter((id) => !tests[id].hidden);
+  if (!ids.length) { card.append(el("p", { class: "muted" }, "Пока нет тестов.")); continue; }
+  const t = el("table");
+  for (const id of ids) {
+    const meta = tests[id];
+    let done = false;
+    try { done = (await get(ref(db, `results/${subj}/${id}/${p.uid}`))).exists(); } catch {}
+    const action = done
+      ? el("span", { class: "tag" }, "Сдан")
+      : meta.open
+        ? el("a", { href: `test.html?s=${encodeURIComponent(subj)}&t=${encodeURIComponent(id)}` }, el("button", {}, "Начать"))
+        : el("span", { class: "tag off" }, "Закрыт");
+    t.append(el("tr", {}, el("td", {}, meta.title || id), el("td", { class: "muted" }, meta.minutes ? meta.minutes + " мин" : ""), el("td", { style: "text-align:right" }, action)));
+  }
+  card.append(t);
+}
+</script>
+</body>
+</html>

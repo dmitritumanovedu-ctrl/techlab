@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — вход по коду</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap" style="max-width:420px; padding-top:70px">
+  <div class="card">
+    <h1>Вход в TechLab</h1>
+    <p class="muted">Введите личный код, который выдал учитель.</p>
+    <form id="f">
+      <input id="code" class="big-code" maxlength="11" autocomplete="off" placeholder="XXX-XXX-XXX" autofocus>
+      <div class="err" id="err"></div>
+      <button id="btn" style="width:100%">Войти</button>
+    </form>
+  </div>
+  <p class="muted" style="text-align:center">Не сообщайте свой код одноклассникам.</p>
+</div>
+<script type="module">
+import { loginWithCode } from "./guard.js";
+const f = document.getElementById("f"), err = document.getElementById("err"), btn = document.getElementById("btn");
+f.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  err.textContent = ""; btn.disabled = true;
+  try {
+    await loginWithCode(document.getElementById("code").value);
+    location.replace("tests.html");
+  } catch (x) {
+    err.textContent = x.message;
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

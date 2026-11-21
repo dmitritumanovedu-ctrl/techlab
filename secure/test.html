@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — тест</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="timer hidden" id="timer"></div>
+<div class="wrap">
+  <div class="card" id="box"><p class="muted">Проверяем доступ…</p></div>
+</div>
+<script type="module">
+import { requireStudent, db, el } from "./guard.js";
+import { ref, get, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const box = document.getElementById("box");
+const deny = (msg) => box.replaceChildren(el("h2", {}, "Доступ закрыт"), el("p", { class: "muted" }, msg), el("a", { href: "tests.html" }, el("button", { class: "ghost" }, "К моим тестам")));
+
+const p = await requireStudent();
+const q = new URLSearchParams(location.search);
+const subj = q.get("s") || "", testId = q.get("t") || "";
+
+// 1-я проверка — на странице (для понятного сообщения). Главная — на сервере Firebase.
+if (!subj || !testId || !(p.access && p.access[subj] === true)) {
+  deny("Этот тест не относится к вашим предметам.");
+  throw new Error("no access");
+}
+let test;
+try {
+  const snap = await get(ref(db, `content/${subj}/${testId}`));
+  if (!snap.exists()) { deny("Тест не найден."); throw new Error("nf"); }
+  test = snap.val();
+} catch (e) {
+  if (e.message !== "nf") deny("Тест закрыт учителем или у вас нет к нему доступа.");
+  throw e;
+}
+const resRef = ref(db, `results/${subj}/${testId}/${p.uid}`);
+if ((await get(resRef)).exists()) { deny("Вы уже сдали этот тест."); throw new Error("done"); }
+
+// Рисуем тест (правильных ответов здесь нет — они хранятся отдельно, только у учителя)
+const startedAt = Date.now();
+const form = el("form");
+const questions = test.questions || [];
+questions.forEach((qq, i) => {
+  const d = el("div", { class: "q" }, el("p", {}, `${i + 1}. ${qq.text}`));
+  (qq.options || []).forEach((opt, j) => {
+    d.append(el("label", {}, el("input", { type: "radio", name: "q" + i, value: String(j) }), el("span", {}, opt)));
+  });
+  form.append(d);
+});
+const send = el("button", { type: "submit", style: "margin-top:16px" }, "Сдать тест");
+form.append(send);
+box.replaceChildren(el("h1", {}, test.title || "Тест"), el("p", { class: "muted" }, p.name + (p.cls ? ", " + p.cls : "")), form);
+
+let sent = false;
+async function submit(auto) {
+  if (sent) return;
+  if (!auto && !confirm("Сдать тест? Изменить ответы будет нельзя.")) return;
+  sent = true; send.disabled = true;
+  const answers = {};
+  questions.forEach((_, i) => {
+    const c = form.querySelector(`input[name="q${i}"]:checked`);
+    answers["q" + i] = c ? Number(c.value) : -1;
+  });
+  try {
+    await set(resRef, { answers, name: p.name || "", cls: p.cls || "", startedAt, finishedAt: serverTimestamp(), auto: !!auto });
+    box.replaceChildren(el("h2", { class: "ok" }, "Тест сдан"), el("p", { class: "muted" }, "Результат увидит учитель."), el("a", { href: "tests.html" }, el("button", {}, "К моим тестам")));
+    document.getElementById("timer").classList.add("hidden");
+  } catch {
+    sent = false; send.disabled = false;
+    alert("Не удалось отправить. Возможно, учитель уже закрыл тест. Позовите учителя.");
+  }
+}
+form.addEventListener("submit", (e) => { e.preventDefault(); submit(false); });
+
+// Таймер
+if (test.minutes) {
+  const end = startedAt + test.minutes * 60000, tb = document.getElementById("timer");
+  tb.classList.remove("hidden");
+  const tick = () => {
+    const left = Math.max(0, end - Date.now());
+    tb.textContent = "Осталось: " + Math.floor(left / 60000) + ":" + String(Math.floor(left / 1000) % 60).padStart(2, "0");
+    if (left === 0) { clearInterval(iv); submit(true); }
+  };
+  const iv = setInterval(tick, 1000); tick();
+}
+</script>
+</body>
+</html>

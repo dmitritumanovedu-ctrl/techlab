@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — кабинет учителя</title>
+<link rel="stylesheet" href="style.css">
+<style>
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+}
+#printArea { display: none; }
+@media print { #printArea { display: block; } }
+.slip { display: inline-block; width: 31%; margin: 0 1% 12px; padding: 10px; border: 1px dashed #999; font-size: 13px; }
+.slip b { display: block; font-family: Consolas, monospace; font-size: 18px; letter-spacing: 2px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Вход учителя -->
+  <div class="card hidden" id="loginCard" style="max-width:420px; margin:60px auto">
+    <h1>Кабинет учителя</h1>
+    <form id="loginForm">
+      <label>Почта</label><input id="em" type="email" autocomplete="username">
+      <label>Пароль</label><input id="pw" type="password" autocomplete="current-password">
+      <div class="err" id="loginErr"></div>
+      <button style="width:100%">Войти</button>
+    </form>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="row" style="margin-bottom:16px">
+      <div><h1>Кабинет учителя</h1><div class="muted">Коды учеников, доступ к предметам, тесты и результаты</div></div>
+      <div style="flex:0"><button class="ghost" id="outBtn">Выйти</button></div>
+    </div>
+
+    <!-- 1. Новые ученики -->
+    <div class="card">
+      <h2>1. Выдать коды ученикам</h2>
+      <div class="row">
+        <div><label>Класс</label><input id="newCls" placeholder="например, 6 «Б»"></div>
+      </div>
+      <label>Имена учеников (каждое с новой строки)</label>
+      <textarea id="newNames" placeholder="Иванов Иван&#10;Петрова Анна" style="font-family:inherit; min-height:110px"></textarea>
+      <label>Какие предметы открыть</label>
+      <div class="chips" id="newSubj"></div>
+      <div class="err" id="addErr"></div>
+      <button id="addBtn">Создать коды</button>
+    </div>
+
+    <!-- 2. Список учеников -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <h2 style="margin:0">2. Ученики и доступ</h2>
+        <div style="flex:0; white-space:nowrap">
+          <select id="filterCls" style="width:auto"></select>
+          <button class="ghost" id="printBtn">Печать карточек с кодами</button>
+        </div>
+      </div>
+      <p class="muted">Галочки — предметы, которые ученик может открыть. Остальные закрыты для него на сервере.</p>
+      <table><thead><tr><th>Ученик</th><th>Класс</th><th>Код</th><th>Предметы</th><th></th></tr></thead><tbody id="stBody"></tbody></table>
+    </div>
+
+    <!-- 3. Тесты -->
+    <div class="card">
+      <h2>3. Тесты</h2>
+      <div class="row">
+        <div><label>Предмет</label><select id="tSubj"></select></div>
+      </div>
+      <table style="margin-top:10px"><thead><tr><th>Тест</th><th>ID</th><th>Время</th><th>Статус</th><th></th></tr></thead><tbody id="tBody"></tbody></table>
+
+      <h2 style="margin-top:22px">Загрузить / обновить тест</h2>
+      <div class="row">
+        <div><label>ID теста (латиница, цифры, дефис)</label><input id="upId" placeholder="soils-10"></div>
+        <div><label>Название</label><input id="upTitle" placeholder="Почвы и недра"></div>
+        <div style="flex:0 0 120px"><label>Минут</label><input id="upMin" type="number" value="40"></div>
+      </div>
+      <label>Вопросы в формате JSON (поле "answer" — номер правильного ответа, начиная с 0). Ответы ученикам не отправляются.</label>
+      <textarea id="upJson"></textarea>
+      <div class="err" id="upErr"></div>
+      <button id="upBtn">Сохранить тест (закрытым)</button>
+    </div>
+
+    <!-- 4. Результаты -->
+    <div class="card">
+      <h2>4. Результаты</h2>
+      <div class="row">
+        <div><label>Предмет</label><select id="rSubj"></select></div>
+        <div><label>Тест</label><select id="rTest"></select></div>
+        <div style="flex:0"><label>&nbsp;</label><button id="rBtn">Показать</button></div>
+      </div>
+      <table style="margin-top:10px"><thead><tr><th>Ученик</th><th>Класс</th><th>Верно</th><th>%</th><th>Отметка</th><th></th></tr></thead><tbody id="rBody"></tbody></table>
+    </div>
+  </div>
+</div>
+<div id="printArea"></div>
+
+<script type="module">
+import { auth, db, el, isAdmin, generateCode, prettyCode, codeToEmail, codeToPassword } from "./guard.js";
+import { firebaseConfig, SUBJECTS } from "./firebase-config.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, initializeAuth, inMemoryPersistence, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- Вход ----------
+async function start() {
+  if (await isAdmin()) { $("loginCard").classList.add("hidden"); $("panel").classList.remove("hidden"); init(); }
+  else { $("panel").classList.add("hidden"); $("loginCard").classList.remove("hidden"); }
+}
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("loginErr").textContent = "";
+  try {
+    await setPersistence(auth, browserSessionPersistence);
+    await signInWithEmailAndPassword(auth, $("em").value.trim(), $("pw").value);
+    if (!(await isAdmin())) { await signOut(auth); throw new Error("Эта учётная запись не является учительской."); }
+    start();
+  } catch (x) { $("loginErr").textContent = x.message.startsWith("Firebase") ? "Неверная почта или пароль." : x.message; }
+});
+$("outBtn").onclick = async () => { await signOut(auth); location.reload(); };
+
+// ---------- Общее ----------
+let students = {};
+function subjOptions(sel) {
+  sel.replaceChildren(...Object.entries(SUBJECTS).map(([k, v]) => el("option", { value: k }, v)));
+}
+function init() {
+  $("newSubj").replaceChildren(...Object.entries(SUBJECTS).map(([k, v]) => el("label", {}, el("input", { type: "checkbox", value: k }), v)));
+  subjOptions($("tSubj")); subjOptions($("rSubj"));
+  $("tSubj").onchange = loadTests; $("rSubj").onchange = fillResultTests;
+  $("filterCls").onchange = renderStudents;
+  loadStudents(); loadTests(); fillResultTests();
+}
+
+// ---------- 1. Создание учеников ----------
+async function createStudentAccount() {
+  // Отдельный «экземпляр» Firebase, чтобы учитель не вышел из своего кабинета
+  const sec = initializeApp(firebaseConfig, "creator-" + Date.now());
+  const sAuth = initializeAuth(sec, { persistence: inMemoryPersistence });
+  try {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = generateCode();
+      try {
+        const cred = await createUserWithEmailAndPassword(sAuth, codeToEmail(code), codeToPassword(code));
+        await signOut(sAuth);
+        return { uid: cred.user.uid, code };
+      } catch (e) { if (e.code !== "auth/email-already-in-use") throw e; }
+    }
+    throw new Error("Не удалось подобрать свободный код");
+  } finally { await deleteApp(sec); }
+}
+$("addBtn").onclick = async () => {
+  const names = $("newNames").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  const cls = $("newCls").value.trim();
+  const access = {};
+  $("newSubj").querySelectorAll("input:checked").forEach((c) => (access[c.value] = true));
+  $("addErr").textContent = "";
+  if (!names.length) { $("addErr").textContent = "Впишите хотя бы одно имя."; return; }
+  if (!Object.keys(access).length && !confirm("Не выбран ни один предмет. Создать коды без доступа?")) return;
+  $("addBtn").disabled = true;
+  let made = 0;
+  for (const name of names) {
+    try {
+      $("addBtn").textContent = `Создаю ${made + 1} из ${names.length}…`;
+      const { uid, code } = await createStudentAccount();
+      await set(ref(db, "students/" + uid), { name, cls, code, active: true, access, created: Date.now() });
+      made++;
+    } catch (e) { $("addErr").textContent = `Ошибка на «${name}»: ${e.message}`; break; }
+  }
+  $("addBtn").disabled = false; $("addBtn").textContent = "Создать коды";
+  if (made) { $("newNames").value = ""; await loadStudents(); $("filterCls").value = cls; renderStudents(); }
+};
+
+// ---------- 2. Список и доступ ----------
+async function loadStudents() {
+  students = (await get(ref(db, "students"))).val() || {};
+  const classes = [...new Set(Object.values(students).map((s) => s.cls || ""))].sort();
+  const cur = $("filterCls").value;
+  $("filterCls").replaceChildren(el("option", { value: "*" }, "Все классы"), ...classes.map((c) => el("option", { value: c }, c || "(без класса)")));
+  $("filterCls").value = classes.includes(cur) ? cur : "*";
+  renderStudents();
+}
+function visibleStudents() {
+  const f = $("filterCls").value;
+  return Object.entries(students).filter(([, s]) => f === "*" || (s.cls || "") === f).sort((a, b) => (a[1].cls + a[1].name).localeCompare(b[1].cls + b[1].name, "ru"));
+}
+function renderStudents() {
+  const rows = visibleStudents().map(([uid, s]) => {
+    const chips = el("div", { class: "chips" }, ...Object.entries(SUBJECTS).map(([k]) => {
+      const cb = el("input", { type: "checkbox", checked: !!(s.access && s.access[k]) });
+      cb.onchange = async () => {
+        await set(ref(db, `students/${uid}/access/${k}`), cb.checked ? true : null);
+        s.access = s.access || {}; if (cb.checked) s.access[k] = true; else delete s.access[k];
+      };
+      return el("label", { title: SUBJECTS[k] }, cb, k);
+    }));
+    const tog = el("button", { class: s.active ? "ghost" : "" }, s.active ? "Отключить" : "Включить");
+    tog.onclick = async () => {
+      s.active = !s.active;
+      await update(ref(db, "students/" + uid), { active: s.active });
+      renderStudents();
+    };
+    return el("tr", {},
+      el("td", {}, s.name, s.active ? null : el("div", {}, el("span", { class: "tag off" }, "отключён"))),
+      el("td", {}, s.cls || ""),
+      el("td", {}, el("span", { class: "code" }, prettyCode(s.code || ""))),
+      el("td", {}, chips),
+      el("td", {}, tog));
+  });
+  $("stBody").replaceChildren(...rows);
+}
+$("printBtn").onclick = () => {
+  const list = visibleStudents().filter(([, s]) => s.active);
+  $("printArea").replaceChildren(...list.map(([, s]) => el("div", { class: "slip" },
+    `${s.name} (${s.cls || ""})`, el("div", {}, "Вход: сайт TechLab → «Вход по коду»"), el("b", {}, prettyCode(s.code || "")))));
+  window.print();
+};
+
+// ---------- 3. Тесты ----------
+async function loadTests() {
+  const subj = $("tSubj").value;
+  const cat = (await get(ref(db, "catalog/" + subj))).val() || {};
+  $("tBody").replaceChildren(...Object.entries(cat).map(([id, m]) => {
+    const b = el("button", { class: m.open ? "danger" : "" }, m.open ? "Закрыть" : "Открыть");
+    b.onclick = async () => { await update(ref(db, `catalog/${subj}/${id}`), { open: !m.open }); loadTests(); };
+    const del = el("button", { class: "ghost" }, "Удалить");
+    del.onclick = async () => {
+      if (!confirm(`Удалить тест «${m.title}» вместе с результатами?`)) return;
+      await Promise.all(["catalog", "content", "keys", "results"].map((p) => remove(ref(db, `${p}/${subj}/${id}`))));
+      loadTests(); fillResultTests();
+    };
+    return el("tr", {}, el("td", {}, m.title), el("td", { class: "muted" }, id), el("td", {}, (m.minutes || "—") + " мин"),
+      el("td", {}, el("span", { class: m.open ? "tag" : "tag off" }, m.open ? "открыт" : "закрыт")), el("td", {}, b, " ", del));
+  }));
+}
+$("upJson").placeholder = JSON.stringify({ questions: [
+  { text: "Как называется образование корки на поверхности почвы?", options: ["Эрозия", "Крустификация", "Засоление"], answer: 1 },
+] }, null, 2);
+$("upBtn").onclick = async () => {
+  $("upErr").textContent = "";
+  try {
+    const subj = $("tSubj").value, id = $("upId").value.trim().toLowerCase(), title = $("upTitle").value.trim();
+    const minutes = Number($("upMin").value) || 0;
+    if (!/^[a-z0-9-]{2,40}$/.test(id)) throw new Error("ID: только латинские буквы, цифры и дефис.");
+    if (!title) throw new Error("Впишите название.");
+    const data = JSON.parse($("upJson").value);
+    if (!Array.isArray(data.questions) || !data.questions.length) throw new Error("Нужен список questions.");
+    const questions = [], keys = {};
+    data.questions.forEach((q, i) => {
+      if (!q.text || !Array.isArray(q.options) || typeof q.answer !== "number") throw new Error(`Вопрос ${i + 1}: нужны text, options и answer.`);
+      questions.push({ text: q.text, options: q.options }); // без ответа!
+      keys["q" + i] = q.answer;
+    });
+    await set(ref(db, `content/${subj}/${id}`), { title, minutes, questions });
+    await set(ref(db, `keys/${subj}/${id}`), keys);
+    await update(ref(db, `catalog/${subj}/${id}`), { title, minutes, open: false, count: questions.length });
+    $("upErr").innerHTML = ""; $("upErr").append(el("span", { class: "ok" }, `Сохранено: ${questions.length} вопросов. Тест закрыт — откройте его, когда начнёте урок.`));
+    loadTests(); fillResultTests();
+  } catch (x) { $("upErr").textContent = x instanceof SyntaxError ? "Ошибка в JSON: " + x.message : x.message; }
+};
+
+// ---------- 4. Результаты ----------
+async function fillResultTests() {
+  const cat = (await get(ref(db, "catalog/" + $("rSubj").value))).val() || {};
+  $("rTest").replaceChildren(...Object.entries(cat).map(([id, m]) => el("option", { value: id }, m.title)));
+}
+function mark10(pct) { // при необходимости поменяйте шкалу
+  const t = [[95, 10], [85, 9], [75, 8], [65, 7], [55, 6], [45, 5], [35, 4], [25, 3], [15, 2]];
+  for (const [p, m] of t) if (pct >= p) return m;
+  return 1;
+}
+$("rBtn").onclick = async () => {
+  const subj = $("rSubj").value, id = $("rTest").value;
+  if (!id) return;
+  const [res, keys] = await Promise.all([get(ref(db, `results/${subj}/${id}`)), get(ref(db, `keys/${subj}/${id}`))]);
+  const k = keys.val() || {}, total = Object.keys(k).length;
+  const rows = Object.entries(res.val() || {}).map(([uid, r]) => {
+    const right = Object.keys(k).filter((q) => r.answers && r.answers[q] === k[q]).length;
+    const pct = total ? Math.round((right / total) * 100) : 0;
+    const again = el("button", { class: "ghost" }, "Разрешить пересдачу");
+    again.onclick = async () => { if (confirm("Удалить результат и разрешить пересдачу?")) { await remove(ref(db, `results/${subj}/${id}/${uid}`)); $("rBtn").click(); } };
+    return { cls: r.cls || "", name: r.name || "", tr: el("tr", {}, el("td", {}, r.name, r.auto ? el("div", { class: "muted" }, "сдан по таймеру") : null), el("td", {}, r.cls), el("td", {}, `${right} из ${total}`), el("td", {}, pct + "%"), el("td", {}, el("b", {}, mark10(pct))), el("td", {}, again)) };
+  }).sort((a, b) => (a.cls + a.name).localeCompare(b.cls + b.name, "ru"));
+  $("rBody").replaceChildren(...(rows.length ? rows.map((r) => r.tr) : [el("tr", {}, el("td", { colspan: 6, class: "muted" }, "Пока никто не сдал."))]));
+};
+
+start();
+</script>
+</body>
+</html>
