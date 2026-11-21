@@ -33,7 +33,7 @@ for (const subj of keys) {
   const card = el("div", { class: "card" }, el("h2", {}, SUBJECTS[subj] || subj));
   list.append(card);
   // Ученик может прочитать только каталог своих предметов — так решают правила на сервере
-  const snap = await get(ref(db, "catalog/" + subj));
+  const snap = await get(ref(db, "sec/catalog/" + subj));
   const tests = snap.val() || {};
   const ids = Object.keys(tests).filter((id) => !tests[id].hidden);
   if (!ids.length) { card.append(el("p", { class: "muted" }, "Пока нет тестов.")); continue; }
@@ -41,7 +41,7 @@ for (const subj of keys) {
   for (const id of ids) {
     const meta = tests[id];
     let done = false;
-    try { done = (await get(ref(db, `results/${subj}/${id}/${p.uid}`))).exists(); } catch {}
+    try { done = (await get(ref(db, `sec/results/${subj}/${id}/${p.uid}`))).exists(); } catch {}
     const action = done
       ? el("span", { class: "tag" }, "Сдан")
       : meta.open

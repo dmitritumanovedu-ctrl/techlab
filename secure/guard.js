@@ -65,7 +65,7 @@ export async function getProfile() {
   const u = await currentUser();
   if (!u) return null;
   try {
-    const snap = await get(ref(db, "students/" + u.uid));
+    const snap = await get(ref(db, "sec/students/" + u.uid));
     return snap.exists() ? { uid: u.uid, ...snap.val() } : null;
   } catch { return null; }
 }
@@ -83,7 +83,7 @@ export async function requireStudent() {
 export async function isAdmin() {
   const u = await currentUser();
   if (!u) return false;
-  try { return (await get(ref(db, "admins/" + u.uid))).val() === true; }
+  try { return (await get(ref(db, "sec/admins/" + u.uid))).val() === true; }
   catch { return false; }
 }
 

@@ -29,14 +29,14 @@ if (!subj || !testId || !(p.access && p.access[subj] === true)) {
 }
 let test;
 try {
-  const snap = await get(ref(db, `content/${subj}/${testId}`));
+  const snap = await get(ref(db, `sec/content/${subj}/${testId}`));
   if (!snap.exists()) { deny("Тест не найден."); throw new Error("nf"); }
   test = snap.val();
 } catch (e) {
   if (e.message !== "nf") deny("Тест закрыт учителем или у вас нет к нему доступа.");
   throw e;
 }
-const resRef = ref(db, `results/${subj}/${testId}/${p.uid}`);
+const resRef = ref(db, `sec/results/${subj}/${testId}/${p.uid}`);
 if ((await get(resRef)).exists()) { deny("Вы уже сдали этот тест."); throw new Error("done"); }
 
 // Рисуем тест (правильных ответов здесь нет — они хранятся отдельно, только у учителя)

@@ -170,7 +170,7 @@ $("addBtn").onclick = async () => {
     try {
       $("addBtn").textContent = `Создаю ${made + 1} из ${names.length}…`;
       const { uid, code } = await createStudentAccount();
-      await set(ref(db, "students/" + uid), { name, cls, code, active: true, access, created: Date.now() });
+      await set(ref(db, "sec/students/" + uid), { name, cls, code, active: true, access, created: Date.now() });
       made++;
     } catch (e) { $("addErr").textContent = `Ошибка на «${name}»: ${e.message}`; break; }
   }
@@ -180,7 +180,7 @@ $("addBtn").onclick = async () => {
 
 // ---------- 2. Список и доступ ----------
 async function loadStudents() {
-  students = (await get(ref(db, "students"))).val() || {};
+  students = (await get(ref(db, "sec/students"))).val() || {};
   const classes = [...new Set(Object.values(students).map((s) => s.cls || ""))].sort();
   const cur = $("filterCls").value;
   $("filterCls").replaceChildren(el("option", { value: "*" }, "Все классы"), ...classes.map((c) => el("option", { value: c }, c || "(без класса)")));
@@ -196,7 +196,7 @@ function renderStudents() {
     const chips = el("div", { class: "chips" }, ...Object.entries(SUBJECTS).map(([k]) => {
       const cb = el("input", { type: "checkbox", checked: !!(s.access && s.access[k]) });
       cb.onchange = async () => {
-        await set(ref(db, `students/${uid}/access/${k}`), cb.checked ? true : null);
+        await set(ref(db, `sec/students/${uid}/access/${k}`), cb.checked ? true : null);
         s.access = s.access || {}; if (cb.checked) s.access[k] = true; else delete s.access[k];
       };
       return el("label", { title: SUBJECTS[k] }, cb, k);
@@ -204,7 +204,7 @@ function renderStudents() {
     const tog = el("button", { class: s.active ? "ghost" : "" }, s.active ? "Отключить" : "Включить");
     tog.onclick = async () => {
       s.active = !s.active;
-      await update(ref(db, "students/" + uid), { active: s.active });
+      await update(ref(db, "sec/students/" + uid), { active: s.active });
       renderStudents();
     };
     return el("tr", {},
@@ -226,14 +226,14 @@ $("printBtn").onclick = () => {
 // ---------- 3. Тесты ----------
 async function loadTests() {
   const subj = $("tSubj").value;
-  const cat = (await get(ref(db, "catalog/" + subj))).val() || {};
+  const cat = (await get(ref(db, "sec/catalog/" + subj))).val() || {};
   $("tBody").replaceChildren(...Object.entries(cat).map(([id, m]) => {
     const b = el("button", { class: m.open ? "danger" : "" }, m.open ? "Закрыть" : "Открыть");
-    b.onclick = async () => { await update(ref(db, `catalog/${subj}/${id}`), { open: !m.open }); loadTests(); };
+    b.onclick = async () => { await update(ref(db, `sec/catalog/${subj}/${id}`), { open: !m.open }); loadTests(); };
     const del = el("button", { class: "ghost" }, "Удалить");
     del.onclick = async () => {
       if (!confirm(`Удалить тест «${m.title}» вместе с результатами?`)) return;
-      await Promise.all(["catalog", "content", "keys", "results"].map((p) => remove(ref(db, `${p}/${subj}/${id}`))));
+      await Promise.all(["catalog", "content", "keys", "results"].map((p) => remove(ref(db, `sec/${p}/${subj}/${id}`))));
       loadTests(); fillResultTests();
     };
     return el("tr", {}, el("td", {}, m.title), el("td", { class: "muted" }, id), el("td", {}, (m.minutes || "—") + " мин"),
@@ -258,9 +258,9 @@ $("upBtn").onclick = async () => {
       questions.push({ text: q.text, options: q.options }); // без ответа!
       keys["q" + i] = q.answer;
     });
-    await set(ref(db, `content/${subj}/${id}`), { title, minutes, questions });
-    await set(ref(db, `keys/${subj}/${id}`), keys);
-    await update(ref(db, `catalog/${subj}/${id}`), { title, minutes, open: false, count: questions.length });
+    await set(ref(db, `sec/content/${subj}/${id}`), { title, minutes, questions });
+    await set(ref(db, `sec/keys/${subj}/${id}`), keys);
+    await update(ref(db, `sec/catalog/${subj}/${id}`), { title, minutes, open: false, count: questions.length });
     $("upErr").innerHTML = ""; $("upErr").append(el("span", { class: "ok" }, `Сохранено: ${questions.length} вопросов. Тест закрыт — откройте его, когда начнёте урок.`));
     loadTests(); fillResultTests();
   } catch (x) { $("upErr").textContent = x instanceof SyntaxError ? "Ошибка в JSON: " + x.message : x.message; }
@@ -268,7 +268,7 @@ $("upBtn").onclick = async () => {
 
 // ---------- 4. Результаты ----------
 async function fillResultTests() {
-  const cat = (await get(ref(db, "catalog/" + $("rSubj").value))).val() || {};
+  const cat = (await get(ref(db, "sec/catalog/" + $("rSubj").value))).val() || {};
   $("rTest").replaceChildren(...Object.entries(cat).map(([id, m]) => el("option", { value: id }, m.title)));
 }
 function mark10(pct) { // при необходимости поменяйте шкалу
@@ -279,13 +279,13 @@ function mark10(pct) { // при необходимости поменяйте �
 $("rBtn").onclick = async () => {
   const subj = $("rSubj").value, id = $("rTest").value;
   if (!id) return;
-  const [res, keys] = await Promise.all([get(ref(db, `results/${subj}/${id}`)), get(ref(db, `keys/${subj}/${id}`))]);
+  const [res, keys] = await Promise.all([get(ref(db, `sec/results/${subj}/${id}`)), get(ref(db, `sec/keys/${subj}/${id}`))]);
   const k = keys.val() || {}, total = Object.keys(k).length;
   const rows = Object.entries(res.val() || {}).map(([uid, r]) => {
     const right = Object.keys(k).filter((q) => r.answers && r.answers[q] === k[q]).length;
     const pct = total ? Math.round((right / total) * 100) : 0;
     const again = el("button", { class: "ghost" }, "Разрешить пересдачу");
-    again.onclick = async () => { if (confirm("Удалить результат и разрешить пересдачу?")) { await remove(ref(db, `results/${subj}/${id}/${uid}`)); $("rBtn").click(); } };
+    again.onclick = async () => { if (confirm("Удалить результат и разрешить пересдачу?")) { await remove(ref(db, `sec/results/${subj}/${id}/${uid}`)); $("rBtn").click(); } };
     return { cls: r.cls || "", name: r.name || "", tr: el("tr", {}, el("td", {}, r.name, r.auto ? el("div", { class: "muted" }, "сдан по таймеру") : null), el("td", {}, r.cls), el("td", {}, `${right} из ${total}`), el("td", {}, pct + "%"), el("td", {}, el("b", {}, mark10(pct))), el("td", {}, again)) };
   }).sort((a, b) => (a.cls + a.name).localeCompare(b.cls + b.name, "ru"));
   $("rBody").replaceChildren(...(rows.length ? rows.map((r) => r.tr) : [el("tr", {}, el("td", { colspan: 6, class: "muted" }, "Пока никто не сдал."))]));
