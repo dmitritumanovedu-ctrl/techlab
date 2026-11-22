@@ -5,7 +5,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
 import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS, TESTS } from "../tests.js?v=9";
 import { roleOf, pendingHtml } from "../engine/staff.js?v=3";
-import { syncProgress, startAutoSync, autoSyncOn, setAutoSync, getClassSubjects, setClassSubjects } from "../engine/sync.js?v=2";
+import { syncProgress, startAutoSync, autoSyncOn, setAutoSync, getClassSubjects, setClassSubjects } from "../engine/sync.js?v=3";
 import { plusOf, CLASSES, PLAN, makeCode, prettyCode, nameKey, clsKey, xpOf, levelOf, fmt1, esc } from "../engine/people.js?v=4";
 
 const $ = (s, el = document) => el.querySelector(s);

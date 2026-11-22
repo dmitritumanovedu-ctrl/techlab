@@ -5,15 +5,15 @@ import { firebaseConfig } from "../firebase-config.js";
 import { SUBJECTS } from "../tests.js?v=9";
 import { cleanCode, prettyCode, levelOf, awardsOf, fmt1, esc, clsKey, plusOf, mySubjects } from "../engine/people.js?v=4";
 import { t, plw, subjName, kindShortById, qualShow, LOCALE, LANG } from "../engine/i18n.js?v=1";
-import { reviewBtn, openReview } from "../engine/review.js?v=1";
+import { reviewBtn, openReview } from "../engine/review.js?v=2";
 
 const $ = (s) => document.querySelector(s);
 const app = $("#app");
 const db = getDatabase(initializeApp(firebaseConfig));
 const KEY = "techlab_parent";
 // «🔍 Разбор работы» (если учитель включил разбор)
-let CUR_WORKS = {};
-app.addEventListener("click", (e) => { const b = e.target.closest("[data-review]"); if (b) { e.preventDefault(); openReview(CUR_WORKS[b.dataset.review]); } });
+let CUR_WORKS = {}, CUR_WHO = null;
+app.addEventListener("click", (e) => { const b = e.target.closest("[data-review]"); if (b) { e.preventDefault(); openReview(CUR_WORKS[b.dataset.review], CUR_WHO); } });
 const subj = (id) => { const s = SUBJECTS.find((x) => x.id === id); return s ? { ...s, name: subjName(s) } : { name: "", icon: "" }; };
 const codes = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } };
 const saveCodes = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
@@ -85,7 +85,7 @@ async function show(pcode, quiet = false) {
   $("#child").onchange = (e) => { if (e.target.value === "+") return login(); CUR = e.target.value; show(CUR); };
   $("#out").onclick = () => { if (confirm(t("confirm_out"))) { saveCodes([]); login(); } };
 
-  CUR_WORKS = P.works || {};
+  CUR_WORKS = P.works || {}; CUR_WHO = { name: P.name, cls: P.cls };
   const works = Object.entries(P.works || {}).map(([id, w]) => ({ ...w, id })).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
   const done = works.filter((w) => w.complete && !w.qual);
   const quals = works.filter((w) => w.complete && w.qual);

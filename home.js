@@ -6,7 +6,7 @@ import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=9";
 import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT, plusOf, samePlus, mySubjects } from "./engine/people.js?v=4";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=2";
-import { reviewBtn, openReview } from "./engine/review.js?v=1";
+import { reviewBtn, openReview } from "./engine/review.js?v=2";
 import { firebaseConfig } from "./firebase-config.js";
 const DB_URL = String(firebaseConfig.databaseURL || "").replace(/\/+$/, "");
 var ILL = {
@@ -59,11 +59,11 @@ document.head.insertAdjacentHTML("beforeend", `<style>
 const box = document.getElementById("home");
 const chip = document.getElementById("meChip");
 // «🔍 Разбор работы» — кнопка в списке «Мои работы» (если учитель включил разбор)
-let CUR_WORKS = {};
+let CUR_WORKS = {}, CUR_WHO = null;
 box.addEventListener("click", (e) => {
   const b = e.target.closest("[data-review]"); if (!b) return;
   e.preventDefault(); e.stopPropagation();
-  openReview(CUR_WORKS[b.dataset.review]);
+  openReview(CUR_WORKS[b.dataset.review], CUR_WHO);
 });
 const subjName = (id) => subjNameT(SUBJECTS.find((s) => s.id === id));
 let renderNo = 0;
@@ -216,7 +216,7 @@ function askCode(prefill = "") {
 // ---------------- игровой центр ----------------
 function center(S, P, B, CS = null, note = "") {
   LAST = [S, P, B, CS, note];
-  CUR_WORKS = P.works || {};
+  CUR_WORKS = P.works || {}; CUR_WHO = { name: P.name, cls: P.cls };
   const works = Object.entries(P.works || {}).map(([id, w]) => ({ ...w, id })).filter((w) => !CS || CS.includes(w.subject)).sort((a, b) => (b.date || 0) - (a.date || 0));
   const done = works.filter((w) => w.complete && !w.qual);
   const avg = done.length ? done.reduce((a, w) => a + w.grade, 0) / done.length : null;

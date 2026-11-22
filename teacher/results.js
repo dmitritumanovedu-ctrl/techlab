@@ -13,7 +13,7 @@ import { firebaseConfig } from "../firebase-config.js";
 import { roleOf, pendingHtml } from "../engine/staff.js?v=3";
 import { SUBJECTS, addSubjects } from "../tests.js?v=9";
 import { clsKey, xpOf } from "../engine/people.js?v=4";
-import { syncProgress } from "../engine/sync.js?v=2";
+import { syncProgress } from "../engine/sync.js?v=3";
 
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

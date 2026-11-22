@@ -56,7 +56,7 @@ async function startRecord() {
 }
 function progress() {
   if (!S.rec) return;
-  update(ref(db, `${P}/${S.rec}`), { score: S.score, stage: `Задание ${Math.min(S.i + 1, S.order.length)} из ${S.order.length}`, doneCount: S.i, updatedAt: serverTimestamp() }).catch(() => {});
+  update(ref(db, `${P}/${S.rec}`), { score: S.score, log: S.log || null, stage: `Задание ${Math.min(S.i + 1, S.order.length)} из ${S.order.length}`, doneCount: S.i, updatedAt: serverTimestamp() }).catch(() => {});
 }
 const totals = () => {
   const max = maxOf(V), pts = Object.values(S.score).reduce((a, x) => a + (Number(x) || 0), 0);
@@ -67,7 +67,7 @@ async function submit() {
   if (PREVIEW || !S.rec) return;
   const t = totals();
   const minutes = Math.max(1, Math.round((Date.now() - S.startedAt) / 60000));
-  await withTimeout(update(ref(db, `${P}/${S.rec}`), { score: S.score, points: t.pts, max: t.max, percent: t.pct, grade: t.grade, minutes,
+  await withTimeout(update(ref(db, `${P}/${S.rec}`), { score: S.score, log: S.log || null, points: t.pts, max: t.max, percent: t.pct, grade: t.grade, minutes,
     stage: "Финиш", doneCount: S.order.length, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }), 20000);
 }
 
@@ -379,6 +379,22 @@ function evaluate(q, el) {
   return { ready: false };
 }
 
+// ответ ученика текстом — для разбора и PDF (учитель, ученик, родитель)
+function answerText(q) {
+  const a = R.answer, inp = document.getElementById("inp");
+  switch (q.t) {
+    case "choice": return a === null ? "" : plain(q.o[a]);
+    case "tf": return a === null ? "" : a ? "Верно" : "Неверно";
+    case "multi": return [...(a || [])].sort((x, y) => x - y).map((i) => plain(q.o[i])).join("; ");
+    case "num": case "set": return inp ? inp.value.trim() : "";
+    case "order": return (a || []).map((k) => plain(q.items[k])).join(" → ");
+    case "bins": return q.b.map((nm, bi) => nm + ": " + q.items.filter((_, k) => a?.[k] === bi).map((it) => plain(it[0])).join(", ")).join(" | ");
+    case "match": return q.l.map((l, li) => plain(l) + " — " + (a?.[li] == null ? "?" : plain(q.r[a[li]]))).join("; ");
+  }
+  return "";
+}
+const cutT = (x, n) => { x = String(x || ""); return x.length > n ? x.slice(0, n - 1) + "…" : x; };
+
 function check() {
   const q = R.q, fb = $("#fb");
   const res = evaluate(q, $("#area"));
@@ -388,6 +404,7 @@ function check() {
   if (R.retry) { if (full) RETRY.ok++; }
   else {
     S.score["q" + (R.k + 1)] = res.pts;
+    (S.log = S.log || {})["q" + (R.k + 1)] = { l: cutT(plain(q.q), 220), a: cutT(answerText(q), 300), k: cutT(plain(res.key), 300), c: cutT(plain(q.e), 300) };
     if (full) { S.streak++; S.best = Math.max(S.best, S.streak); } else { S.streak = 0; S.wrong.push(R.k); }
     S.i++; save(); progress(); headerScore();
   }

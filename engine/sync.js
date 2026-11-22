@@ -11,7 +11,9 @@ import { nameKey, clsKey, xpOf } from "./people.js?v=2";
 import { gradeAttempt } from "./btest.js?v=1";
 
 // ---------- разбор работы для ученика ----------
-// settings/<id>/review: 0 (или нет) — выключен; 1 — баллы по заданиям и ответы ученика; 2 — ещё и правильные ответы.
+// settings/<id>/review: 0 — выключен; 1 — баллы по заданиям и ответы ученика; 2 — ещё и правильные ответы.
+// Если у работы своя настройка не задана — действует общая settings/reviewAll («для всех работ»).
+export const reviewLevel = (SET, id) => { const own = SET?.[id]?.review; return Number(own !== undefined && own !== null ? own : SET?.reviewAll) || 0; };
 // Разбор кладётся в progress/<код>/works/<id>/review — его видят только сам ученик и его родитель (по коду).
 const cut = (x, n = 400) => { const t = String(x ?? "").trim(); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
 const rnd = (x) => x === null || x === undefined ? null : Math.round(Number(x) * 10) / 10;
@@ -25,11 +27,14 @@ function reviewOf(level, items) {
   }) };
 }
 const aiText = (a) => a ? [a.comment, a.missing ? "Не хватает: " + a.missing : "", a.advice ? "Совет: " + a.advice : ""].filter(Boolean).join(" ") : "";
-function missionReview(r, t) {
+export function missionReview(r, t) {
   const out = [];
   for (const p of t.parts || []) {
     if (p.open) continue;
-    out.push({ l: p.name, s: Number(r.score?.[p.k]) || 0, m: p.max });
+    if (p.bonus && r.score?.[p.k] == null) continue;
+    const g = r.log?.[p.k];                       // подробности задания (тренажёры): вопрос, ответ ученика, правильный ответ
+    out.push(g ? { l: p.name + (g.l ? ": " + g.l : ""), s: Number(r.score?.[p.k]) || 0, m: p.max, a: g.a || "—", k: g.k || "", c: g.c || "" }
+      : { l: p.name, s: r.score?.[p.k] == null ? 0 : Number(r.score[p.k]) || 0, m: p.max });
   }
   for (const q of t.openQs || []) {
     const ans = String(r.open?.[q.k] || "").trim();
@@ -89,7 +94,7 @@ export async function syncProgress(db, ROSTER = null, RES = null) {
   try { BT = Object.entries((await get(ref(db, "pubIndex"))).val() || {}).map(([id, x]) => ({ id, type: "test", teacher: true, bt: true, kind: x.kind || "to", subject: x.subject, grade: x.grade, title: x.title, path: `b/?t=${id}` })); } catch (e) {}
   for (const t of READY.concat(BT)) {
     const list = RES[t.id]; if (!list) continue;
-    const RV = Number(SET[t.id]?.review) || 0;                 // разбор для учеников включён?
+    const RV = reviewLevel(SET, t.id);                        // разбор для учеников включён? (своя настройка или «для всех»)
     const KEYS = (t.type !== "mission" && (!t.teacher || (RV && t.bt))) ? await keysOf(db, t.id) : null;
     const K = kindOf(t, SET);
     for (const r of Object.values(list)) {

@@ -4,7 +4,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
 import { firebaseConfig } from "../firebase-config.js";
 import { grade, SCALE, parseNum, usesQual, qualOf, qualScaleText } from "./grading.js?v=5";
 import { SUBJECTS, TESTS, KINDS, kindOf } from "../tests.js?v=9";
-import { startAutoSync, syncProgress } from "./sync.js?v=2";
+import { startAutoSync, syncProgress, reviewLevel, missionReview } from "./sync.js?v=3";
+import { printWorks } from "./review.js?v=2";
 import { startNotify } from "./notify.js?v=2";
 import { roleOf, pendingHtml, loadStaff, acceptStaff, declineStaff, removeStaff } from "./staff.js?v=3";
 
@@ -146,7 +147,7 @@ function showDashboard() {
     </div>
   </div>
   <div class="toolbar noprint" style="margin-bottom:14px">
-    <label class="switch"><input type="checkbox" id="swAi"> <span>🤖 Автоматически проверять развёрнутые ответы ИИ (пока открыта эта панель)</span></label>
+    <label class="switch"><input type="checkbox" id="swAi"> <span>🤖 Автоматически: ИИ-разбор каждой сданной работы и проверка развёрнутых ответов (пока открыта эта панель)</span></label>
     <span class="muted" id="aiStatus" style="font-size:14px"></span>
   </div>
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
@@ -614,6 +615,7 @@ function kindRowHtml() {
     ${ENTRY.retake ? '<span class="ktag k-retake">🔁 Пересдача</span>' : ""}
     <span class="muted" style="font-size:13px">ярлык виден ученикам на сайте</span></div>
   <div class="kindrow"><span>🔍 Разбор для учеников:</span><select id="selReview" style="width:auto">
+      <option value="">Как для всех работ (общая настройка)</option>
       <option value="0">Выключен — ученик видит только оценку</option>
       <option value="1">Баллы по заданиям и свои ответы (где ошибся)</option>
       <option value="2">Всё + правильные ответы</option></select>
@@ -627,12 +629,12 @@ function bindKind() {
   }));
   sel.onchange = () => set(ref(db, `settings/${ENTRY.id}/kind`), sel.value);
   const rs = $("#selReview"); if (!rs) return;
-  unsub.push(onValue(ref(db, `settings/${ENTRY.id}/review`), (s) => { rs.value = String(Number(s.val()) || 0); }));
+  unsub.push(onValue(ref(db, `settings/${ENTRY.id}/review`), (s) => { const v = s.val(); rs.value = v === null || v === undefined ? "" : String(Number(v) || 0); }));
   rs.onchange = async () => {
     const st = $("#reviewSt");
-    await set(ref(db, `settings/${ENTRY.id}/review`), Number(rs.value) || null);
+    await set(ref(db, `settings/${ENTRY.id}/review`), rs.value === "" ? null : Number(rs.value));
     st.textContent = "Обновляю странички учеников…";
-    try { await syncProgress(db); st.textContent = Number(rs.value) ? "✓ Разбор открыт ученикам и родителям" : "✓ Разбор скрыт"; }
+    try { await syncProgress(db); st.textContent = rs.value === "" ? "✓ Действует общая настройка для всех работ" : Number(rs.value) ? "✓ Разбор открыт ученикам и родителям" : "✓ Разбор скрыт"; }
     catch (e) { st.textContent = "Сохранено. Странички обновятся в течение минуты."; }
   };
 }
@@ -910,7 +912,7 @@ const moodIcon = (m) => !m ? "—" : m.startsWith("Мне всё") ? "🟢" : m.
 
 async function showMissionDashboard() {
   const parts = ENTRY.parts || [];
-  const HAS_OPEN = !!(ENTRY.openQs || []).length;
+  const HAS_OPEN = true;          // ИИ-разбор доступен для всех миссий и тренажёров (развёрнутых ответов может и не быть)
   if (HAS_OPEN) {
     try { AICFG = (await get(ref(db, "keys/_ai"))).val(); } catch (e) { AICFG = null; }
     try { aiAuto = localStorage.getItem("techlab_ai_auto") === "1"; } catch (e) {}
@@ -937,14 +939,15 @@ async function showMissionDashboard() {
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <select id="fCls" style="width:auto"><option value="">Все классы</option>${(ENTRY.classes || []).map((c) => `<option>${esc(c)}</option>`).join("")}</select>
       <input type="text" id="fSearch" placeholder="Поиск по фамилии" style="width:180px">
-      ${HAS_OPEN ? `<button class="btn small ghost" id="bAi">🤖 Проверить всё ИИ</button>
+      <button class="btn small ghost" id="bPdfAll" title="PDF всех сданных работ (с учётом фильтра класса) — каждая с новой страницы">📄 PDF класса</button>
+      ${HAS_OPEN ? `<button class="btn small ghost" id="bAi" title="ИИ проверит развёрнутые ответы и напишет каждому ученику разбор: что получилось, что повторить, совет">🤖 Разбор и проверка ИИ</button>
       <button class="btn small ghost" id="bAiCfg" title="Настройка проверки ИИ">⚙ ИИ</button>` : ""}
       <button class="btn small ghost" id="bCsv">Скачать CSV</button>
       <button class="btn small red" id="bClear">Очистить результаты</button>
     </div>
   </div>
   ${HAS_OPEN ? `<div class="toolbar noprint" style="margin-bottom:14px">
-    <label class="switch"><input type="checkbox" id="swAi"> <span>🤖 Автоматически проверять развёрнутые ответы ИИ (пока открыта эта панель)</span></label>
+    <label class="switch"><input type="checkbox" id="swAi"> <span>🤖 Автоматически: ИИ-разбор каждой сданной работы${(ENTRY.openQs || []).length ? " и проверка развёрнутых ответов" : ""} (пока открыта эта панель)</span></label>
     <span class="muted" id="aiStatus" style="font-size:14px"></span></div>` : ""}
   <div class="stats noprint" id="stats" style="margin-bottom:14px"></div>
   <div class="table-wrap"><table class="res"><thead><tr>
@@ -978,6 +981,12 @@ async function showMissionDashboard() {
   $("#fCls").onchange = (e) => { filterCls = e.target.value; renderMission(); };
   $("#fSearch").oninput = (e) => { search = e.target.value.toLowerCase(); renderMission(); };
   $("#bCsv").onclick = missionCsv;
+  $("#bPdfAll").onclick = () => {
+    const ids = rows().filter(([, r]) => r.status === "submitted").map(([id]) => id).reverse();
+    if (!ids.length) return alert("Нет сданных работ.");
+    if (ids.length > 35 && !confirm(`Работ: ${ids.length}. Лучше выбрать один класс в фильтре. Всё равно сделать PDF всех?`)) return;
+    missionPdf(ids);
+  };
   $("#bClear").onclick = async () => {
     const n = Object.keys(RESULTS).length; if (!n) return;
     if (!confirm(`Удалить ВСЕ результаты этой миссии (${n} шт.)? Сначала скачайте CSV.`)) return;
@@ -988,8 +997,8 @@ async function showMissionDashboard() {
     $("#bAiCfg").onclick = showAiSettings;
     $("#bAi").onclick = () => {
       if (!AICFG?.url) return showAiSettings();
-      const ids = Object.entries(RESULTS).filter(([, r]) => r.status === "submitted" && mAiTargets(r).length).map(([id]) => id);
-      if (!ids.length) return setAiStatus("Нет развёрнутых ответов для проверки.");
+      const ids = Object.entries(RESULTS).filter(([, r]) => r.status === "submitted" && (mAiTargets(r).length || !r.aiSummary)).map(([id]) => id);
+      if (!ids.length) return setAiStatus("Все сданные работы уже разобраны ИИ.");
       ids.forEach((id) => mEnqueue(id, true));
     };
     const swAi = $("#swAi"); swAi.checked = aiAuto;
@@ -1042,14 +1051,35 @@ function renderMission() {
       <td>${e.complete ? `<span class="grade" title="${esc(e.qualName)}">${e.mark}</span>` : `<span class="grade pending">≈${e.mark}${fin && e.pending ? " · проверить " + e.pending : ""}</span>`}</td>
       <td>${mins} мин</td>
       <td title="${esc(r.mood || "")}" style="font-size:18px">${moodIcon(r.mood)}</td>
-      <td style="white-space:nowrap">${(ENTRY.openQs || []).length && fin ? `<button class="btn small" data-mopen="${id}">${e.pending ? "Проверить" : "Открыть"}</button> ` : ""}<button class="btn small red" data-del="${id}" title="Удалить">✕</button></td></tr>`;
+      <td style="white-space:nowrap">${(ENTRY.openQs || []).length && fin ? `<button class="btn small" data-mopen="${id}">${e.pending ? "Проверить" : "Открыть"}</button> ` : ""}${fin ? `<button class="btn small ghost" data-mpdf="${id}" title="Разбор работы в PDF">📄</button> ` : ""}${fin && r.aiSummary ? '<span title="Есть разбор ИИ">🤖</span> ' : ""}<button class="btn small red" data-del="${id}" title="Удалить">✕</button></td></tr>`;
   }).join("");
   list.forEach(([id]) => seen.add(id));
   tb.querySelectorAll("[data-mopen]").forEach((b) => b.onclick = () => mShowOpen(b.dataset.mopen));
+  tb.querySelectorAll("[data-mpdf]").forEach((b) => b.onclick = () => missionPdf([b.dataset.mpdf]));
   tb.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => {
     const r = RESULTS[b.dataset.del];
     if (confirm(`Удалить результат ученика ${r?.name || ""}?`)) remove(ref(db, `${P}/${b.dataset.del}`));
   });
+}
+
+// контекст для ИИ-разбора миссии: баллы по частям и ошибки (у тренажёров — с ответами ученика)
+function mContext(r) {
+  return (ENTRY.parts || []).filter((p) => !p.open && !(p.bonus && r.score?.[p.k] == null)).map((p) => {
+    const sc = r.score?.[p.k], g = r.log?.[p.k];
+    let s = `${p.name}${g?.l ? " (" + g.l + ")" : ""}: ${sc == null ? "не выполнено" : sc + " из " + p.max + " б"}`;
+    if (g && sc != null && Number(sc) < p.max) s += `. Ответ ученика: ${g.a || "—"}; правильно: ${g.k || "—"}`;
+    return s;
+  }).join("\n").slice(0, 6000);
+}
+// PDF выполненных работ миссии / тренажёра: задания, баллы, ответы, правильные ответы, разбор ИИ
+function missionPdf(ids) {
+  const docs = ids.map((id) => {
+    const r = RESULTS[id], e = mEval(r);
+    return { title: (ENTRY.n ? "Миссия " + ENTRY.n + " · " : "") + ENTRY.title, who: { name: r.name, cls: r.cls }, date: r.submittedAt || r.updatedAt,
+      head: `${fmtNum(e.pts)} / ${e.max} баллов · ${usesQual(ENTRY.subject) ? e.qual : "оценка " + e.mark}${e.complete ? "" : " (предварительно)"}`,
+      items: missionReview(r, ENTRY), summary: r.aiSummary, keys: true };
+  });
+  printWorks(docs, ENTRY.title);
 }
 
 function missionCsv() {
@@ -1189,7 +1219,7 @@ async function showOverview() {
         <span class="live">${isOpen(t) ? '<span class="tag done">🟢 открыт</span>' : '<span class="tag">закрыт</span>'}</span>
         <div class="k">${esc(t.grade)} класс · ${kindLine(t)}</div>
         <div class="n">${esc(t.title)}</div>
-        <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}${Number(SET[t.id]?.review) ? ' <span class="ktag" title="Ученики видят разбор своей работы">🔍 Разбор</span>' : ""}</div>
+        <div class="kt"><span class="ktag k-${K.id}">${K.icon} ${esc(K.short)}</span>${t.retake ? ' <span class="ktag k-retake">🔁 Пересдача</span>' : ""}${reviewLevel(SET, t.id) ? ' <span class="ktag" title="Ученики видят разбор своей работы">🔍 Разбор</span>' : ""}</div>
         ${t.type === "mission" && t.path ? `<span class="hub-pv" data-pv="${pvUrl(t.path)}" title="Открыть содержание миссии без кода ученика">👁 Посмотреть содержание</span>` : ""}
         <div class="hub-nums"><div><b>${list.length}</b>всего</div><div><b>${run}</b>пишут</div><div><b>${done}</b>сдали</div><div><b style="${q ? "font-size:13px" : ""}">${avgOf(t, list)}</b>${q ? "квалификативы" : "ср. оценка"}</div></div>
       </a>`;
@@ -1227,20 +1257,31 @@ function showReviewDlg(items, SET) {
       <p class="muted">После сдачи ученик (и родитель в своём кабинете) видит на своей страничке кнопку «🔍 Разбор»: каждое задание,
         сколько баллов получено, его ответ и комментарий ИИ. Правильные ответы — только если выбрать «Всё + правильные ответы».
         Удобно включать после того, как все классы написали работу.</p>
-      <p><b>${sb ? sb.icon + " " + esc(sb.name) + (ws.g ? " · " + esc(ws.g) + " класс" : "") : "Все предметы"}</b> <span class="muted">(выбор предмета и класса — в Центре управления)</span></p>
-      <div class="rv-list">${items.length ? items.map((t) => `<div class="rv-row"><div><b>${esc(t.title)}</b>
+      <div class="rv-row" style="background:#EEF1FF;border-radius:14px;padding:12px 14px"><div><b>⭐ Для всех работ (по умолчанию)</b>
+          <div class="muted" style="font-size:13px">все тесты, контрольные, тренажёры, миссии и тесты конструктора — и новые тоже</div></div>
+        <select id="rvAll" style="width:auto">${REVIEW_LV.map((n, i) => `<option value="${i}"${(Number(SET.reviewAll) || 0) === i ? " selected" : ""}>${n}</option>`).join("")}</select></div>
+      <p><b>${sb ? sb.icon + " " + esc(sb.name) + (ws.g ? " · " + esc(ws.g) + " класс" : "") : "Все предметы"}</b> <span class="muted">— можно задать отдельно для работы (например, скрыть разбор контрольной, пока не написали все классы)</span></p>
+      <div class="rv-list">${items.length ? items.map((t) => { const own = SET[t.id]?.review, has = own !== undefined && own !== null;
+          return `<div class="rv-row"><div><b>${esc(t.title)}</b>
           <div class="muted" style="font-size:13px">${esc(t.grade)} класс · ${t.type === "mission" ? "миссия" : t.bt ? "тест · конструктор" : "тест"}</div></div>
-          <select data-rv="${esc(t.id)}" style="width:auto">${REVIEW_LV.map((n, i) => `<option value="${i}"${(Number(SET[t.id]?.review) || 0) === i ? " selected" : ""}>${n}</option>`).join("")}</select></div>`).join("")
+          <select data-rv="${esc(t.id)}" style="width:auto"><option value=""${has ? "" : " selected"}>Как для всех</option>${REVIEW_LV.map((n, i) => `<option value="${i}"${has && (Number(own) || 0) === i ? " selected" : ""}>${n}</option>`).join("")}</select></div>`; }).join("")
         : '<p class="muted">Здесь пока нет работ.</p>'}</div>
       <p class="muted" id="rvSt" style="font-size:14px"></p>
       <p class="muted" style="font-size:13px">Для тестов со своей страницей результатов (сессия, практические, итоговые) разбор появится после того, как вы хотя бы раз откроете страницу результатов этого теста.</p>
     </div>`;
   dlg.showModal();
   $("#rvClose").onclick = () => dlg.close();
+  $("#rvAll").onchange = async (e) => {
+    const st = $("#rvSt"); st.textContent = "Сохраняю…";
+    await set(ref(db, "settings/reviewAll"), Number(e.target.value) || null); SET.reviewAll = Number(e.target.value) || null;
+    st.textContent = "Обновляю странички учеников…";
+    try { await syncProgress(db); st.textContent = "✓ Общая настройка сохранена: она действует для всех работ, где выбрано «Как для всех»."; }
+    catch (er) { st.textContent = "Сохранено. Странички обновятся в течение минуты."; }
+  };
   dlg.querySelectorAll("[data-rv]").forEach((sel) => sel.onchange = async () => {
     const st = $("#rvSt");
     st.textContent = "Сохраняю…";
-    await set(ref(db, `settings/${sel.dataset.rv}/review`), Number(sel.value) || null);
+    await set(ref(db, `settings/${sel.dataset.rv}/review`), sel.value === "" ? null : Number(sel.value));
     st.textContent = "Обновляю странички учеников…";
     try { await syncProgress(db); st.textContent = "✓ Готово. Ученики увидят изменения при следующем обновлении странички (до минуты)."; }
     catch (e) { st.textContent = "Сохранено. Странички обновятся в течение минуты."; }
@@ -1298,7 +1339,7 @@ function mAiTargets(r, all = false) {
 }
 function mAutoEnqueue() {
   if (!AICFG?.url) return;
-  for (const [id, r] of Object.entries(RESULTS)) if (r.status === "submitted" && !r.aiStatus && mAiTargets(r).length) mEnqueue(id, false);
+  for (const [id, r] of Object.entries(RESULTS)) if (r.status === "submitted" && !r.aiStatus && (mAiTargets(r).length || !r.aiSummary)) mEnqueue(id, false);
 }
 function mEnqueue(id, force) {
   if (mAiQueued.has(id)) return;
@@ -1312,8 +1353,8 @@ async function mRun() {
     setAiStatus(`🤖 Проверяю: ${r?.name || ""} (в очереди ещё ${mAiQueue.length})`);
     try {
       const items = r ? mAiTargets(r) : [];
-      if (items.length) {
-        const data = await callAi({ subject: ENTRY.aiSubject || "информатика", items });
+      if (r && (items.length || !r.aiSummary)) {
+        const data = await callAi({ subject: ENTRY.aiSubject || SUBJECTS.find((x) => x.id === ENTRY.subject)?.name || "информатика", items, review: true, context: mContext(r) });
         const ai = { ...(r.ai || {}) };
         for (const x of data.results || []) {
           const it = items.find((i) => i.key === x.key);
@@ -1321,7 +1362,10 @@ async function mRun() {
           ai[x.key] = { score: Math.max(0, Math.min(it.max, Math.round(Number(x.score) * 2) / 2)), comment: String(x.comment || "").slice(0, 400),
             good: String(x.good || "").slice(0, 500), missing: String(x.missing || "").slice(0, 500), advice: String(x.advice || "").slice(0, 500) };
         }
-        await update(ref(db, `${P}/${id}`), { ai, aiStatus: "done", aiError: null, aiAt: Date.now() });
+        const upd = { ai, aiStatus: "done", aiError: null, aiAt: Date.now() };
+        const cut = (x, n) => String(x || "").slice(0, n);
+        if (data.summary) upd.aiSummary = { strengths: cut(data.summary.strengths, 800), gaps: cut(data.summary.gaps, 800), advice: cut(data.summary.advice, 800) };
+        await update(ref(db, `${P}/${id}`), upd);
       }
     } catch (e) {
       await update(ref(db, `${P}/${id}`), { aiStatus: "error", aiError: String(e.message || e).slice(0, 300) }).catch(() => {});
