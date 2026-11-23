@@ -111,8 +111,8 @@ export const TESTS = [
 
   { id: "geo12-sess", type: "test", kind: "so", subject: "geo", grade: "12",
     title: "Тренировочная сессия по географии · подготовка к зимней сессии",
-    note: "Формат сессии и БАК · 9 заданий · 60 баллов · 8 вариантов · 90 минут · схема оценивания", path: "geo12/sessiya/",
-    teacher: "geo12/sessiya/#teacher", aiSubject: "география, 12 класс" },
+    note: "Формат сессии и БАК · 9 заданий · 60 баллов · 8 вариантов · 90 минут · схема оценивания", path: "geo12/sessiya.html",
+    teacher: "geo12/sessiya.html#teacher", aiSubject: "география, 12 класс" },
 
   { id: "inf7-so1", type: "test", kind: "so", subject: "inf", grade: "7",
     title: "Суммативное оценивание · Модуль 1. Информация в нашей жизни. Цифровые устройства",
