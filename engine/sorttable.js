@@ -31,7 +31,10 @@
   function headText(th) { return (th.textContent || "").replace(/[⇅▲▼]/g, "").trim(); }
   function tid(table) { var all = document.querySelectorAll(SEL); return Array.prototype.indexOf.call(all, table); }
 
+  // таблицы результатов с «Завершить / Блок» сортирует engine/restable.js — здесь их не трогаем
+  function own(table) { return table.classList.contains("tl-own"); }
   function apply(table) {
+    if (own(table)) return;
     var tb = table.tBodies[0]; if (!tb) return;
     var s = state[tid(table)];
     var ths = table.tHead ? table.tHead.rows[0].cells : [];
@@ -60,6 +63,7 @@
   }
 
   function prepare(table) {
+    if (own(table)) return;
     if (!table.tHead || !table.tHead.rows[0]) return;
     var ths = table.tHead.rows[0].cells;
     for (var i = 0; i < ths.length; i++) {

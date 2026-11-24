@@ -123,6 +123,25 @@ const dm = (ms) => ms ? new Date(ms).toLocaleDateString("ru-RU", { day: "2-digit
 // ---------------- отрисовка ----------------
 function render() {
   if (!LOADED) return;
+  const tw0 = document.querySelector(".tw"), keep = tw0 ? [tw0.scrollLeft, tw0.scrollTop] : null, wy = window.scrollY;
+  render0();
+  const tw1 = document.querySelector(".tw");
+  if (tw1 && keep) { tw1.scrollLeft = keep[0]; tw1.scrollTop = keep[1]; }
+  window.scrollTo(0, wy);
+  crosshair();
+}
+// подсветка столбца под курсором (как в Excel) — строка подсвечивается через CSS
+function crosshair() {
+  const t = document.querySelector("table.jr"); if (!t) return;
+  t.querySelectorAll("th[data-s]").forEach((th) => th.classList.toggle("on", /[▲▼]/.test(th.textContent)));
+  let cur = -1;
+  const paint = (i) => { if (i === cur) return; cur = i;
+    t.querySelectorAll(".colhl").forEach((c) => c.classList.remove("colhl"));
+    if (i > 1) t.querySelectorAll("tr").forEach((tr) => tr.cells[i]?.classList.add("colhl")); };
+  t.onmouseover = (e) => { const c = e.target.closest("td,th"); if (c) paint(c.cellIndex); };
+  t.onmouseleave = () => paint(-1);
+}
+function render0() {
   const M = model();
   const classes = classList();
   // предметы класса: подключённые к классу и группам + те, по которым уже есть сданные работы
@@ -181,18 +200,19 @@ function vTable(M) {
   const s = ST.sort;
   const key = (r) => s.k === "name" ? r.name : s.k === "avg" ? r.avg ?? -1 : s.k === "done" ? r.done : s.k === "xp" ? r.xp : s.k === "rank" ? (r.rank ?? 999) : (r.cells[+s.k] ? score10(r.cells[+s.k]) : -1);
   const rows = M.rows.slice().sort((a, b) => { const x = key(a), y = key(b); return (typeof x === "string" ? x.localeCompare(y, "ru") : x - y) * s.dir * (["name", "rank"].includes(s.k) ? 1 : -1); });
-  const arrow = (k) => (s.k === String(k) ? (s.dir > 0 ? " ▲" : " ▼") : "");
-  return `<div class="tw"><table class="jr"><thead><tr><th class="nm" data-s="rank">#  Ученик${arrow("rank")}${arrow("name")}</th>
+  // ▲ — по возрастанию, ▼ — по убыванию (оценки и средняя сначала идут от лучших — это ▼)
+  const arrow = (k) => (s.k === String(k) ? ((["name", "rank"].includes(s.k) ? s.dir > 0 : s.dir < 0) ? " ▲" : " ▼") : "");
+  return `<div class="tw"><table class="jr"><thead><tr><th class="no">№</th><th class="nm" data-s="name">Ученик${arrow("name")}</th>
       ${M.works.map((w, i) => `<th class="wk" data-s="${i}" title="${esc(w.title)}">${subjOf(w.subject)?.icon || ""} ${esc(shortT(w.title))}<br><span class="sub">${dm(w.date)}</span>${arrow(i)}</th>`).join("")}
-      <th data-s="avg">Средняя${arrow("avg")}</th><th data-s="done">Сдано${arrow("done")}</th><th data-s="xp">XP${arrow("xp")}</th></tr></thead><tbody>
-    ${rows.map((r) => `<tr class="${ST.sel.has(r.code) ? "sel" : ""}" data-code="${esc(r.code)}"><td class="nm"><span class="rank ${r.rank && r.rank <= 3 ? "r" + r.rank : ""}">${r.rank ?? "–"}</span>${esc(r.name)}</td>
+      <th data-s="avg">Средняя${arrow("avg")}</th><th data-s="done">Сдано${arrow("done")}</th><th data-s="xp">XP${arrow("xp")}</th><th data-s="rank">Место${arrow("rank")}</th></tr></thead><tbody>
+    ${rows.map((r, i) => `<tr class="${ST.sel.has(r.code) ? "sel" : ""}" data-code="${esc(r.code)}"><td class="no">${i + 1}</td><td class="nm"><span class="rank ${r.rank && r.rank <= 3 ? "r" + r.rank : ""}">${r.rank ?? "–"}</span>${esc(r.name)}</td>
       ${r.cells.map((w) => `<td><span class="g ${gcls(w)}" title="${w ? esc((w.total ?? "") + " из " + (w.max ?? "") + " · " + (w.pct ?? 0) + "%") : "не сдано"}">${w ? (w.complete ? showMark(w) : "…") : "—"}</span></td>`).join("")}
-      <td class="avg">${f1(r.avg)}</td><td>${r.done}${r.due ? "/" + r.due : ""}</td><td>${r.xp}</td></tr>`).join("")}
-    <tr><td class="nm"><b>Средняя по классу</b></td>${M.colAvg.map((a) => `<td><b>${f1(a)}</b></td>`).join("")}<td></td><td></td><td></td></tr>
+      <td class="avg">${f1(r.avg)}</td><td>${r.done}${r.due ? "/" + r.due : ""}</td><td>${r.xp}</td><td>${r.rank ?? "—"}</td></tr>`).join("")}
+    <tr class="foot"><td class="no"></td><td class="nm"><b>Средняя по классу</b></td>${M.colAvg.map((a) => `<td><b>${f1(a)}</b></td>`).join("")}<td></td><td></td><td></td><td></td></tr>
     </tbody></table></div>
     <div class="legend no-big"><span><span class="g g9">9</span> 9–10</span><span><span class="g g7">7</span> 7–8</span><span><span class="g g5">5</span> 5–6</span><span><span class="g g3">3</span> 1–4</span>
       <span><span class="g gq">ОХ</span> квалификатив</span><span><span class="g gp">…</span> ждёт проверки</span><span><span class="g g0">—</span> не сдано</span>
-      <span>· нажмите на заголовок — сортировка; на ученика — выделить; двойной щелчок — карточка ученика</span></div>`;
+      <span>· щелчок по заголовку — сортировка (по оценке, средней, фамилии, месту…); щелчок по строке — выделить ученика (вся строка подсвечивается); двойной щелчок — карточка ученика</span></div>`;
 }
 
 // ---------- 🏆 рейтинг ----------
@@ -310,7 +330,7 @@ function bind(M) {
     render();
   });
   app.querySelectorAll("th[data-s]").forEach((th) => th.onclick = () => {
-    const k = th.dataset.s; ST.sort = { k: k === "rank" && ST.sort.k === "rank" ? "name" : k, dir: ST.sort.k === k ? -ST.sort.dir : 1 }; render();
+    const k = th.dataset.s; ST.sort = { k, dir: ST.sort.k === k ? -ST.sort.dir : 1 }; render();
   });
   app.querySelectorAll("tr[data-code], .rk-row[data-code]").forEach((tr) => {
     tr.onclick = () => { const c = tr.dataset.code; ST.sel.has(c) ? ST.sel.delete(c) : ST.sel.add(c); render(); };

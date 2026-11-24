@@ -257,6 +257,9 @@ body.noscroll{overflow:hidden}
 .rv .src{font-size:.8rem;color:var(--muted);margin-left:.3rem}
 .pbar-top{display:flex;justify-content:space-between;align-items:center;max-width:1000px;margin:0 auto}
 @media print{.t-top,.backlink,.chk-bar,.pbar-top,.pv{display:none!important}.chk{position:static;overflow:visible}.t-main{padding:0}}
+
+.stopmsg{color:var(--bad);font-weight:700;margin:.3rem 0}
+.tag.bad{background:var(--bad-l);color:var(--bad)}
 </style>
 </head>
 <body class="mode-start">
@@ -890,6 +893,7 @@ let WHO = null; try { WHO = JSON.parse(localStorage.getItem('techlab_student') |
 const PREVIEW = !WHO || !WHO.name;          // учитель смотрит без кода ученика — в базу ничего не пишем
 let S = null, timerId = null, saveTimer = null, unwatch = null, MAN = {};
 
+const dl = () => S.deadline || (S.start + DURATION);
 const saveLocal = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) {} };
 const loadLocal = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; } };
 const dropLocal = () => { try { localStorage.removeItem(LS_KEY); } catch (e) {} };
@@ -907,11 +911,13 @@ const dbUpdate = (obj) => live() ? FB.update(FB.ref(db, `${P}/${S.id}`), obj).ca
         const r = (await FB.get(FB.ref(db, `${P}/${S.id}`))).val();
         if (!r) { dropLocal(); S = null; return renderStart(); }
         MAN = r.manual || {};
-        if (r.status === 'submitted') { S.finished = true; S.self = r.self || S.self || {}; S.end = r.submittedAt || S.end; saveLocal(); return renderReview(); }
+        if (r.deadline) S.deadline = r.deadline;
+        if (r.status === 'submitted') { S.finished = true; S.reason = r.reason || S.reason; S.self = r.self || S.self || {}; S.end = r.submittedAt || S.end; saveLocal(); watchRecord(); return renderReview(); }
+        if (r.status === 'in_progress' && S.finished) { S.finished = false; saveLocal(); }
       } catch (e) {}
     }
     if (S.finished) return renderReview();
-    if (Date.now() >= S.start + DURATION) return finish('timeout');
+    if (Date.now() >= dl()) return finish('timeout');
     return renderResume();
   }
   renderStart();
@@ -946,7 +952,7 @@ function renderStart(msg = '') {
     const name = $('#fName').value.trim().replace(/\s+/g, ' '), cls = $('#fClass').value.trim();
     const v = PREVIEW ? +$('#fVar').value : Math.floor(Math.random() * VARIANTS.length);
     const now = Date.now();
-    S = { id: null, name, cls, v, start: now, a: {}, self: {}, leaves: 0, finished: false };
+    S = { id: null, name, cls, v, start: now, deadline: now + DURATION, a: {}, self: {}, leaves: 0, finished: false };
     if (!PREVIEW) {
       try {
         if (!db) throw new Error('no db');
@@ -986,7 +992,7 @@ function renderTest() {
   <div id="toast" class="toast"></div>`;
   $('#app').oninput = $('#app').onchange = onInput; $('#app').onclick = null;
   $('#finishBtn').onclick = $('#finishBtn2').onclick = confirmFinish;
-  progress(); startTimer();
+  progress(); startTimer(); watchRecord();
 }
 function onInput(e) {
   const el = e.target, a = el.dataset?.a;
@@ -1007,7 +1013,7 @@ function progress() {
 function startTimer() {
   stopTimer();
   const tick = () => {
-    const left = S.start + DURATION - Date.now(), t = $('#timer');
+    const left = dl() - Date.now(), t = $('#timer');
     if (left <= 0) { finish('timeout'); return; }
     if (!t) return;
     const m = Math.floor(left / 60000), s = Math.floor(left % 60000 / 1000);
@@ -1045,11 +1051,33 @@ function modal(html, buttons) {
 async function finish(reason) {
   if (!S || S.finished) return;
   stopTimer(); clearTimeout(saveTimer);
-  S.finished = true; S.end = Math.min(Date.now(), S.start + DURATION); S.reason = reason; saveLocal();
+  S.finished = true; S.end = Math.min(Date.now(), dl()); S.reason = reason; saveLocal();
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   await dbUpdate({ answers: S.a, status: 'submitted', reason, submittedAt: S.end, updatedAt: Date.now(), violations: S.leaves,
     result: resultOf(S.v, S.a, S.self, MAN) });
   renderReview();
+}
+
+/* ---------- учитель может завершить, заблокировать или разрешить продолжить ---------- */
+function watchRecord() {
+  if (!live() || unwatch) return;
+  unwatch = FB.onValue(FB.ref(db, `${P}/${S.id}`), snap => {
+    const r = snap.val(); if (!r || !S) return;
+    const m = r.manual || {};
+    const manChanged = JSON.stringify(m) !== JSON.stringify(MAN); MAN = m;
+    if (r.status === 'submitted' && !S.finished) {                     // учитель завершил / заблокировал
+      stopTimer(); clearTimeout(saveTimer);
+      S.finished = true; S.reason = r.reason || 'teacher'; S.end = r.submittedAt || Date.now(); saveLocal();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      dbUpdate({ answers: S.a, result: resultOf(S.v, S.a, S.self, MAN) });   // последние ответы — учителю
+      return renderReview();
+    }
+    if (r.status === 'in_progress' && S.finished) {                     // учитель разрешил продолжить
+      S.finished = false; S.reason = null; S.deadline = r.deadline || dl(); saveLocal();
+      goFull(); return renderTest();
+    }
+    if (manChanged && S.finished && document.body.classList.contains('mode-review')) renderReview();
+  });
 }
 
 /* ---------- проверка после сдачи ---------- */
@@ -1078,6 +1106,7 @@ function renderReview() {
   $('#printBtn').onclick = () => window.print();
   $('#againBtn').onclick = () => modal('<h3>Начать новую попытку?</h3><p>Эта работа останется у учителя. Новая попытка начнётся с другим вариантом, если учитель держит работу открытой.</p>',
     [['Отмена', null], ['Начать заново', () => { if (unwatch) unwatch(); unwatch = null; dropLocal(); S = null; MAN = {}; renderStart(); }]]);
+  if (S.reason === 'blocked') $('#againBtn').remove();
   $('#app').oninput = $('#app').onchange = null;
   $('#app').onclick = e => {
     const b = e.target.closest('[data-r]'); if (!b) return;
@@ -1085,10 +1114,7 @@ function renderReview() {
     dbUpdate({ self: S.self, result: resultOf(S.v, S.a, S.self, MAN), updatedAt: Date.now() });
   };
   updateScores();
-  if (live() && !unwatch) unwatch = FB.onValue(FB.ref(db, `${P}/${S.id}/manual`), snap => {
-    const m = snap.val() || {};
-    if (JSON.stringify(m) !== JSON.stringify(MAN)) { MAN = m; renderReview(); }
-  });
+  watchRecord();
 }
 function updateScores() {
   const e = evaluate(S.v, S.a, S.self, MAN), done = e.complete, mark = e.grade, total = e.total, pct = Math.round(total / 60 * 100);
@@ -1105,6 +1131,7 @@ function updateScores() {
         <h2>${done ? `${total} из 60 баллов · ${pct}%` : 'Работа сдана. Оцените развёрнутые ответы'}</h2>
         <p>${done ? (live() ? 'Результат отправлен учителю. Учитель может проверить ответы и изменить баллы.' : 'Отметка выставлена по шкале зимней сессии.')
           : `Под каждым развёрнутым ответом выберите 0, 1 или 2 балла, честно сравнив его с эталоном. Осталось: <b>${e.pending}</b>. <a href="#" id="nextPend">Перейти к следующему →</a>`}</p>
+        ${S.reason === 'blocked' ? '<p class="stopmsg">⛔ Работа остановлена учителем.</p>' : S.reason === 'teacher' ? '<p class="stopmsg">⏹ Работа завершена учителем. Засчитаны сохранённые ответы.</p>' : ''}
         <p class="meta">Время работы: ${mins} мин${S.reason === 'timeout' ? ' (время истекло)' : ''} · Выходов из окна теста: <b class="${S.leaves ? 'warnc' : ''}">${S.leaves}</b></p>
       </div>
     </div>

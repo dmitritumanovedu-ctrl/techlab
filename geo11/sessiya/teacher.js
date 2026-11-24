@@ -1,6 +1,7 @@
 // Пробная сессия · География 11 · панель учителя: ключи, автопроверка, ИИ, PDF
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { enhanceResults } from "../../engine/restable.js?v=1";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../../firebase-config.js";
 import { TEST, VARIANTS } from "./questions.js?v=1";
@@ -28,6 +29,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const P = `results/${WORK.id}`;
 
 let RESULTS = {}, KEYS = null, AICFG = null, aiAuto = false, filterCls = "", search = "", openId = null, unsub = [], seen = new Set();
+enhanceResults({ db, ref, update, path: P, records: () => RESULTS });   // сортировка, выделение строки, «Завершить» / «Блок»
 const aiQueue = [], aiQueued = new Set(); let aiBusy = false;
 
 const TOPICS = { 1: "Верно / неверно", 2: "Отрасли промышленности", 3: "Группировка / соответствие", 4: "Географические координаты",
@@ -344,7 +346,7 @@ function rows() {
 function statusTag(r) {
   if (r.status === "in_progress") return `<span class="tag run">⏳ пишет</span>`;
   const map = { manual: ["done", "✅ сдано"], timeout: ["warn", "⏰ время вышло"], tab: ["auto", "⚠ автосдача: вкладка"],
-    blur: ["auto", "⚠ автосдача: другое окно"], close: ["auto", "⚠ автосдача: закрыл страницу"], teacher: ["warn", "завершено учителем"] };
+    blur: ["auto", "⚠ автосдача: другое окно"], close: ["auto", "⚠ автосдача: закрыл страницу"], teacher: ["warn", "завершено учителем"], blocked: ["auto", "⛔ заблокирован"] };
   const [cls, txt] = map[r.reason] || ["done", "сдано"];
   return `<span class="tag ${cls}">${txt}</span>`;
 }

@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { enhanceResults } from "../../engine/restable.js?v=1";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../../firebase-config.js";
 import { TEST, VARIANTS } from "./questions.js";
@@ -21,6 +22,7 @@ const P = `results/${TEST.id}`;
 
 let AICFG = null, aiAuto = false, aiQueue = [], aiQueued = new Set(), aiBusy = false;
 let KEYS = null, RESULTS = {}, seen = new Set(), filterCls = "", search = "", openId = null, unsub = [];
+enhanceResults({ db, ref, update, path: P, records: () => RESULTS });   // сортировка, выделение строки, «Завершить» / «Блок»
 
 onAuthStateChanged(auth, async (user) => {
   unsub.forEach((u) => u()); unsub = [];
@@ -133,7 +135,7 @@ function evaluate(r) {
 function statusTag(r) {
   if (r.status === "in_progress") return `<span class="tag run">⏳ пишет</span>`;
   const map = { manual: ["done", "✅ сдано"], timeout: ["warn", "⏰ время вышло"], tab: ["auto", "⚠ автосдача: вкладка"],
-    blur: ["auto", "⚠ автосдача: другое окно"], close: ["auto", "⚠ автосдача: закрыл страницу"], teacher: ["warn", "завершено учителем"] };
+    blur: ["auto", "⚠ автосдача: другое окно"], close: ["auto", "⚠ автосдача: закрыл страницу"], teacher: ["warn", "завершено учителем"], blocked: ["auto", "⛔ заблокирован"] };
   const [cls, txt] = map[r.reason] || ["done", "сдано"];
   return `<span class="tag ${cls}">${txt}</span>`;
 }

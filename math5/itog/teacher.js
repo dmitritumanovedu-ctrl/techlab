@@ -2,6 +2,7 @@
 // Ответы вычисляются из условий вариантов прямо здесь — отдельный файл ключей загружать не нужно.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { enhanceResults } from "../../engine/restable.js?v=1";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../../firebase-config.js";
 import { TEST, VARIANTS, shopText, stHtml, buyText, exprHtml, mText, lei } from "./questions.js?v=1";
@@ -30,6 +31,7 @@ const db = getDatabase(fb), auth = getAuth(fb);
 const P = `results/${WORK.id}`;
 
 let RESULTS = {}, AICFG = null, aiAuto = false, filterCls = "", search = "", openId = null, unsub = [], seen = new Set();
+enhanceResults({ db, ref, update, path: P, records: () => RESULTS });   // сортировка, выделение строки, «Завершить» / «Блок»
 const aiQueue = [], aiQueued = new Set(); let aiBusy = false;
 
 const TOPICS = { "1а": "Истинно / ложно (делимость)", "1б": "Множество делителей", "1в": "Деление с остатком", "1г": "Задача о покупке",
@@ -319,7 +321,7 @@ function rows() {
 function statusTag(r) {
   if (r.status === "in_progress") return `<span class="tag run">⏳ пишет</span>`;
   const map = { manual: ["done", "✅ сдано"], timeout: ["warn", "⏰ время вышло"], tab: ["auto", "⚠ автосдача: вкладка"],
-    blur: ["auto", "⚠ автосдача: другое окно"], close: ["auto", "⚠ автосдача: закрыл страницу"], teacher: ["warn", "завершено учителем"] };
+    blur: ["auto", "⚠ автосдача: другое окно"], close: ["auto", "⚠ автосдача: закрыл страницу"], teacher: ["warn", "завершено учителем"], blocked: ["auto", "⛔ заблокирован"] };
   const [cls, txt] = map[r.reason] || ["done", "сдано"];
   return `<span class="tag ${cls}">${txt}</span>`;
 }

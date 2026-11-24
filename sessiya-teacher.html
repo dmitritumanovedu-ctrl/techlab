@@ -257,6 +257,9 @@ body.noscroll{overflow:hidden}
 .rv .src{font-size:.8rem;color:var(--muted);margin-left:.3rem}
 .pbar-top{display:flex;justify-content:space-between;align-items:center;max-width:1000px;margin:0 auto}
 @media print{.t-top,.backlink,.chk-bar,.pbar-top,.pv{display:none!important}.chk{position:static;overflow:visible}.t-main{padding:0}}
+
+.stopmsg{color:var(--bad);font-weight:700;margin:.3rem 0}
+.tag.bad{background:var(--bad-l);color:var(--bad)}
 </style>
 </head>
 <body class="mode-teacher">
@@ -885,8 +888,10 @@ const AU = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 const { firebaseConfig } = await import('./firebase-config.js');
 const fb = fbApp.initializeApp(firebaseConfig);
 const db = D.getDatabase(fb), auth = AU.getAuth(fb);
+const { enhanceResults } = await import('./engine/restable.js?v=1');
 
 let RESULTS = {}, unsub = [], filterCls = '', search = '', openId = null, stopSync = null;
+enhanceResults({ db, ref: D.ref, update: D.update, path: P, records: () => RESULTS });   // сортировка, выделение, «Завершить» / «Блок»
 const fmtWhen = (a, b) => { if (!a) return '—'; const d = new Date(a), t = x => new Date(x).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   return `<b>${d.toLocaleDateString('ru-RU')}</b><br><small>${t(a)} / ${b ? t(b) : '…'}</small>`; };
 const evalR = r => evaluate((r.variant || 1) - 1, r.answers || {}, r.self || {}, r.manual || {});
@@ -984,6 +989,8 @@ function rows() {
 }
 function statusTag(r) {
   if (r.status === 'in_progress') return Date.now() > (r.deadline || 0) + 60000 ? '<span class="tag warn">не сдал (время вышло)</span>' : '<span class="tag run">⏳ пишет</span>';
+  if (r.reason === 'blocked') return '<span class="tag bad">⛔ заблокирован</span>';
+  if (r.reason === 'teacher') return '<span class="tag warn">⏹ завершил учитель</span>';
   return r.reason === 'timeout' ? '<span class="tag warn">⏰ время вышло</span>' : '<span class="tag done">✅ сдано</span>';
 }
 function renderTable() {
@@ -998,18 +1005,15 @@ function renderTable() {
   if (!list.length) { tb.innerHTML = '<tr><td colspan="13" class="muted">Работ пока нет. Включите «Работа открыта», и ученики смогут начать.</td></tr>'; return; }
   tb.innerHTML = list.map(([id, r], i) => {
     const fin = r.status === 'submitted', e = evalR(r);
-    return `<tr><td>${list.length - i}</td><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.variant}</td><td>${statusTag(r)}</td>
-      <td>${r.violations ? `<span class="tag warn">${r.violations}</span>` : '0'}</td><td>${fmtWhen(r.startedAt, r.submittedAt)}</td>
+    return `<tr><td>${list.length - i}</td><td data-sort="${esc(String(r.name || '').toLowerCase())}"><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.variant}</td><td>${statusTag(r)}</td>
+      <td>${r.violations ? `<span class="tag warn">${r.violations}</span>` : '0'}</td><td data-sort="${r.submittedAt || r.startedAt || 0}">${fmtWhen(r.startedAt, r.submittedAt)}</td>
       ${[1, 2, 3].map(s => `<td>${fin ? `${e.secs[s][0]}/${e.secs[s][1]}` : '—'}</td>`).join('')}
       <td>${fin ? `<b>${e.total}</b> / 60` : '—'}</td>
-      <td>${fin ? (e.complete ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}</span><br><small>не оценено: ${e.pending}</small>`) : '—'}</td>
+      <td data-sort="${fin ? e.grade : ''}">${fin ? (e.complete ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}</span><br><small>не оценено: ${e.pending}</small>`) : '—'}</td>
       <td class="nowrap"><button class="btn small" data-open="${id}">${fin ? 'Открыть' : 'Смотреть'}</button>
-        ${!fin ? `<button class="btn small" data-stop="${id}" title="Завершить работу ученика">Завершить</button>` : ''}
         <button class="btn small red" data-del="${id}" title="Удалить работу">✕</button></td></tr>`;
   }).join('');
   tb.querySelectorAll('[data-open]').forEach(b => b.onclick = () => showCheck(b.dataset.open));
-  tb.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => { if (confirm('Завершить работу этого ученика? Она будет сдана с текущими ответами.'))
-    D.update(D.ref(db, `${P}/${b.dataset.stop}`), { status: 'submitted', reason: 'teacher', submittedAt: Date.now() }); });
   tb.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const r = RESULTS[b.dataset.del];
     if (confirm(`Удалить работу «${r?.name}»? Это нельзя отменить.`)) D.remove(D.ref(db, `${P}/${b.dataset.del}`)); });
 }
