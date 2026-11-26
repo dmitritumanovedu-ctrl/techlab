@@ -101,7 +101,7 @@ export const TESTS = [
     teacher: "geo11/sessiya/teacher.html", aiSubject: "география, 11 класс" },
   { id: "geo11-kr1", type: "test", kind: "so", subject: "geo", grade: "11",
     title: "Суммативное оценивание · «Политическая карта мира. Природные условия и ресурсы»",
-    note: "Единицы обучения I–II · 9 заданий · 40 баллов · 10 вариантов · 45 минут · карта, таблицы, схемы", path: "kr-geo11.html",
+    note: "Единицы обучения I–II · 11 заданий · 50 баллов · 10 вариантов · 45 минут · карта, таблицы, схемы, причинно-следственные связи", path: "kr-geo11.html",
     teacher: "kr-geo11-teacher.html", aiSubject: "география, 11 класс" },
 
   { id: "geo12-sr1", type: "test", kind: "sr", subject: "geo", grade: "12",
