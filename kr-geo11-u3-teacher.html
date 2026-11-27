@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Учитель · Суммативное оценивание · Население и населённые пункты · 11 класс</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --blue:#1f5f9e; --blue-d:#174a7c; --blue-l:#e8f0f8; --sky:#f3f7fb;
+  --ink:#1d2733; --muted:#5d6b7a; --line:#c9d3de; --paper:#fff;
+  --green:#2f7d3b; --warm:#d98b2b; --warm-l:#fdf3e4;
+  --good:#2f7d3b; --good-l:#e9f4ea; --bad:#b3412f; --bad-l:#fbecea; --mid:#a86b12; --mid-l:#fdf3e1;
+  --serif: "PT Serif", Georgia, "Times New Roman", serif;
+  --sans: "Segoe UI", "PT Sans", Roboto, Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--sky);line-height:1.45}
+body::before{content:"";display:block;height:6px;background:var(--blue)}
+button{font:inherit;cursor:pointer}
+a{color:var(--blue)}
+
+/* --- кнопки --- */
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:.5rem .95rem;border-radius:8px;font-weight:600;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--blue);background:var(--blue-l)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:var(--blue-d)}
+.btn.big{padding:.8rem 1.4rem;font-size:1.05rem}
+.btn.small{padding:.3rem .7rem;font-size:.9rem}
+
+/* --- старт --- */
+.start{min-height:calc(100vh - 6px);display:grid;place-items:center;padding:2rem 1rem;
+  background:linear-gradient(var(--blue) 0 210px, var(--sky) 210px)}
+.start-card{background:#fff;border-radius:14px;box-shadow:0 6px 28px rgba(23,74,124,.14);max-width:560px;width:100%;padding:2rem 2rem 1.6rem}
+.start-card.wide{max-width:820px}
+.kicker{margin:0;color:var(--warm);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:.8rem}
+.start h1{margin:.3rem 0 .2rem;font-family:var(--serif);font-size:2.1rem;color:var(--blue-d)}
+.sub{margin:0 0 1.2rem;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin:0 0 1.4rem}
+.facts div{background:var(--blue-l);border-radius:10px;padding:.6rem .4rem;text-align:center}
+.facts b{display:block;font-size:1.5rem;color:var(--blue-d);font-family:var(--serif)}
+.facts span{font-size:.82rem;color:var(--muted)}
+form label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.9rem;color:var(--muted)}
+form input,form select{display:block;width:100%;margin-top:.3rem;padding:.65rem .75rem;border:1px solid var(--line);border-radius:8px;font:inherit;color:var(--ink);background:#fff}
+form input[readonly]{background:#f3f6f9;color:var(--muted)}
+form input:focus,form select:focus{outline:2px solid var(--blue-l);border-color:var(--blue)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+form .btn{width:100%;margin-top:.3rem}
+.notice{background:var(--warm-l);border:1px solid #f0d3a6;border-radius:10px;padding:.7rem .9rem;margin:0 0 1rem;font-size:.95rem;display:flex;gap:.6rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.rules{margin-top:1.2rem;border-top:1px solid #e6ecf2;padding-top:.9rem;font-size:.92rem;color:var(--muted)}
+.rules summary{cursor:pointer;font-weight:600;color:var(--blue)}
+.rules ul{padding-left:1.1rem}
+table.scale{border-collapse:collapse;margin:.6rem 0;font-size:.9rem;min-width:220px}
+table.scale th,table.scale td{border:1px solid var(--line);padding:.25rem .8rem;text-align:center}
+table.scale th{background:var(--blue-l)}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.6rem;margin:1rem 0}
+.tv{border:1px solid var(--line);border-radius:10px;padding:.7rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.tv b{width:100%;font-family:var(--serif)}
+
+/* --- верхняя панель --- */
+.bar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;padding:.55rem 1.2rem;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.bar-l{display:flex;flex-direction:column;line-height:1.2}
+.bar-l span{font-size:.85rem;color:var(--muted)}
+.bar-c{text-align:center;font-size:.9rem;color:var(--muted);min-width:220px}
+.bar-r{display:flex;gap:.6rem;justify-content:flex-end;align-items:center}
+.pbar{height:5px;background:#e3e9f0;border-radius:3px;overflow:hidden;margin-top:.3rem}
+.pbar i{display:block;height:100%;background:var(--blue);transition:width .3s}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.25rem;color:var(--blue-d);background:var(--blue-l);padding:.25rem .7rem;border-radius:8px}
+.timer.warn{color:var(--bad);background:var(--bad-l)}
+
+/* --- лист бланка --- */
+.sheet{max-width:1000px;margin:1.4rem auto 3rem;background:var(--paper);box-shadow:0 2px 16px rgba(23,74,124,.1);border-radius:6px;padding:2.2rem 2.4rem;font-family:var(--serif)}
+.blank-head{text-align:center;margin-bottom:1.2rem}
+.blank-head p{margin:.1rem 0}
+.h-title{font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:1.15rem}
+.h-sub{font-weight:700}
+.h-year{color:var(--muted);font-style:italic}
+.h-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:.35rem 2rem;text-align:left;margin:1rem 0 .6rem;font-size:.98rem}
+.fill{display:inline-block;min-width:140px;border-bottom:1px solid var(--ink);padding:0 .3rem;font-weight:700}
+.h-var{font-weight:700;font-size:1.15rem;margin-top:.6rem!important}
+
+table.blank{width:100%;border-collapse:collapse;font-size:1rem;table-layout:fixed}
+table.blank th:first-child{width:2.6rem}table.blank th:last-child{width:6.4rem}
+table.barem th:nth-child(2){width:4rem}table.barem th:last-child{width:30%}
+table.blank th{background:var(--blue-l);border:1px solid #9fb2c6;padding:.4rem;font-family:var(--sans);font-size:.85rem;letter-spacing:.05em}
+table.blank td{border:1px solid #9fb2c6;padding:.55rem .7rem;vertical-align:top}
+table.blank tr.part td{border-top:none;border-bottom:none}
+table.blank tr.part td.body{padding-top:.15rem}
+table.blank tr.t-head td.stem{border-bottom:none}
+table.blank tr.part+tr.t-head td,table.blank tr.part+tr.sec td,table.blank tr.part+tr.total td{border-top:1px solid #9fb2c6}
+table.blank tr.part:last-of-type td{border-bottom:1px solid #9fb2c6}
+td.num{width:2.6rem;text-align:center;font-weight:700}
+td.pts{width:6.4rem;text-align:center;font-family:var(--sans);font-size:.85rem;color:var(--muted)}
+td.pts b{color:var(--ink);font-size:1rem}
+tr.sec td{background:#f4f8f3;color:var(--green);font-weight:700;font-family:var(--sans);font-size:.95rem;padding:.45rem .7rem}
+tr.total td{font-weight:700;text-align:right}
+td.stem{font-weight:600}
+.q{margin:.35rem 0 .15rem}
+
+/* поля как на бумаге */
+.line{border:none;border-bottom:1px dashed #8aa0b6;background:transparent;font:inherit;font-family:var(--sans);color:var(--blue-d);padding:.25rem .2rem;outline:none;min-width:0}
+.line:focus{border-bottom:2px solid var(--blue);background:var(--blue-l)}
+.line.full{width:100%}
+.two{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:.2rem .5rem;align-items:end}
+.dot{color:var(--muted)}
+textarea.ruled{width:100%;border:1px solid #dbe3ec;border-radius:4px;resize:vertical;font:inherit;font-family:var(--sans);color:var(--blue-d);padding:0 .5rem;line-height:1.9rem;
+  background:repeating-linear-gradient(#fff 0 calc(1.9rem - 1px), #cfd9e4 calc(1.9rem - 1px) 1.9rem);background-attachment:local;min-height:5.9rem}
+textarea.ruled:focus{outline:none;border-color:var(--blue)}
+.tf{display:grid;grid-template-columns:9.5rem auto 1fr;gap:.6rem;align-items:start;padding:.3rem 0}
+.tf-fix .line{width:100%;margin-top:.2rem}
+.vn{display:flex;gap:.3rem}
+.pill{display:inline-grid;place-items:center;width:2rem;height:2rem;border:1.5px solid #8aa0b6;border-radius:50%;font-weight:700;font-family:var(--sans);cursor:pointer;user-select:none}
+.pill input{display:none}
+.pill.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tf-s u{text-decoration-thickness:2px;text-underline-offset:3px}
+table.grp{border-collapse:collapse;margin:.3rem 0;min-width:70%}
+table.grp th,table.grp td{border:1px solid #c3cfdb;padding:.35rem .6rem;font-size:.95rem}
+table.grp th{background:#f6f9fc;font-family:var(--sans);font-size:.85rem}
+table.grp td.c{text-align:center;width:9rem}
+.pick input{display:none}
+.pick span{display:inline-block;width:1.25rem;height:1.25rem;border:1.5px solid #8aa0b6;border-radius:4px;vertical-align:middle;cursor:pointer}
+.pick input:checked+span{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 3px #fff}
+figure.map{margin:.7rem 0 .2rem;text-align:center}
+figure.map img{max-width:100%;border:1px solid #c3cfdb;border-radius:4px}
+figure.map figcaption{font-size:.85rem;color:var(--muted);font-weight:400}
+
+/* баллы L 0 1 2 */
+.boxes{display:inline-flex;flex-wrap:wrap;gap:2px;margin-top:.35rem;justify-content:center;align-items:center;max-width:5.4rem}
+.boxes .L{font-size:.7rem;color:#9aa8b6;margin-right:2px}
+.boxes.wide .L{width:100%;margin:0}
+.sb{display:inline-block;width:1.45rem;height:1.3rem;line-height:1.3rem;border:1px solid #b7c4d1;font-size:.78rem;color:#7d8b99;background:#fff}
+.sb.on{background:var(--warm);border-color:var(--warm);color:#fff;font-weight:700}
+
+/* проверка */
+.rv{margin:.5rem 0 .3rem;padding:.55rem .75rem;border-radius:6px;font-family:var(--sans);font-size:.92rem;border-left:4px solid}
+.rv.good{background:var(--good-l);border-color:var(--good);color:#205a29}
+.rv.mid{background:var(--mid-l);border-color:var(--mid);color:#7a4c0a}
+.rv.bad{background:var(--bad-l);border-color:var(--bad);color:#82301f}
+.rv.self{background:#f5f8fb;border-color:var(--blue);color:var(--ink)}
+.model{margin-top:.25rem;color:var(--ink)}
+.model span{font-weight:700;color:var(--muted)}
+.model i{color:var(--muted)}
+.rate{margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.rate button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:.3rem .6rem;font-size:.86rem}
+.rate button:hover{border-color:var(--blue)}
+.rate button.on{background:var(--warm);border-color:var(--warm);color:#fff}
+.mode-review input:disabled,.mode-review textarea:disabled{color:var(--ink);opacity:1;-webkit-text-fill-color:var(--ink)}
+.mode-review .pill,.mode-review .pick span{cursor:default}
+
+.result{font-family:var(--sans);border:1px solid var(--line);border-radius:10px;padding:1.2rem;margin-bottom:1.8rem;background:linear-gradient(#f7fafd,#fff)}
+.res-top{display:flex;gap:1.2rem;align-items:center}
+.res-mark{flex:none;width:6.2rem;height:6.2rem;border-radius:12px;background:var(--blue);color:#fff;display:grid;place-items:center;text-align:center;line-height:1}
+.res-mark span{font-size:.75rem;opacity:.85;align-self:end}
+.res-mark b{font-size:2.8rem;font-family:var(--serif);align-self:start}
+.res-mark.wait{background:#9fb2c6}
+.res-main h2{margin:0 0 .3rem;font-family:var(--serif);color:var(--blue-d)}
+.res-main p{margin:.2rem 0;color:var(--muted)}
+.meta{font-size:.88rem}
+.warnc{color:var(--bad)}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin:1rem 0 .8rem}
+.rsec{background:#fff;border:1px solid #e1e8ef;border-radius:8px;padding:.6rem .7rem;font-size:.85rem;color:var(--muted)}
+.rsec b{display:block;color:var(--ink);font-size:1.15rem;margin-top:.15rem}
+.res-tasks{display:flex;flex-wrap:wrap;gap:.4rem}
+.res-tasks a{text-decoration:none;border:1px solid var(--line);border-radius:6px;padding:.25rem .55rem;font-size:.85rem;color:var(--ink);background:#fff}
+.res-tasks a b{margin-left:.35rem}
+.res-tasks a.full{border-color:#9cc8a3;background:var(--good-l)}
+.res-tasks a.zero{border-color:#e3b0a7;background:var(--bad-l)}
+
+.sign{margin-top:1.6rem;font-size:.95rem}
+.end{text-align:center;margin-top:2rem}
+table.barem td{font-size:.93rem}
+table.barem td.crit{width:30%;color:var(--muted);font-family:var(--sans);font-size:.85rem}
+.sc-h{font-family:var(--serif);margin-top:1.6rem}
+
+.toast{position:fixed;left:50%;bottom:1.4rem;transform:translate(-50%,150%);opacity:0;visibility:hidden;background:var(--ink);color:#fff;padding:.7rem 1.1rem;border-radius:8px;font-size:.92rem;transition:transform .3s;z-index:50;max-width:90vw}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
+.modal{position:fixed;inset:0;background:rgba(20,35,50,.45);display:grid;place-items:center;z-index:60;padding:1rem}
+.mbox{background:#fff;border-radius:12px;padding:1.4rem 1.5rem;max-width:430px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.mbox h3{margin:0 0 .5rem;font-family:var(--serif);color:var(--blue-d)}
+.mbtns{display:flex;justify-content:flex-end;gap:.6rem;margin-top:1rem}
+
+.mode-test .sheet{user-select:none}
+.mode-test .sheet input,.mode-test .sheet textarea{user-select:text}
+
+@media (max-width:760px){
+  .boxes{max-width:2.6rem}
+  .sheet{padding:1.2rem .8rem;margin:.6rem}
+  .bar{grid-template-columns:1fr auto;padding:.5rem .7rem}
+  .bar-c{display:none}
+  .bar-r .btn{padding:.4rem .6rem;font-size:.85rem}
+  .tf{grid-template-columns:1fr;gap:.3rem}
+  .tf .vn{order:-1}
+  .tf-fix{order:3}
+  .h-grid{grid-template-columns:1fr}
+  td.pts{width:3.2rem}
+  table.blank th:first-child{width:2rem}table.blank th:last-child{width:3.4rem}
+  table.blank td{padding:.45rem .45rem}
+  table.blank th{font-size:.7rem;letter-spacing:0}
+  .fill{min-width:90px}
+  .facts b{font-size:1.2rem}
+  .res-grid{grid-template-columns:1fr}
+  .two{grid-template-columns:auto 1fr}
+  table.grp{min-width:100%}
+}
+@media print{
+  body{background:#fff}
+  body::before,.bar,.end,.toast,.rate,.modal{display:none!important}
+  .sheet{box-shadow:none;margin:0;max-width:none;padding:0}
+  .result{break-inside:avoid}
+  tr{break-inside:avoid}
+  .line{border-bottom:1px solid #555}
+  textarea.ruled{border:none;resize:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sb.on,.pill.on,.pick input:checked+span,.rv,.res-mark,tr.sec td,table.blank th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+.pv{background:#fff4dc;color:#5a4300;text-align:center;font-size:.9rem;padding:.45rem;font-weight:600}
+.rules-list{font-size:.88rem;color:var(--muted);padding-left:1.1rem;margin:.2rem 0 1rem}
+.rules-list li{margin:.25rem 0}
+.err{color:var(--bad);font-size:.92rem;min-height:1.2rem;margin:.2rem 0 .5rem;font-weight:600}
+.saved{font-size:.8rem;color:var(--good)}
+.tnote{margin-top:.35rem;font-size:.85rem;color:var(--blue-d)}
+/* панель учителя */
+.t-top{background:var(--blue);color:#fff;padding:.9rem 1.4rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.t-top h1{margin:0;font-size:1.15rem;font-weight:700}
+.t-top #who{font-size:.88rem;opacity:.9}.t-top #who a{color:#fff}
+.t-main{max-width:1250px;margin:0 auto;padding:1.2rem}
+.tcard{background:#fff;border:1px solid #dfe7ef;border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1rem}
+.tcard.narrow{max-width:520px;margin:3rem auto;text-align:center}
+.tcard h2{margin:.2rem 0 .4rem;font-family:var(--serif);color:var(--blue-d)}
+.muted{color:var(--muted)}.small{font-size:.88rem}
+.row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.8rem 0 .3rem}
+.switch{display:flex;align-items:center;gap:.6rem;font-weight:600;cursor:pointer;background:var(--sky);border:1px solid var(--line);border-radius:10px;padding:.6rem .9rem}
+.switch input{width:1.2rem;height:1.2rem}
+.toolbar{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem}
+.toolbar select,.toolbar input{padding:.5rem .7rem;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+.stats{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem}
+.stat{background:#fff;border:1px solid #dfe7ef;border-radius:10px;padding:.5rem .9rem;font-size:.82rem;color:var(--muted);min-width:110px}
+.stat b{display:block;font-size:1.25rem;color:var(--ink)}
+.table-wrap{overflow-x:auto;background:#fff;border:1px solid #dfe7ef;border-radius:12px;margin-bottom:1rem}
+table.res{width:100%;border-collapse:collapse;font-size:.9rem}
+table.res th{background:var(--blue-l);text-align:left;padding:.55rem .6rem;font-size:.8rem;white-space:nowrap}
+table.res td{border-top:1px solid #edf1f5;padding:.5rem .6rem;vertical-align:middle}
+.nowrap{white-space:nowrap}
+.tag{display:inline-block;border-radius:6px;padding:.12rem .45rem;font-size:.8rem;font-weight:600}
+.tag.run{background:var(--blue-l);color:var(--blue-d)}.tag.done{background:var(--good-l);color:var(--good)}.tag.warn{background:var(--mid-l);color:var(--mid)}
+.grade{display:inline-grid;place-items:center;min-width:2rem;height:2rem;border-radius:8px;background:var(--blue);color:#fff;font-weight:700;font-size:1.05rem}
+.grade.pending{background:#9fb2c6;padding:0 .3rem}
+.btn.red{color:var(--bad)}.btn.red:hover{background:var(--bad-l);border-color:var(--bad)}
+.backlink{display:inline-block;margin:0 0 .8rem;text-decoration:none;font-weight:600}
+.chk{position:fixed;inset:0;z-index:40;background:var(--sky);overflow:auto}
+.chk-bar{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 1.2rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;font-size:.92rem}
+.chk-bar .sp{flex:1}
+body.noscroll{overflow:hidden}
+.rv.tch .rate button{min-width:2.1rem}
+.rv .src{font-size:.8rem;color:var(--muted);margin-left:.3rem}
+.pbar-top{display:flex;justify-content:space-between;align-items:center;max-width:1000px;margin:0 auto}
+@media print{.t-top,.backlink,.chk-bar,.pbar-top,.pv{display:none!important}.chk{position:static;overflow:visible}.t-main{padding:0}}
+
+.stopmsg{color:var(--bad);font-weight:700;margin:.3rem 0}
+.tag.bad{background:var(--bad-l);color:var(--bad)}
+
+/* ---------- новые типы заданий ---------- */
+.mc{display:grid;gap:.3rem;margin:.2rem 0 .3rem}
+.mc .ch{display:flex;gap:.5rem;align-items:flex-start;padding:.4rem .6rem;border:1px solid #dbe3ec;border-radius:8px;cursor:pointer;font-family:var(--sans);font-size:.95rem;background:#fff}
+.mc .ch:hover{border-color:var(--blue)}
+.mc .ch.on{background:var(--blue-l);border-color:var(--blue);font-weight:600}
+.mc .ch input{margin-top:.2rem;accent-color:var(--blue)}
+.mc .lt{color:var(--muted);font-weight:700}
+.selrow,.numrow{display:grid;grid-template-columns:minmax(150px,1fr) 1.4fr;gap:.6rem;align-items:center;padding:.3rem 0}
+.selrow.long{grid-template-columns:minmax(140px,.7fr) 2fr}
+.selrow select,.ord select,.sc-sel{font:inherit;font-family:var(--sans);font-size:.92rem;padding:.4rem .5rem;border:1px solid #9fb2c6;border-radius:6px;background:#fff;color:var(--blue-d);max-width:100%;width:100%}
+.selrow select:focus,.ord select:focus,.sc-sel:focus{outline:2px solid var(--blue-l);border-color:var(--blue)}
+.numrow .num{width:9rem;justify-self:start;font-size:1rem}
+.ord{display:grid;gap:.35rem;margin:.3rem 0}
+.ordrow{display:grid;grid-template-columns:5rem 1fr;gap:.6rem;align-items:center;padding:.35rem .5rem;border:1px dashed #c3cfdb;border-radius:8px;font-family:var(--sans);font-size:.95rem}
+.scheme{font-family:var(--sans);margin:.4rem 0;padding:.6rem;background:#f8fafc;border:1px solid #e1e8ef;border-radius:10px}
+.sc-root{background:var(--blue);color:#fff;font-weight:700;text-align:center;padding:.5rem .7rem;border-radius:8px;margin:0 auto .7rem;max-width:520px}
+.sc-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem}
+.sc-col{display:flex;flex-direction:column;gap:.4rem;border-top:3px solid var(--blue-l);padding-top:.5rem}
+.sc-node{background:var(--blue-l);color:var(--blue-d);font-weight:700;text-align:center;padding:.4rem;border-radius:6px;font-size:.92rem}
+.sc-node.sm{background:#fff;border:1px dashed #9fb2c6;font-weight:600;font-size:.85rem}
+.sc-sel{white-space:normal}
+.mapbox{position:relative;display:inline-block;max-width:100%;line-height:0}
+.mapbox img{max-width:100%;border:1px solid #c3cfdb;border-radius:4px}
+.mk{position:absolute;transform:translate(-50%,-50%);width:1.45rem;height:1.45rem;border-radius:50%;background:#C62828;color:#fff;font:700 .85rem/1.45rem var(--sans);text-align:center;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.4)}
+.fig{margin:.7rem 0 .3rem}
+.fig figcaption{font-size:.9rem;font-weight:700;color:var(--ink);margin-bottom:.35rem;font-family:var(--sans)}
+table.stat{border-collapse:collapse;font-family:var(--sans);font-size:.92rem;font-weight:400;min-width:60%}
+table.stat th,table.stat td{border:1px solid #c3cfdb;padding:.3rem .6rem}
+table.stat th{background:#f0f5fb;font-size:.82rem}
+table.stat td.nmr{text-align:center}
+table.stat tr:last-child td{font-weight:700}
+svg.chart{width:100%;max-width:640px;height:auto;font-family:var(--sans)}
+svg.chart .bv{font-size:13px;font-weight:700;fill:#1d2733}
+svg.chart .bl{font-size:12px;fill:#5d6b7a}
+.legend{font-size:.82rem;color:var(--muted);font-family:var(--sans);font-weight:400;margin:.2rem 0}
+.ex{margin-top:.35rem;font-size:.88rem;color:#3d4b5a;background:#fffbea;border-radius:6px;padding:.35rem .55rem}
+.bq{font-size:.82rem;color:var(--muted)}
+.mode-review select:disabled,.mode-review .mc input:disabled+span{color:var(--ink);opacity:1}
+.mode-review select:disabled{background:#f6f8fa;-webkit-text-fill-color:var(--ink)}
+@media (max-width:760px){.selrow,.selrow.long,.numrow{grid-template-columns:1fr}.mk{width:1.3rem;height:1.3rem;font-size:.75rem;line-height:1.3rem}.ordrow{grid-template-columns:4rem 1fr}}
+@media print{.mc .ch{border:none;padding:.1rem}.scheme{background:#fff}}
+
+blockquote.src{margin:.6rem 0 .3rem;padding:.7rem .9rem;background:#f6f8fb;border-left:4px solid var(--blue);border-radius:0 8px 8px 0;font-weight:400;font-style:italic;line-height:1.5}
+.sc-chain{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;justify-content:center}
+.sc-chain .sc-node{max-width:13rem;font-weight:600;padding:.45rem .6rem}
+.sc-gap{min-width:13rem;max-width:16rem;display:inline-block}
+.sc-arr{color:var(--blue);font-weight:700;font-size:1.2rem}
+svg.pyr{max-width:420px;width:100%;height:auto;background:#fcfdfe;border:1px solid #e1e8ef;border-radius:8px}
+.rv.ai{background:#f3f7ff;border-color:#b9d0ee}
+.ai-sp{font-family:var(--sans);font-size:.9rem;color:#6d4300;background:#fff4e0;border-radius:8px;padding:.5rem .7rem;margin-top:.5rem}
+</style>
+</head>
+<body class="mode-teacher">
+<header class="t-top"><h1>🌍 География, 11 класс · суммативное оценивание · панель учителя</h1><div id="who"></div></header>
+<div class="t-main" id="app"><p class="muted" style="text-align:center;padding:3rem">Загрузка…</p></div>
+<script type="module">
+const MAP_SRC = ''; const PLACES = {};
+/* ===== СУММАТИВНОЕ ОЦЕНИВАНИЕ: «Население и населённые пункты», 11 класс (единица обучения III) =====
+   30 вариантов · 11 заданий · 50 баллов · 45 минут. Все факты — по учебнику (темы 12–22).
+   Типы пунктов (как в kr-geo11): tf, mc, sel, num, grp, ord, sch; op — развёрнутый ответ, проверяют нейросети (учитель может изменить балл). */
+const tf  = (s, a, fix = [], show = '', ex = '') => ({ t: 'tf', s, a, fix, show, ex });
+const mc  = (q, opts, a, ex = '') => ({ t: 'mc', q, opts, a, ex });
+const num = (q, v, tol, ex = '', unit = '') => ({ t: 'num', q, v, tol, ex, unit });
+const grp = (cats, items, ex = '') => ({ t: 'grp', cats, items, ex });
+const op  = (q, m, max = 2) => ({ t: 'op', q, m, max });
+
+const TF_STEM = 'Прочитайте утверждения. Если утверждение верное, отметьте <b>В</b>. Если неверное — отметьте <b>Н</b> и запишите вместо подчёркнутого слова (слов) такое, чтобы утверждение стало верным.';
+const MC_STEM = 'Выберите один правильный ответ.';
+const T3_STEM = 'Соотнесите термин с его определением: для каждого термина выберите определение из списка (одно определение лишнее).';
+const CALC_STEM = 'Используя данные таблицы, вычислите для каждой страны естественный прирост (‰), среднюю плотность населения (чел./км²) и уровень урбанизации (%). Ответы округлите до целого числа.';
+const GAPS_STEM = 'Прочитайте текст и заполните пропуски (1)–(3), выбрав подходящий вариант из списка.';
+const ATLAS_STEM = 'Используя карту плотности населения мира в школьном атласе, отнесите каждую страну к зоне средней плотности населения.';
+const PYR_STEM = 'Проанализируйте возрастно-половую пирамиду населения страны и выполните задания.';
+const ORD_STEM = 'Расположите элементы в правильной последовательности: у каждого выберите его номер по порядку (1 — первый).';
+const CHAIN_STEM = 'Восстановите причинно-следственную цепочку: в каждый пропуск выберите недостающее звено. Затем ответьте на вопрос.';
+const SIT_STEM = 'Проанализируйте ситуацию и дайте развёрнутый ответ на все вопросы.';
+
+/* ===================== БАНК ЗАДАНИЙ (Единица обучения III) ===================== */
+var BANK = {};
+
+/* ---- 1. Верно / неверно (подчёркнутое слово в [[ ]]) ---- */
+BANK.tf = [
+  { s: "Население Земли достигло 8 миллиардов человек в [[2023]] году.", t: true },
+  { s: "С 2023 года самой населённой страной мира является [[Китай]].", t: false, fix: "Индия", keys: ["инди"] },
+  { s: "Коэффициент рождаемости рассчитывается как число живорождённых за год на [[1 000]] жителей.", t: true },
+  { s: "Традиционный тип воспроизводства населения характерен для [[большинства стран Европы]].", t: false, fix: "развивающихся стран Африки, Азии, Латинской Америки", keys: ["развивающ", "африк", "латинск", "азии", "азия"] },
+  { s: "Политика «одна семья – один ребёнок» несколько десятилетий проводилась в [[Китае]].", t: true },
+  { s: "Пронаталистская демографическая политика направлена на [[снижение]] рождаемости.", t: false, fix: "повышение (увеличение, стимулирование)", keys: ["повыш", "увелич", "стимул", "рост"] },
+  { s: "Концепцию демографического перехода разработал американец [[Ф. Ноутстайн]].", t: true },
+  { s: "Разность между численностью иммигрантов и эмигрантов называется [[естественным приростом]].", t: false, fix: "сальдо миграции", keys: ["сальдо"] },
+  { s: "Около 90% населения Земли проживает в [[Северном]] полушарии.", t: true },
+  { s: "В Азии проживает около 59% населения мира на территории всего в [[50%]] площади суши.", t: false, fix: "20%", keys: ["20"] },
+  { s: "Средняя плотность населения Земли в 2024 году составила около [[60]] чел./км².", t: true },
+  { s: "Самой многочисленной языковой семьёй мира по числу носителей является [[сино-тибетская]].", t: false, fix: "индоевропейская", keys: ["индоевроп", "индо-европ"] },
+  { s: "Финский, эстонский и венгерский языки относятся к [[славянской]] группе языков.", t: false, fix: "финно-угорской (уральской)", keys: ["финно", "угор", "ураль"] },
+  { s: "Мировым центром католицизма является [[Мекка]].", t: false, fix: "Ватикан", keys: ["ватикан", "рим"] },
+  { s: "Ислам по числу последователей занимает [[второе]] место в мире.", t: true },
+  { s: "Индуизм, синтоизм и иудаизм относятся к [[мировым]] религиям.", t: false, fix: "национальным", keys: ["национальн"] },
+  { s: "Регрессивный тип возрастно-половой пирамиды характерен для [[развивающихся]] стран.", t: false, fix: "развитых", keys: ["развит", "япони", "германи"] },
+  { s: "Средняя продолжительность жизни женщин [[выше]], чем у мужчин.", t: true },
+  { s: "Уровень урбанизации в мире в 2024 году составил около [[58]]%.", t: true },
+  { s: "Мегалополис БосВаш расположен в [[Японии]].", t: false, fix: "США", keys: ["сша", "соедин", "америк"] },
+  { s: "Крупнейшей городской агломерацией мира в 2023 году была [[Джакарта]].", t: false, fix: "Токио", keys: ["токио"] },
+  { s: "По шкале Божьо-Гарнье и Россета демографическое старение начинается, когда доля людей 60 лет и старше достигает [[12]]%.", t: true },
+  { s: "Быстрый рост городского населения без развития инфраструктуры называется [[субурбанизацией]].", t: false, fix: "ложной урбанизацией", keys: ["ложн"] },
+  { s: "Фавелы – это трущобные районы в [[Индии]].", t: false, fix: "Бразилии", keys: ["бразил"] },
+  { s: "Самый низкий уровень урбанизации среди регионов мира в 2024 году отмечался в [[Африке]].", t: true },
+  { s: "Маятниковая миграция относится, как правило, к [[внешним]] миграциям.", t: false, fix: "внутренним", keys: ["внутрен"] },
+  { s: "В Швейцарии официальными являются [[четыре]] языка.", t: true },
+  { s: "Самая высокая младенческая смертность отмечается в [[высокоразвитых]] странах.", t: false, fix: "слаборазвитых", keys: ["слабораз", "бедн", "развивающ", "отстал", "наименее"] },
+  { s: "Близко расположенные города, которые сохраняют свою индивидуальность, но имеют общие коммуникации, образуют [[конурбацию]].", t: true },
+  { s: "Наибольшее количество мигрантов в Западной Европе приняла [[Португалия]].", t: false, fix: "Германия", keys: ["германи", "франци", "великобрит"] },
+  { s: "В 2024 году самый высокий уровень рождаемости (43‰) был зарегистрирован в [[Японии]].", t: false, fix: "Нигере (Гвинее, Сомали)", keys: ["нигер", "гвине", "сомали"] },
+  { s: "Демографическое старение сильнее выражено среди [[женщин]], чем среди мужчин.", t: true }
+];
+
+/* ---- 2. Один правильный ответ (первый вариант – верный, порядок перемешивается) ---- */
+BANK.mc = [
+  { q: "Самой населённой страной мира в 2024 году является:", o: ["Индия", "Китай", "США", "Индонезия"] },
+  { q: "«Демографический взрыв» – быстрый рост численности населения, который пришёлся на:", o: ["вторую половину XX века", "первую половину XIX века", "XVII–XVIII века", "начало XXI века"] },
+  { q: "Рождаемость в стране составляет 20‰, смертность – 12‰. Естественный прирост равен:", o: ["8‰", "32‰", "−8‰", "1,6‰"] },
+  { q: "Максимальный уровень рождаемости в 2024 году (43‰) был зарегистрирован в:", o: ["Нигере", "Японии", "Италии", "Китае"] },
+  { q: "Тип воспроизводства, при котором рождаемость ниже смертности, называется:", o: ["современным", "традиционным", "переходным", "прогрессивным"] },
+  { q: "Политика «одна семья – один ребёнок» долгое время проводилась в:", o: ["Китае", "Индии", "Японии", "Нигерии"] },
+  { q: "Сальдо миграции – это разность между численностью:", o: ["иммигрантов и эмигрантов", "родившихся и умерших", "городского и сельского населения", "мужчин и женщин"] },
+  { q: "Ежедневные поездки людей из пригорода на работу в город – это миграция:", o: ["маятниковая", "сезонная", "вынужденная", "международная"] },
+  { q: "Наибольшая доля иностранных работников среди занятых (92%) отмечается в:", o: ["Катаре", "Германии", "Израиле", "Австралии"] },
+  { q: "Наибольшая доля населения мира (около 59%) проживает в:", o: ["Азии", "Африке", "Европе", "Латинской Америке"] },
+  { q: "Более 55% населения Земли проживает на высоте над уровнем моря:", o: ["до 200 м", "от 500 до 1000 м", "от 1000 до 2000 м", "более 2000 м"] },
+  { q: "В стране проживает 50 млн человек, её площадь – 1 000 000 км². Средняя плотность населения:", o: ["50 чел./км²", "5 чел./км²", "500 чел./км²", "20 чел./км²"] },
+  { q: "Метисами в Америке называли потомков от браков:", o: ["европейцев и индейцев", "европейцев и африканцев", "индейцев и африканцев", "азиатов и африканцев"] },
+  { q: "К романской группе индоевропейской семьи относится язык:", o: ["румынский", "немецкий", "польский", "венгерский"] },
+  { q: "К национальным религиям относится:", o: ["синтоизм", "христианство", "ислам", "буддизм"] },
+  { q: "Наибольшее число последователей в мире имеет:", o: ["христианство", "ислам", "буддизм", "индуизм"] },
+  { q: "Прогрессивный тип возрастно-половой пирамиды характерен для:", o: ["Малави", "Японии", "Германии", "Италии"] },
+  { q: "Наибольшая доля пожилого населения (36%) зарегистрирована в:", o: ["Монако", "Катаре", "ОАЭ", "Нигерии"] },
+  { q: "Ожидаемая продолжительность жизни при рождении в мире сейчас составляет около:", o: ["73 лет", "63 лет", "83 лет", "53 лет"] },
+  { q: "Уровень урбанизации – это:", o: ["доля городского населения в общей численности населения", "число городов в стране", "доля приезжих в городах", "плотность населения в городах"] },
+  { q: "Самый высокий уровень урбанизации в 2024 году был в:", o: ["Северной Америке", "Европе", "Азии", "Африке"] },
+  { q: "Крупнейшим по численности населения мегалополисом мира является:", o: ["«Голубой банан» (Европа)", "БосВаш (США)", "Токайдо (Япония)", "Сан-Паулу – Рио-де-Жанейро"] },
+  { q: "В состав мегалополиса БосВаш НЕ входит:", o: ["Чикаго", "Бостон", "Нью-Йорк", "Вашингтон"] },
+  { q: "Минимальный порог населения для города в Японии составляет:", o: ["30 000 человек", "200 человек", "2 000 человек", "10 000 человек"] },
+  { q: "Трущобные районы на неустойчивых склонах в Бразилии называются:", o: ["фавелы", "тауншипы", "слэмы", "кибера"] },
+  { q: "Демографическая ловушка возникает, когда:", o: ["население быстро растёт, а экономических ресурсов не хватает", "население быстро стареет", "рождаемость ниже смертности", "растёт число мегалополисов"] },
+  { q: "Коэффициент смертности рассчитывается как число умерших за год на:", o: ["1 000 жителей", "100 жителей", "10 000 жителей", "1 млн жителей"] },
+  { q: "Самый низкий уровень смертности (1‰) в 2024 году зарегистрирован в:", o: ["ОАЭ", "Болгарии", "Республике Молдова", "Центральноафриканской Республике"] },
+  { q: "Примером конурбации является:", o: ["Токио – Йокогама", "Шанхай", "Лагос", "Сеул"] },
+  { q: "Население Земли впервые достигло 1 миллиарда человек около:", o: ["1830 года", "1700 года", "1930 года", "1960 года"] },
+  { q: "К трудоспособному (взрослому) населению по учебнику относятся люди в возрасте:", o: ["16–64 лет", "0–15 лет", "65 лет и старше", "18–55 лет"] },
+  { q: "Вторая фаза роста численности населения Земли связана с:", o: ["освоением сельского хозяйства и одомашниванием животных", "индустриальной революцией", "изобретением каменных орудий", "демографическим взрывом"] },
+  { q: "В Европейском союзе официально признано:", o: ["24 языка", "4 языка", "11 языков", "50 языков"] },
+  { q: "Страной иммиграции, как правило, является:", o: ["развитое государство", "слаборазвитое государство", "страна с традиционным воспроизводством", "страна с высокой рождаемостью"] }
+];
+
+/* ---- 3. Соотнесение терминов ---- */
+BANK.terms = [
+  ["Демографическая политика", "Комплекс мер государства для воздействия на рождаемость, смертность и миграцию населения."],
+  ["Демографический переход", "Переход от высоких уровней рождаемости и смертности к низким на фоне социально-экономического прогресса."],
+  ["Демографический кризис", "Сокращение численности населения вследствие снижения рождаемости и эмиграции."],
+  ["Сальдо миграции", "Разность между численностью иммигрантов и эмигрантов."],
+  ["Эмиграция", "Выезд человека из страны своего происхождения для проживания в другой стране."],
+  ["Иммиграция", "Въезд человека в другую страну для временного или постоянного проживания и работы."],
+  ["Утечка мозгов", "Переезд учёных и высококвалифицированных специалистов в страны с развитой экономикой."],
+  ["Маятниковая миграция", "Регулярные поездки между местом жительства и местом работы или учёбы без смены места жительства."],
+  ["Урбанизация", "Процесс роста городов, увеличения их числа и доли городского населения."],
+  ["Городская агломерация", "Город и прилегающие населённые пункты, связанные снабжением, торговлей и рабочей силой."],
+  ["Конурбация", "Близко расположенные города, сохраняющие индивидуальность, но имеющие общие коммуникации."],
+  ["Мегалополис", "Слияние нескольких агломераций в единую непрерывную городскую структуру."],
+  ["Ложная урбанизация", "Быстрый рост городского населения без развития инфраструктуры и общественных услуг."],
+  ["Демографическое старение", "Увеличение доли пожилого населения при снижении доли молодого и трудоспособного."],
+  ["Метис", "Человек, рождённый от родителей, принадлежащих к разным расам."],
+  ["Анимизм", "Система верований, согласно которой всё живое и неживое наделено духами."],
+  ["Языковая семья", "Группа языков, происходящих от общего языка-предка."],
+  ["Демографическая ловушка", "Быстрый рост населения при недостатке экономических ресурсов для его поддержания."],
+  ["Интерурбация", "Слияние пригородных зон соседних агломераций в почти непрерывное урбанизированное пространство."],
+  ["Естественный прирост", "Положительная разница между рождаемостью и смертностью."],
+  ["Антропогенез", "Длительный процесс эволюции человека как вида."]
+];
+
+/* ---- 5. Пропуски (первый вариант в списке – верный) ---- */
+BANK.gaps = [
+  ["Тип воспроизводства, при котором в семье трое и более детей, называется {традиционным|переходным|современным}. Сегодня он сохраняется в {развивающихся странах Африки, Азии и Латинской Америки|большинстве стран Европы|Японии и Южной Корее}, а возрастно-половая пирамида таких стран имеет {прогрессивный|стационарный|регрессивный} тип."],
+  ["Страны с {антинаталистской|пронаталистской} политикой стремятся замедлить рост населения. Классическим примером является {Китай|Франция|Германия} с политикой «одна семья – один ребёнок». Главная мера такой политики – {программы планирования семьи|выплаты многодетным семьям|налоговые льготы для семей с детьми}."],
+  ["Разность между численностью иммигрантов и эмигрантов называется {сальдо миграции|естественным приростом|демографическим переходом}. Страны Западной Европы являются, как правило, странами {иммиграции|эмиграции|закрытого типа}. Ежедневные поездки из пригорода на работу в город – это {маятниковая|сезонная|вынужденная} миграция."],
+  ["Город и прилегающие к нему населённые пункты, связанные трудом и торговлей, образуют {городскую агломерацию|мегалополис|интерурбацию}. При слиянии нескольких агломераций формируется {мегалополис|конурбация|сельское поселение}; пример – {БосВаш в США|Лагос в Нигерии|Дакка в Бангладеш}."],
+  ["Наиболее высокий уровень урбанизации в 2024 году отмечался в {Северной Америке|Африке|Азии}, а наиболее низкий – в {Африке|Европе|Латинской Америке}. Быстрый рост городов без развития инфраструктуры называется {ложной урбанизацией|субурбанизацией|конурбацией}."],
+  ["Около 90% населения Земли проживает в {Северном|Южном|Западном} полушарии. Наибольшая доля населения мира приходится на {Азию|Африку|Европу}. Численность населения в горах уменьшается, потому что с высотой {снижается атмосферное давление и количество кислорода|растёт плодородие почв|увеличивается количество осадков}."],
+  ["Индоевропейская семья языков объединяет {романскую, германскую и славянскую|китайскую и тибетскую|банту и семитскую} группы. Румынский язык относится к {романской|славянской|германской} группе. Венгерский и финский языки входят в {финно-угорскую|индоевропейскую|сино-тибетскую} семью."],
+  ["Демографическое старение начинается, когда доля лиц 60 лет и старше составляет {12% и выше|5% и выше|30% и выше}. Сильнее всего этот процесс выражен в {развитых|развивающихся|наименее развитых} странах. В старших возрастных группах преобладают {женщины|мужчины|дети}, так как их продолжительность жизни выше."],
+  ["Ислам занимает {второе|первое|третье} место в мире по числу последователей. Его мировым центром является {Мекка|Ватикан|Лхаса}. Большинство мусульман (около 90%) – {сунниты|шииты|протестанты}."],
+  ["Коэффициент смертности рассчитывается по формуле {Rm = M / P × 1000|D = Np / St|Ra = Pa / P × 100}. Самый высокий уровень смертности регистрируется в {африканских государствах|странах Ближнего Востока|странах Центральной Америки}. Младенческая смертность наиболее высока в {слаборазвитых странах|высокоразвитых странах Европы|странах Северной Америки}."],
+  ["При традиционном демографическом режиме рождаемость и смертность {высокие|низкие|равны нулю}. В ходе демографического перехода сначала снижается {смертность|рождаемость|миграция}, что приводит к {демографическому взрыву|демографическому кризису|старению населения}."],
+  ["Население – открытая система: на «вход» влияют рождаемость и {иммиграция|эмиграция|смертность}, а на «выход» – смертность и {эмиграция|иммиграция|рождаемость}. Сочетание рождаемости и смертности называется {естественным движением|миграционным движением|урбанизацией} населения."]
+];
+
+/* ---- 6. Работа с атласом: зоны плотности ---- */
+BANK.zones = [
+  { z: "более 100 чел./км²", list: ["бангладеш", "индия", "нидерланды", "голландия", "бельгия", "япония", "южная корея", "корея", "республика корея", "германия", "великобритания", "англия", "италия", "филиппины", "вьетнам", "пакистан", "нигерия", "китай", "израиль", "ливан", "сингапур", "тайвань", "шри-ланка", "непал", "руанда", "бурунди", "гаити", "сальвадор", "швейцария", "чехия", "польша", "дания", "люксембург", "мальта", "индонезия", "таиланд", "уганда", "малави", "франция", "египет", "турция", "португалия", "словакия", "австрия", "венгрия", "северная корея", "кндр", "ямайка", "тринидад и тобаго", "бахрейн", "мальдивы", "маврикий", "барбадос", "катар", "кувейт", "сирия", "гана", "того", "бенин", "гамбия", "эфиопия"] },
+  { z: "от 20 до 100 чел./км²", list: ["сша", "соединенные штаты", "соединенные штаты америки", "америка", "бразилия", "мексика", "румыния", "украина", "испания", "молдова", "республика молдова", "колумбия", "перу", "чили", "иран", "юар", "южная африка", "южно-африканская республика", "кения", "швеция", "беларусь", "белоруссия", "мьянма", "афганистан", "венесуэла", "эквадор", "танзания", "мадагаскар", "мозамбик", "ангола", "камерун", "судан", "болгария", "греция", "хорватия", "латвия", "литва", "эстония", "ирландия", "узбекистан", "кыргызстан", "киргизия", "таджикистан", "грузия", "сербия", "босния и герцеговина", "никарагуа", "гондурас", "марокко", "тунис", "йемен", "лаос", "камбоджа", "зимбабве", "замбия", "др конго", "демократическая республика конго", "конго", "кот-д'ивуар", "гвинея", "сенегал", "буркина-фасо", "нигер"] },
+  { z: "менее 20 чел./км²", list: ["россия", "российская федерация", "рф", "канада", "австралия", "монголия", "казахстан", "ливия", "намибия", "ботсвана", "мавритания", "исландия", "чад", "мали", "аргентина", "боливия", "саудовская аравия", "гайана", "суринам", "оман", "туркмения", "туркменистан", "центральноафриканская республика", "цар", "габон", "гренландия", "западная сахара", "новая зеландия", "алжир", "нигер", "норвегия", "финляндия", "республика конго", "конго"] }
+];
+/* Нигер и «Конго» (ДР Конго / Республика Конго) засчитываются в обе соседние зоны */
+
+/* ---- 7. Пирамиды ---- */
+BANK.pyr = {
+  progressive: {
+    name: "прогрессивный", shares: [17, 13.5, 10, 6.5, 4, 2.5, 1.2], ex: ["Малави", "Парагвай", "Нигер"],
+    yes: ["Высокая доля детей и подростков (0–15 лет)", "Высокий естественный прирост населения", "Характерен для развивающихся стран"],
+    no: ["Доля пожилых людей превышает 12%", "Наблюдается естественная убыль населения", "Узкое основание и широкая верхняя часть пирамиды"]
+  },
+  stationary: {
+    name: "стационарный", shares: [7.8, 8, 8.1, 7.8, 7.2, 6.2, 5.1], ex: ["Чили", "Эквадор"],
+    yes: ["Доли населения младше 15 и старше 65 лет почти равны", "Низкий или нулевой естественный прирост"],
+    no: ["Очень высокий естественный прирост населения", "Широкое основание и очень узкая вершина пирамиды", "Доля детей в несколько раз меньше доли пожилых"]
+  },
+  regressive: {
+    name: "регрессивный", shares: [4.2, 4.8, 5.8, 6.8, 7.6, 7.4, 7.2], ex: ["Япония", "Германия"],
+    yes: ["Доля пожилых людей превышает 12%", "Наблюдается естественная убыль населения", "Преобладает в развитых странах"],
+    no: ["Высокая доля детей и подростков", "Высокий естественный прирост населения", "Соответствует традиционному типу воспроизводства"]
+  }
+};
+
+/* ---- 8. Порядок (значения из таблиц учебника; без равных значений) ---- */
+BANK.order = [
+  { q: "Расположите регионы мира по уровню урбанизации в 2024 году – от наименьшего к наибольшему.", asc: true,
+    items: [["Африка", 45], ["Азия", 53], ["Австралия и Океания", 70], ["Европа", 76], ["Латинская Америка", 82], ["Северная Америка", 83]] },
+  { q: "Расположите регионы мира по численности населения в 2024 году – от наибольшей к наименьшей.", asc: false,
+    items: [["Азия", 4773], ["Африка", 1478], ["Европа", 747], ["Латинская Америка", 661], ["Северная Америка", 378], ["Австралия и Океания", 46]] },
+  { q: "Расположите городские агломерации по численности населения в 2023 году – от наибольшей к наименьшей.", asc: false,
+    items: [["Токио", 37.7], ["Джакарта", 33.7], ["Дели", 33.2], ["Шанхай", 24.0], ["Мехико", 21.8]] },
+  { q: "Расположите страны по численности населения в 2024 году – от наибольшей к наименьшей.", asc: false,
+    items: [["Индия", 1450.9], ["Китай", 1419.3], ["США", 345.4], ["Индонезия", 283.4], ["Пакистан", 251.2], ["Нигерия", 232.6], ["Бразилия", 211.9]] },
+  { q: "Расположите регионы мира по доле пожилого населения (65+) в 2024 году – от наибольшей к наименьшей.", asc: false,
+    items: [["Европа", 20], ["Северная Америка", 18], ["Океания", 13], ["Азия", 10], ["Африка", 4]] },
+  { q: "Расположите мегалополисы по численности населения – от наибольшей к наименьшей.", asc: false,
+    items: [["«Голубой банан» (Европа)", 110], ["Дельта реки Жемчужной (Китай)", 85], ["Токайдо (Япония)", 65], ["БосВаш (США)", 55], ["Мумбаи – Пуне (Индия)", 50], ["Сан-Паулу – Рио-де-Жанейро", 45]] },
+  { q: "Расположите этапы роста численности населения Земли в хронологическом порядке.", asc: true,
+    items: [["Появление техник обработки камня и орудий труда", 1], ["Освоение сельского хозяйства и одомашнивание животных", 2], ["Начало индустриальных революций", 3], ["Демографический взрыв", 4], ["Население Земли достигло 8 млрд человек", 5]] },
+  { q: "Расположите регионы мира по уровню урбанизации в 1950 году – от наименьшего к наибольшему.", asc: true,
+    items: [["Африка", 15], ["Азия", 17], ["Австралия и Океания", 38], ["Латинская Америка", 41], ["Европа", 54], ["Северная Америка", 64]] },
+  { q: "Расположите регионы по доле молодого населения (0–15 лет) в 2024 году – от наибольшей к наименьшей.", asc: false,
+    items: [["Африка", 39], ["Океания", 23], ["Южная Америка", 22], ["Северная Америка", 18], ["Европа", 16]] }
+];
+
+/* ---- 9. Причинно-следственные цепочки (null – пропуск; opts: 2 верных + 2 лишних) ---- */
+BANK.chains = [
+  { title: "Ложная урбанизация", links: ["Высокая рождаемость и бедность в сельской местности", null, "Города растут быстрее, чем строится инфраструктура", null, "Рост безработицы и болезней"],
+    ans: ["Массовый переезд сельских жителей в города", "Появление трущоб без водопровода и канализации"], wrong: ["Снижение рождаемости в городах", "Строительство метро и новых больниц"],
+    open: "Приведите пример трущобного района (с указанием страны) и предложите одну меру борьбы с ложной урбанизацией.",
+    crit: "1 балл – верный пример трущоб и страны (фавелы – Бразилия, слэмы – Индия, тауншипы – ЮАР, Кибера – Кения, барриос – Венесуэла); 1 балл – обоснованная мера (инвестиции в инфраструктуру, водоснабжение, жильё, рабочие места в сельской местности и т.п.)." },
+  { title: "Демографический взрыв", links: ["Успехи медицины и борьба с эпидемиями после 1950 г.", null, "Рождаемость остаётся высокой", null, "Быстрый рост населения развивающихся стран"],
+    ans: ["Резкое снижение смертности", "Высокий естественный прирост населения"], wrong: ["Рост доли пожилого населения", "Снижение рождаемости в Европе"],
+    open: "Назовите две проблемы, к которым приводит демографический взрыв.",
+    crit: "По 1 баллу за каждую верную проблему (нехватка продовольствия, воды, рабочих мест, школ, больниц; бедность; ложная урбанизация; демографическая ловушка; нагрузка на природные ресурсы)." },
+  { title: "Демографическое старение", links: ["Снижение рождаемости и рост продолжительности жизни", null, null, "Рост нагрузки на пенсионную систему и здравоохранение", "Повышение пенсионного возраста"],
+    ans: ["Увеличение доли пожилого населения", "Сокращение доли трудоспособного населения"], wrong: ["Демографический взрыв", "Рост доли детей 0–15 лет"],
+    open: "Предложите две меры, которые может принять государство для смягчения последствий старения населения.",
+    crit: "По 1 баллу за каждую обоснованную меру (пронаталистская политика: пособия, льготы семьям; привлечение мигрантов; поддержка занятости пожилых; развитие здравоохранения; автоматизация)." },
+  { title: "«Утечка мозгов»", links: ["Низкие зарплаты врачей, учёных и инженеров", null, "Нехватка квалифицированных специалистов в стране", null, "Усиление разрыва в уровне жизни со странами-лидерами"],
+    ans: ["Эмиграция высококвалифицированных специалистов", "Замедление развития экономики, науки и медицины"], wrong: ["Рост рождаемости", "Приток иммигрантов из развитых стран"],
+    open: "Какие две меры может принять Республика Молдова, чтобы уменьшить «утечку мозгов»?",
+    crit: "По 1 баллу за каждую реалистичную меру (повышение зарплат, гранты и программы для молодых специалистов, развитие IT и науки, жильё для молодых семей, программы возвращения и т.п.)." },
+  { title: "Трудовая миграция в Западную Европу", links: ["Старение населения и нехватка рабочей силы", null, "Рост численности иммигрантов", null, "Необходимость политики интеграции мигрантов"],
+    ans: ["Привлечение трудовых мигрантов из других стран", "Рост культурного и религиозного разнообразия"], wrong: ["Демографический взрыв в Европе", "Сокращение числа рабочих мест"],
+    open: "Назовите одно положительное и одно отрицательное последствие миграции для принимающей страны.",
+    crit: "1 балл – положительное (восполнение нехватки рабочей силы, рост экономики, культурное разнообразие, замедление старения); 1 балл – отрицательное (напряжённость, трудности интеграции, нелегальная миграция, нагрузка на социальные службы)." },
+  { title: "Экологические беженцы", links: ["Чрезмерный выпас скота и вырубка лесов", null, "Люди теряют средства к существованию", null, "Усиление миграционного давления на города"],
+    ans: ["Деградация почв и опустынивание", "Появление «экологических беженцев»"], wrong: ["Рост урожайности", "Снижение плотности населения в городах"],
+    open: "Назовите регион мира, где опустынивание угрожает населению, и предложите одну меру решения проблемы.",
+    crit: "1 балл – верный регион (Северная Африка, Сахель, окраины Сахары, пустыни Тар, Атакама, Намиб и т.п.); 1 балл – обоснованная мера (лесовосстановление, контроль выпаса, капельное орошение, севообороты)." },
+  { title: "Пронаталистская политика", links: ["Естественная убыль населения", null, null, "Замедление сокращения численности населения", "Рост доли молодого населения в будущем"],
+    ans: ["Государство вводит пособия и льготы семьям с детьми", "Повышение рождаемости"], wrong: ["Программы планирования семьи", "Ограничение числа детей в семье"],
+    open: "Приведите две конкретные меры пронаталистской политики.",
+    crit: "По 1 баллу за каждую меру (выплаты при рождении ребёнка, пособия многодетным, налоговые льготы, бесплатные детские сады, оплачиваемый отпуск по уходу, льготное жильё)." },
+  { title: "Индустриализация и рост городов", links: ["Индустриальная революция", null, "Переезд сельских жителей в города", null, "Формирование городских агломераций"],
+    ans: ["Рост числа рабочих мест в промышленности городов", "Рост уровня урбанизации"], wrong: ["Рост доли занятых в сельском хозяйстве", "Сокращение численности городского населения"],
+    open: "Объясните, почему рост крупных городов обусловлен прежде всего миграцией, а не естественным приростом (два аргумента).",
+    crit: "По 1 баллу за каждый аргумент (в городах ниже рождаемость; города притягивают работой, услугами, образованием; чем крупнее город, тем он привлекательнее для мигрантов; приток сельских жителей)." }
+];
+
+/* ---- 10. Ситуации (ИИ, 6 баллов) ---- */
+BANK.sit = [
+  { t: "В Республике Молдова доля людей в возрасте 60 лет и старше превышает 20%, уровень смертности (14‰) выше уровня рождаемости, а многие молодые люди уезжают на работу за границу.",
+    q: "1) Определите уровень демографического старения по шкале Ж. Божьо-Гарнье и Э. Россета. 2) Объясните две причины такой ситуации. 3) Предложите две меры демографической политики.",
+    crit: "1 балл – очень высокий уровень демографического старения (18% и выше); 2 балла – две причины (низкая рождаемость, эмиграция молодёжи, рост продолжительности жизни, высокая смертность); 2 балла – две меры (пронаталистская политика, поддержка молодых семей, создание рабочих мест, программы возвращения мигрантов); 1 балл – грамотное использование терминов и связность ответа." },
+  { t: "В стране X рождаемость составляет 42‰, смертность – 9‰. Экономика страны слабая, школ, больниц и рабочих мест не хватает, большинство жителей занято в сельском хозяйстве.",
+    q: "1) Вычислите естественный прирост и определите тип воспроизводства населения. 2) Как называется ситуация, когда рост населения опережает экономические возможности страны? 3) Назовите два последствия и предложите две меры.",
+    crit: "1 балл – прирост 33‰ и традиционный тип воспроизводства; 1 балл – демографическая ловушка; 2 балла – два последствия (бедность, безработица, нехватка образования и медицины, истощение ресурсов, миграция); 2 балла – две меры (антинаталистская политика, планирование семьи, образование женщин, инвестиции в экономику и инфраструктуру)." },
+  { t: "Население одного из городов Африки к югу от Сахары за 10 лет выросло вдвое за счёт переселенцев из деревень. Водопровод, канализация и общественный транспорт за это время почти не развивались, на окраинах выросли самовольные постройки.",
+    q: "1) Назовите это явление. 2) Объясните две его причины. 3) Назовите два признака этого явления и предложите одну меру решения.",
+    crit: "1 балл – ложная урбанизация; 2 балла – две причины (бедность и перенаселение села, поиск работы, высокая рождаемость, конфликты, опустынивание); 2 балла – два признака (трущобы, отсутствие водоснабжения и канализации, безработица, антисанитарное жильё); 1 балл – мера решения." },
+  { t: "В Японии доля людей 65 лет и старше составляет 29%, рождаемость – около 6‰, а численность населения сокращается.",
+    q: "1) Определите тип возрастно-половой пирамиды и тип воспроизводства населения Японии. 2) Назовите два последствия такой ситуации для экономики. 3) Предложите две меры решения проблемы.",
+    crit: "1 балл – регрессивный тип пирамиды; 1 балл – современный тип воспроизводства (естественная убыль); 2 балла – два последствия (нехватка рабочей силы, рост расходов на пенсии и медицину, сокращение населения); 2 балла – две меры (пронаталистская политика, привлечение мигрантов, роботизация, повышение пенсионного возраста)." },
+  { t: "В Катаре 92% всех занятых составляют иностранные работники, а в ОАЭ – 89%. Эти страны являются крупными экспортёрами нефти и природного газа.",
+    q: "1) Объясните, почему эти страны привлекают так много трудовых мигрантов (два фактора). 2) Из каких регионов, вероятно, приезжают мигранты? 3) Назовите одно положительное и одно отрицательное последствие для принимающей страны.",
+    crit: "2 балла – два фактора (доходы от нефти, строительство, высокий уровень жизни, нехватка собственной рабочей силы, малая численность коренного населения); 2 балла – регионы (Южная Азия: Индия, Пакистан, Бангладеш; Юго-Восточная Азия; Северная Африка; другие арабские страны) с объяснением; 2 балла – одно положительное и одно отрицательное последствие." },
+  { t: "Население Нигерии в 2024 году составило 232,6 млн человек и быстро растёт; доля детей очень высока, а экономика и инфраструктура не справляются с таким темпом роста.",
+    q: "1) Определите тип возрастно-половой пирамиды Нигерии. 2) Какой тип демографической политики целесообразен для страны? Обоснуйте. 3) Назовите три проблемы, связанные с быстрым ростом населения.",
+    crit: "1 балл – прогрессивный тип; 2 балла – антинаталистская (денаталистская) политика с обоснованием; 3 балла – три проблемы (демографическая ловушка, бедность, безработица, нехватка школ и больниц, ложная урбанизация, нехватка продовольствия и воды)." },
+  { t: "В Китае несколько десятилетий действовала политика «одна семья – один ребёнок». Сегодня население Китая стареет, а в некоторых провинциях мужчин значительно больше, чем женщин.",
+    q: "1) Назовите тип этой демографической политики и её цель. 2) Объясните два последствия этой политики. 3) Какую политику Китаю стоит проводить сейчас? Обоснуйте.",
+    crit: "2 балла – антинаталистская политика, цель – замедлить рост населения; 2 балла – два последствия (старение населения, дисбаланс полов, сокращение трудоспособного населения, снижение рождаемости); 2 балла – пронаталистская политика с обоснованием." },
+  { t: "Представьте, что через 50 лет пустыня Сахара, где сегодня плотность населения очень низкая, стала привлекательной для заселения.",
+    q: "1) Объясните, почему сегодня Сахара слабо заселена (два природных фактора). 2) Какие географические и экономические изменения должны произойти, чтобы туда переселились люди (минимум три)?",
+    crit: "2 балла – два природных фактора (засушливость, нехватка воды, высокие температуры, отсутствие плодородных почв); 3 балла – три изменения (опреснение воды, орошение, солнечная энергетика, добыча ресурсов, строительство дорог и городов, рабочие места); 1 балл – связность и использование терминов." },
+  { t: "Уровень урбанизации в Индии составляет 36%, однако Дели (33,2 млн) и Мумбаи (24,9 млн) входят в число крупнейших агломераций мира, а около 35% городского населения Индии проживает в трущобах.",
+    q: "1) Объясните, почему при низком уровне урбанизации в Индии существуют гигантские города. 2) Как называется явление, связанное с ростом трущоб? 3) Предложите две меры для улучшения жизни в городах Индии.",
+    crit: "2 балла – объяснение (огромная численность населения страны, концентрация рабочих мест в крупных городах, приток сельских мигрантов, высокая сельская рождаемость); 1 балл – ложная урбанизация; 2 балла – две меры; 1 балл – связность ответа и термины." },
+  { t: "Во многих странах Западной Европы наблюдается естественная убыль населения, однако их общая численность населения почти не сокращается, а в некоторых даже растёт.",
+    q: "1) Объясните, за счёт чего не сокращается население этих стран. 2) Назовите две причины, по которым люди переезжают в Западную Европу. 3) Назовите по одному экономическому, демографическому и культурному последствию этого процесса.",
+    crit: "1 балл – за счёт иммиграции (положительного сальдо миграции); 2 балла – две причины (высокие зарплаты и уровень жизни, рабочие места, безопасность, образование, воссоединение семей); 3 балла – по одному экономическому, демографическому и культурному последствию." }
+];
+
+/* ---- 11. Сравнение / мини-эссе (ИИ, 5 баллов) ---- */
+BANK.essay = [
+  { q: "Сравните Европу и Африку по данным таблицы и сделайте вывод о различиях в демографическом развитии этих регионов.",
+    table: [["Показатель (2024)", "Европа", "Африка"], ["Рождаемость, ‰", "8", "31"], ["Смертность, ‰", "11", "8"], ["Молодое население (0–15 лет), %", "16", "39"], ["Пожилое население (65+), %", "20", "4"], ["Ожидаемая продолжительность жизни, лет", "79", "64"], ["Уровень урбанизации, %", "76", "45"]],
+    crit: "1 балл – сравнение естественного движения (в Европе убыль −3‰, в Африке высокий прирост 23‰); 1 балл – сравнение возрастной структуры (Европа стареет, Африка молодая); 1 балл – продолжительность жизни и урбанизация; 1 балл – вывод о разных этапах демографического перехода / уровне развития; 1 балл – грамотность и использование терминов." },
+  { q: "Напишите мини-эссе (5–7 предложений) на тему «Урбанизация: польза и угрозы». Приведите не менее двух положительных и двух отрицательных последствий и пример страны или города.",
+    crit: "2 балла – два положительных последствия (доступ к услугам, образованию, медицине, рабочим местам, развитие экономики и инноваций); 2 балла – два отрицательных (загрязнение, пробки, трущобы, ложная урбанизация, перенаселённость, рост цен на жильё); 1 балл – уместный пример страны/города." },
+  { q: "Восточный Китай густо заселён, а Западный Китай заселён очень слабо. Объясните причины этого контраста (природные и экономические) и его последствия.",
+    crit: "2 балла – природные причины (на востоке низменные равнины, муссонный климат, плодородные почвы, реки; на западе горы, высокогорья, пустыни, сухой климат); 1 балл – экономические и исторические причины (промышленность, порты, давность заселения); 2 балла – последствия (перенаселённость и загрязнение на востоке, неравенство в развитии, миграция с запада на восток)." },
+  { q: "Сравните пронаталистскую и антинаталистскую (денаталистскую) демографическую политику: цель, меры, пример страны для каждой.",
+    crit: "1 балл – цель пронаталистской (повышение рождаемости); 1 балл – цель антинаталистской (снижение роста населения); 1 балл – меры пронаталистской; 1 балл – меры антинаталистской; 1 балл – верные примеры стран (Китай, Индия – антинаталистская; Франция, Россия, страны Европы – пронаталистская)." },
+  { q: "Объясните, почему около 90% населения Земли проживает в Северном полушарии, а более половины – на высоте до 200 м над уровнем моря. Назовите не менее трёх факторов.",
+    crit: "1 балл – в Северном полушарии сосредоточена большая часть суши; 1 балл – низменные равнины доступны, имеют плодородные почвы и воду; 1 балл – с высотой снижаются давление, кислород, температура; 1 балл – экономические или исторические факторы (давность заселения, развитие сельского хозяйства, транспорта); 1 балл – связность и примеры (муссонная Азия, дельта Нила)." },
+  { q: "Сравните сельские и городские поселения не менее чем по трём критериям (численность населения, экономические функции, территориальная структура, образ жизни).",
+    crit: "По 1 баллу за каждое верное сравнение по критерию (до 3 баллов); 1 балл – пример функционального типа поселения (аграрное, туристическое, промышленное; город-столица, курорт, научный центр); 1 балл – вывод или грамотное использование терминов (ватра, мошие, городская среда)." },
+  { q: "Объясните, как религия влияет на демографические процессы, образ жизни и экономическое поведение населения. Приведите два примера из разных регионов мира.",
+    crit: "1 балл – влияние на рождаемость и размер семьи; 1 балл – влияние на образ жизни (питание, праздники, роль женщины); 1 балл – влияние на экономику (паломничество, хадж, туризм, торговля); 2 балла – два уместных примера из разных регионов." },
+  { q: "Почему в разных странах мира нет единого определения города? Приведите в пример не менее трёх стран с разными критериями (Швеция – от 200 жителей, Франция – от 2 000, Япония – от 30 000 и т.д.) и объясните, как это влияет на сравнение уровня урбанизации.",
+    crit: "1 балл – причина (разные исторические, административные и экономические традиции); 2 балла – три страны с верными критериями; 2 балла – объяснение, что уровни урбанизации разных стран трудно сравнивать напрямую." },
+  { q: "Опишите основные последствия международной миграции для стран эмиграции и стран иммиграции: экономические, демографические, межкультурные.",
+    crit: "1 балл – экономические для стран эмиграции (денежные переводы, нехватка кадров, «утечка мозгов»); 1 балл – экономические для стран иммиграции (рабочая сила, рост экономики); 1 балл – демографические (старение и сокращение населения в странах эмиграции, омоложение в странах иммиграции); 1 балл – межкультурные (разнообразие, напряжённость); 1 балл – пример Республики Молдова или другой страны." }
+];
+
+/* ===================== ГЕНЕРАТОР ВАРИАНТОВ ===================== */
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, rnd) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function rint(rnd, a, b) { return a + Math.floor(rnd() * (b - a + 1)); }
+/* равномерный выбор k элементов по номеру варианта: каждый элемент пула встречается примерно одинаково часто */
+function spreadPick(pool, k, v, salt) {
+  var order = shuffle(pool.map(function (_, i) { return i; }), mulberry32(9137 + salt * 101));
+  var out = [], start = ((v - 1) * k) % pool.length;
+  for (var i = 0; out.length < k; i++) { var idx = order[(start + i) % pool.length]; if (out.indexOf(idx) < 0) out.push(idx); }
+  return out.map(function (i) { return pool[i]; });
+}
+
+function buildVariant(v) {
+  var rnd = mulberry32(v * 7919 + 17);
+  var T = { v: v, tasks: [] };
+
+  /* 1. Верно/неверно: 3 утверждения, минимум одно неверное и одно верное */
+  var tf = spreadPick(BANK.tf, 3, v, 1);
+  if (tf.every(function (x) { return x.t; }) || tf.every(function (x) { return !x.t; })) {
+    var need = !tf[0].t; var pool = BANK.tf.filter(function (x) { return x.t === need && tf.indexOf(x) < 0; });
+    tf[2] = pool[v % pool.length];
+  }
+  T.tasks.push({ id: "t1", type: "tf", sec: 1, pts: 6, items: tf });
+
+  /* 2. Выбор ответа: 4 вопроса */
+  T.tasks.push({ id: "t2", type: "mc", sec: 1, pts: 4, items: spreadPick(BANK.mc, 4, v, 2).map(function (m) {
+    var opts = shuffle(m.o, rnd); return { q: m.q, opts: opts, ok: opts.indexOf(m.o[0]) }; }) });
+
+  /* 3. Соотнесение: 5 терминов, 6 определений */
+  var tr = spreadPick(BANK.terms, 6, v, 3);
+  var defs = shuffle(tr.map(function (x) { return x[1]; }), rnd);
+  T.tasks.push({ id: "t3", type: "match", sec: 1, pts: 5, terms: tr.slice(0, 5).map(function (x) { return { term: x[0], ok: defs.indexOf(x[1]) }; }), defs: defs });
+
+  /* 4. Расчёты: 2 страны × 3 показателя (числа подобраны так, чтобы ответы были «круглыми») */
+  var D = [10, 20, 25, 40, 50, 100, 125, 200, 250, 500];
+  function country(name, decline) {
+    var m = rint(rnd, 1, 15), P = 10 * m, d = D[rint(rnd, 0, D.length - 1)], S = P * 1000 / d;
+    var N = decline ? rint(rnd, 7, 11) : rint(rnd, 22, 42), M = decline ? rint(rnd, N + 1, 16) : rint(rnd, 6, 11);
+    var u = decline ? rint(rnd, 55, 90) : rint(rnd, 15, 50), U = Math.round(P * u) / 100;
+    return { name: name, P: P, S: S, N: N, M: M, U: U, ans: [N - M, d, u] };
+  }
+  var dec = rnd() < 0.5;
+  T.tasks.push({ id: "t4", type: "calc", sec: 2, pts: 6, rows: [country("Страна А", dec), country("Страна Б", !dec)] });
+
+  /* 5. Пропуски */
+  var g = spreadPick(BANK.gaps, 1, v, 5)[0][0];
+  var blanks = [], text = g.replace(/\{([^}]+)\}/g, function (_, s) { var o = s.split("|"); var sh = shuffle(o, rnd); blanks.push({ opts: sh, ok: sh.indexOf(o[0]) }); return "§" + (blanks.length - 1) + "§"; });
+  T.tasks.push({ id: "t5", type: "gaps", sec: 2, pts: 3, text: text, blanks: blanks });
+
+  /* 6. Атлас: 2 зоны плотности × 2 страны */
+  var zi = [[0, 2], [0, 1], [1, 2]][(v - 1) % 3];
+  T.tasks.push({ id: "t6", type: "atlas", sec: 2, pts: 4, zones: zi.map(function (i) { return BANK.zones[i]; }) });
+
+  /* 7. Пирамида */
+  var types = ["progressive", "regressive", "stationary"], pt = types[(v - 1) % 3], P7 = BANK.pyr[pt];
+  var shares = P7.shares.map(function (s) { return Math.max(0.6, s + (rnd() - 0.5) * 0.8); });
+  var others = types.filter(function (x) { return x !== pt; });
+  var cOpts = shuffle([P7.ex[v % P7.ex.length], BANK.pyr[others[0]].ex[0], BANK.pyr[others[1]].ex[0], BANK.pyr[others[1]].ex[1] || BANK.pyr[others[0]].ex[1]], rnd);
+  var st = shuffle(shuffle(P7.yes, rnd).slice(0, 2).map(function (s) { return { s: s, ok: true }; }).concat(P7.no.map(function (s) { return { s: s, ok: false }; })), rnd);
+  T.tasks.push({ id: "t7", type: "pyr", sec: 2, pts: 4, ptype: pt, shares: shares, tOpts: ["прогрессивный", "стационарный", "регрессивный"], tOk: P7.name,
+    cOpts: cOpts, cOk: cOpts.indexOf(P7.ex[v % P7.ex.length]), st: st });
+
+  /* 8. Порядок: 4 элемента */
+  var o8 = spreadPick(BANK.order, 1, v, 8)[0];
+  var pick = shuffle(o8.items, rnd).slice(0, 4);
+  var correct = pick.slice().sort(function (a, b) { return o8.asc ? a[1] - b[1] : b[1] - a[1]; }).map(function (x) { return x[0]; });
+  T.tasks.push({ id: "t8", type: "order", sec: 2, pts: 3, q: o8.q, items: shuffle(pick.map(function (x) { return x[0]; }), rnd), correct: correct });
+
+  /* 9. Цепочка */
+  var ch = spreadPick(BANK.chains, 1, v, 9)[0];
+  T.tasks.push({ id: "t9", type: "chain", sec: 3, pts: 4, title: ch.title, links: ch.links, ans: ch.ans, opts: shuffle(ch.ans.concat(ch.wrong), rnd), open: ch.open, crit: ch.crit });
+
+  /* 10. Ситуация */
+  var s10 = spreadPick(BANK.sit, 1, v, 10)[0];
+  T.tasks.push({ id: "t10", type: "sit", sec: 3, pts: 6, t: s10.t, q: s10.q, crit: s10.crit });
+
+  /* 11. Сравнение / эссе */
+  var e11 = spreadPick(BANK.essay, 1, v, 11)[0];
+  T.tasks.push({ id: "t11", type: "essay", sec: 3, pts: 5, q: e11.q, table: e11.table || null, crit: e11.crit });
+  return T;
+}
+
+
+
+const SCALE = [[49, 10], [45, 9], [40, 8], [34, 7], [27, 6], [20, 5], [14, 4], [8, 3], [4, 2], [0, 1]];
+const SECTIONS = { 1: 'I. Знание и понимание', 2: 'II. Применение', 3: 'III. Интеграция и синтез' };
+const VARIANTS = Array.from({ length: 30 }, (_, i) => buildVariant(i + 1));
+
+/* страны для задания по атласу (без пограничных значений плотности) */
+const ZONES = ['более 100 чел./км²', 'от 20 до 100 чел./км²', 'менее 20 чел./км²'];
+const ZONE_CC = [
+  ['Бангладеш', 'Индия', 'Нидерланды', 'Бельгия', 'Япония', 'Южная Корея', 'Германия', 'Великобритания', 'Италия', 'Филиппины', 'Вьетнам', 'Пакистан'],
+  ['США', 'Бразилия', 'Мексика', 'Румыния', 'Украина', 'Колумбия', 'Иран', 'ЮАР', 'Беларусь', 'Перу', 'Венесуэла', 'Мадагаскар'],
+  ['Россия', 'Канада', 'Австралия', 'Монголия', 'Казахстан', 'Ливия', 'Намибия', 'Ботсвана', 'Мавритания', 'Исландия', 'Боливия', 'Саудовская Аравия']];
+const lcf = s => s.charAt(0).toLowerCase() + s.slice(1);
+const AI_SUBJECT = 'география, 11 класс, Республика Молдова, единица обучения III «Население и населённые пункты»';
+const AI_URL = 'https://script.google.com/macros/s/AKfycbxuWCBIw9_SiAVP0BLwURgMyoQ7hvqMHEu9aSPeoCtcUW_jsw77j8aFrtqi6TsIaLirTw/exec';
+
+
+/* ===== ОБЩЕЕ (ученик и учитель): задания, бланк, проверка, схема оценивания ===== */
+const WORK = { id: 'geo11-kr3', minutes: 45, max: 50,
+  title: 'Суммативное оценивание по единице обучения III «Население и населённые пункты»' };
+const DURATION = WORK.minutes * 60 * 1000;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const strip = h => String(h ?? '').replace(/<[^>]+>/g, '');
+const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[-–—]/g, ' ').replace(/[«»"'.,;:!?()\[\]\/\\%]/g, ' ').replace(/\s+/g, ' ').trim();
+const hasAll = (a, x) => norm(x).split(' ').every(w => a.includes(w));
+const hit = (ans, stems) => { const a = ' ' + norm(ans) + ' '; return !!norm(ans) && stems.some(x => hasAll(a, x)); };
+const toNum = s => { const t = String(s ?? '').replace(/\s/g, '').replace(/[−–—]/g, '-').replace(',', '.').match(/-?\d+(\.\d+)?/); return t ? parseFloat(t[0]) : NaN; };
+const markFor = pts => SCALE.find(([min]) => pts >= min)[1];
+const key = (n, i) => `t${n}p${i}`;
+const fmtDate = ms => new Date(ms || Date.now()).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+const f1 = x => String(x).replace('.', ',');
+// детерминированное «перемешивание» (одинаковое у всех, кто пишет этот вариант)
+const seeded = (arr, seed) => arr.map((x, i) => [x, (Math.sin(seed * 9301 + i * 49297) * 233280) % 1]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+
+/* ---------- из данных варианта — список заданий ---------- */
+const TASKS_CACHE = {};
+function tasksOf(v) {
+  if (TASKS_CACHE[v]) return TASKS_CACHE[v];
+  const V = VARIANTS[v], X = {}, s = v * 7 + 3;
+  V.tasks.forEach(t => { X[t.id] = t; });
+  const rnd = mulberry32(v * 131 + 7);
+
+  /* 4. расчёты */
+  const R = X.t4.rows;
+  const calcParts = [];
+  R.forEach(r => {
+    calcParts.push(num(`${r.name}: естественный прирост, ‰`, r.ans[0], 0, `${r.N} − ${r.M} = ${f1(r.ans[0])}‰${r.ans[0] < 0 ? ' — естественная убыль.' : '.'}`, '‰'));
+    calcParts.push(num(`${r.name}: средняя плотность населения, чел./км²`, r.ans[1], 1, `D = ${r.P} млн чел. : ${r.S.toLocaleString('ru-RU')} тыс. км² = ${r.ans[1]} чел./км².`, 'чел./км²'));
+    calcParts.push(num(`${r.name}: уровень урбанизации, %`, r.ans[2], 1, `${f1(r.U)} : ${r.P} × 100 = ${r.ans[2]}%.`, '%'));
+  });
+
+  /* 6. атлас: 4 страны, минимум из двух разных зон */
+  const zs = shuffle([0, 1, 2, rint(rnd, 0, 2)], rnd), used = new Set();
+  const atlasItems = zs.map(z => { const pool = ZONE_CC[z].filter(c => !used.has(c)); const c = pool[rint(rnd, 0, pool.length - 1)]; used.add(c); return [c, z]; });
+
+  /* 7. пирамида */
+  const P7 = X.t7, yes = P7.st.filter(x => x.ok).map(x => x.s), no = P7.st.filter(x => !x.ok).map(x => x.s);
+  const mc1 = shuffle([yes[0], ...no], rnd), mc2 = shuffle([yes[1], ...no], rnd);
+
+  /* 8. порядок: 3 элемента из 4 (порядок сохраняется) */
+  const drop = rint(rnd, 0, 3), ordItems = X.t8.correct.filter((_, j) => j !== drop);
+
+  /* 9. цепочка */
+  let gi = 0;
+  const chainHtml = '<div class="sc-root">' + X.t9.title + '</div><div class="sc-chain">' + X.t9.links.map((l, i) =>
+    (i ? '<span class="sc-arr">→</span>' : '') + (l === null ? `<span class="sc-gap">{${gi++}}</span>` : `<div class="sc-node">${l}</div>`)).join('') + '</div>';
+
+  const T = [
+    { n: 1, sec: 1, stem: TF_STEM, parts: X.t1.items.map(it => tf(it.s.replace(/\[\[(.+?)\]\]/g, '<u>$1</u>'), it.t ? 'В' : 'Н', it.keys || [], it.fix || '',
+      it.t ? 'Утверждение верное.' : `Правильно: «${it.fix}».`)) },
+    { n: 2, stem: MC_STEM, parts: X.t2.items.map(it => mc(it.q, it.opts, it.ok, `Правильный ответ — «${it.opts[it.ok]}».`)) },
+    { n: 3, stem: T3_STEM, parts: X.t3.terms.map(x => ({ t: 'sel', q: `<b>${x.term}</b>`, a: X.t3.defs[x.ok], opts: X.t3.defs, long: true,
+      ex: `${x.term} — ${lcf(X.t3.defs[x.ok])}` })) },
+    { n: 4, sec: 2, stem: CALC_STEM, fig: { type: 'table', title: 'Таблица. Демографические показатели двух стран',
+      head: ['Страна', 'Население, млн чел.', 'Площадь, тыс. км²', 'Рождаемость, ‰', 'Смертность, ‰', 'Городское население, млн чел.'],
+      rows: R.map(r => [r.name, r.P, r.S, r.N, r.M, r.U]) }, parts: calcParts },
+    { n: 5, stem: GAPS_STEM, src: X.t5.text.replace(/§(\d+)§/g, (_, i) => ` <b>(${+i + 1})</b> ________ `),
+      parts: X.t5.blanks.map((b, i) => ({ t: 'sel', q: `Пропуск (${i + 1})`, a: b.opts[b.ok], opts: b.opts, ex: `(${i + 1}) — ${b.opts[b.ok]}.` })) },
+    { n: 6, stem: ATLAS_STEM, parts: [grp(ZONES, atlasItems, 'Средняя плотность населения определяется по карте плотности населения в атласе.')] },
+    { n: 7, stem: PYR_STEM, fig: { type: 'pyr', shares: P7.shares, title: 'Возрастно-половая пирамида населения страны' }, parts: [
+      { t: 'sel', q: 'Тип возрастно-половой пирамиды', a: P7.tOk, opts: P7.tOpts, ex: `Это ${P7.tOk} тип пирамиды.` },
+      { t: 'sel', q: 'Такая пирамида характерна для страны', a: P7.cOpts[P7.cOk], opts: P7.cOpts, ex: `${P7.cOpts[P7.cOk]} — пример страны с таким типом пирамиды.` },
+      mc('Выберите верное утверждение об этой пирамиде:', mc1, mc1.indexOf(yes[0])),
+      mc('Выберите ещё одно верное утверждение об этой пирамиде:', mc2, mc2.indexOf(yes[1]))] },
+    { n: 8, stem: ORD_STEM, parts: [{ t: 'ord', q: X.t8.q, items: ordItems, ex: 'Правильный порядок: ' + ordItems.join(' → ') + '.',
+      show: seeded(ordItems.map((_, j) => j), s + 3) }] },
+    { n: 9, sec: 3, stem: CHAIN_STEM, parts: [
+      { t: 'sch', html: chainHtml, ans: X.t9.ans, groups: X.t9.ans.map((_, i) => i), opts: X.t9.opts, ex: 'Цепочка: ' + X.t9.links.map((l, i) => l ?? X.t9.ans[X.t9.links.slice(0, i).filter(x => x === null).length]).join(' → ') + '.' },
+      op(X.t9.open, X.t9.crit, 2)] },
+    { n: 10, stem: SIT_STEM, src: X.t10.t, parts: [op(X.t10.q, X.t10.crit, 6)] },
+    { n: 11, stem: X.t11.q, fig: X.t11.table ? { type: 'table', title: 'Таблица. Исходные данные', head: X.t11.table[0], rows: X.t11.table.slice(1) } : null,
+      parts: [op('Ваш ответ (развёрнуто, 5–8 предложений):', X.t11.crit, 5)] },
+  ];
+  T.forEach(t => { t.p = t.parts.reduce((a, p) => a + maxOf(p), 0); });
+  return (TASKS_CACHE[v] = T);
+}
+function maxOf(p) {
+  if (p.t === 'op') return p.max || 2;
+  if (p.t === 'tf') return 2;
+  if (p.t === 'grp') return p.items.length;
+  if (p.t === 'ord') return p.items.length;
+  if (p.t === 'sch') return p.ans.length;
+  return 1;
+}
+
+/* ---------- проверка ---------- */
+function answerText(p, k, A) {
+  if (p.t === 'tf') return A[k + 'v'] ? A[k + 'v'] + (A[k + 'v'] === 'Н' && A[k + 'f'] ? ' → ' + A[k + 'f'] : '') : '';
+  if (p.t === 'mc') return A[k] !== undefined && A[k] !== '' ? p.opts[+A[k]] : '';
+  if (p.t === 'grp') return p.items.map(([n], j) => A[k + 'g' + j] !== undefined ? `${n} — ${p.cats[+A[k + 'g' + j]]}` : '').filter(Boolean).join('; ');
+  if (p.t === 'ord') return p.items.map((x, j) => A[k + '_' + j] ? `${A[k + '_' + j]}. ${x}` : '').filter(Boolean).sort().join('; ');
+  if (p.t === 'sch') return p.ans.map((_, b) => A[k + '_' + b] || '').filter(Boolean).join('; ');
+  return A[k] || '';
+}
+function modelText(p) {
+  if (p.t === 'tf') return p.a === 'В' ? 'Верно' : `Неверно; правильно: ${p.show}`;
+  if (p.t === 'mc') return p.opts[p.a];
+  if (p.t === 'grp') return p.cats.map((c, ci) => `${c}: ${p.items.filter(x => x[1] === ci).map(x => x[0]).join(', ')}`).join(' · ');
+  if (p.t === 'ord') return p.items.map((x, j) => `${j + 1}. ${x}`).join('; ');
+  if (p.t === 'sch') return p.ans.join('; ');
+  if (p.t === 'num') return f1(p.v) + (p.unit ? ' ' + p.unit : '');
+  if (p.t === 'op') return p.m;
+  return p.a;
+}
+function autoOf(p, k, A) {
+  if (p.t === 'tf') { const v = A[k + 'v']; if (!v || v !== p.a) return 0; return p.a === 'В' ? 2 : (hit(A[k + 'f'], p.fix) ? 2 : 1); }
+  if (p.t === 'mc') return A[k] !== undefined && A[k] !== '' && +A[k] === p.a ? 1 : 0;
+  if (p.t === 'sel') return A[k] === p.a ? 1 : 0;
+  if (p.t === 'num') { const x = toNum(A[k]); return Number.isFinite(x) && Math.abs(x - p.v) <= p.tol + 1e-9 ? 1 : 0; }
+  if (p.t === 'grp') return p.items.reduce((s, [, c], j) => s + (A[k + 'g' + j] !== undefined && +A[k + 'g' + j] === c ? 1 : 0), 0);
+  if (p.t === 'ord') return p.items.reduce((s, _, j) => s + (+A[k + '_' + j] === j + 1 ? 1 : 0), 0);
+  if (p.t === 'sch') {           // пропуски одной «ветки» можно заполнить в любом порядке
+    let sc = 0; const gs = [...new Set(p.groups)];
+    gs.forEach(g => {
+      const idx = p.ans.map((_, b) => b).filter(b => p.groups[b] === g);
+      const need = new Set(idx.map(b => p.ans[b])), got = new Set();
+      idx.forEach(b => { const x = A[k + '_' + b]; if (x && need.has(x) && !got.has(x)) { got.add(x); sc++; } });
+    });
+    return sc;
+  }
+  return null;   // op — проверяет учитель
+}
+function evaluate(v, A = {}, MAN = {}, AI = {}) {
+  const items = []; let sec = 1; const secs = { 1: [0, 0], 2: [0, 0], 3: [0, 0] }; const tasks = [];
+  tasksOf(v).forEach(t => {
+    if (t.sec) sec = t.sec; let ts = 0, tp = 0;
+    t.parts.forEach((p, i) => {
+      const k = key(t.n, i), max = maxOf(p), empty = !norm(answerText(p, k, A));
+      let auto = autoOf(p, k, A);
+      if (p.t === 'op' && empty) auto = 0;
+      const man = Number.isFinite(MAN[k]) ? MAN[k] : null;
+      const ai = p.t === 'op' && !empty && AI && AI[k] && Number.isFinite(+AI[k].score) ? Math.max(0, Math.min(max, Math.round(+AI[k].score))) : null;
+      const score = man ?? (ai !== null ? ai : auto);
+      items.push({ k, n: t.n, i, sec, p, max, auto, man, ai, score, empty });
+      if (score === null) tp++; else { ts += score; secs[sec][0] += score; }
+      secs[sec][1] += max;
+    });
+    tasks.push({ n: t.n, sum: ts, max: t.p, pending: tp });
+  });
+  const total = items.reduce((s, x) => s + (x.score ?? 0), 0), pending = items.filter(x => x.score === null).length;
+  return { items, total, pending, complete: !pending, grade: markFor(total), secs, tasks };
+}
+const cut = (x, n = 400) => { const s = String(x ?? '').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+function resultOf(v, A, MAN, AI = {}) {
+  const e = evaluate(v, A, MAN, AI);
+  return { total: e.total, max: WORK.max, grade: e.grade, complete: e.complete, pct: Math.round(e.total / WORK.max * 100),
+    items: e.items.map(x => ({ l: cut(`${x.n}. ${strip(x.p.q || x.p.s || (x.p.t === 'grp' ? 'Таблица' : x.p.t === 'sch' ? 'Схема' : 'Упорядочение'))}`, 300),
+      s: x.score, m: x.max, a: cut(answerText(x.p, x.k, A) || '—'), k: cut(strip(modelText(x.p))), c: x.p.t === 'op' && x.man === null ? cut(AI?.[x.k]?.comment || '') : '' })) };
+}
+
+/* ---------- рисунки: карта, таблица, диаграмма ---------- */
+function mapHTML(countries) {
+  return `<figure class="map"><div class="mapbox"><img src="${MAP_SRC}" alt="Политическая карта мира с номерами 1–4">
+    ${countries.map((c, i) => { const [x, y] = PLACES[c]; return `<span class="mk" style="left:${x / 14}%;top:${y / 8.81}%">${i + 1}</span>`; }).join('')}
+    </div><figcaption>Политическая карта мира (по рисунку 1.1 учебника)</figcaption></figure>`;
+}
+function pyrSvg(sh) {
+  const ages = ['0–9', '10–19', '20–29', '30–39', '40–49', '50–59', '60+'], W = 360, cx = 180, rowH = 28, top = 10, sc = 7.6;
+  let s = '';
+  for (let i = 0; i < 7; i++) {
+    const y = top + (6 - i) * rowH, m = sh[i] * (i >= 5 ? 0.92 : 1.02), f = sh[i] * (i >= 5 ? 1.08 : 0.98);
+    s += `<rect x="${cx - 22 - m * sc}" y="${y}" width="${m * sc}" height="${rowH - 5}" fill="#6f98c8"/><rect x="${cx + 22}" y="${y}" width="${f * sc}" height="${rowH - 5}" fill="#d99aa8"/>`
+      + `<text x="${cx}" y="${y + 16}" text-anchor="middle" class="bl">${ages[i]}</text>`;
+  }
+  const yb = top + 7 * rowH + 4;
+  s += `<line x1="8" y1="${yb}" x2="${W - 8}" y2="${yb}" stroke="#9fb2c6"/><text x="${cx - 22}" y="${yb + 16}" text-anchor="end" class="bl">Мужчины, %</text><text x="${cx + 22}" y="${yb + 16}" class="bl">Женщины, %</text>`;
+  [5, 10, 15].forEach(v => { s += `<text x="${cx - 22 - v * sc}" y="${yb + 30}" text-anchor="middle" class="bv">${v}</text><text x="${cx + 22 + v * sc}" y="${yb + 30}" text-anchor="middle" class="bv">${v}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${yb + 36}" class="chart pyr" role="img" aria-label="Возрастно-половая пирамида">${s}</svg>`;
+}
+function figHTML(f) {
+  if (!f) return '';
+  if (f.type === 'pyr') return `<figure class="fig"><figcaption>${f.title}</figcaption>${pyrSvg(f.shares)}</figure>`;
+  if (f.type === 'table') return `<figure class="fig"><figcaption>${f.title}</figcaption><table class="stat"><thead><tr>${f.head.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${f.rows.map(r => `<tr>${r.map((c, j) => `<td${j ? ' class="nmr"' : ''}>${typeof c === 'number' ? f1(c) : c}</td>`).join('')}</tr>`).join('')}</tbody></table></figure>`;
+  const mx = Math.max(...f.values), W = 640, H = 260, pad = 36, bw = (W - pad * 2) / f.values.length;
+  const bars = f.values.map((v, i) => { const h = (v / mx) * (H - 70), x = pad + i * bw + bw * 0.18, y = H - 40 - h;
+    return `<rect x="${x}" y="${y}" width="${bw * 0.64}" height="${h}" rx="3" fill="#3F7CC0"/>
+      <text x="${x + bw * 0.32}" y="${y - 6}" text-anchor="middle" class="bv">${f1(v)}${f.unit || ''}</text>
+      <text x="${x + bw * 0.32}" y="${H - 22}" text-anchor="middle" class="bl">${f.labels[i].length > 16 ? f.labels[i].slice(0, 15) + '…' : f.labels[i]}</text>`; }).join('');
+  return `<figure class="fig"><figcaption>${f.title}</figcaption><svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${esc(f.title)}">
+    <line x1="${pad}" y1="${H - 40}" x2="${W - pad}" y2="${H - 40}" stroke="#9fb2c6"/>${bars}</svg>
+    ${f.labels.some(l => l.length > 16) ? `<p class="legend">${f.labels.map((l, i) => `${i + 1}) ${l} — ${f1(f.values[i])}${f.unit || ''}`).join(' · ')}</p>` : ''}</figure>`;
+}
+
+/* ---------- бланк ---------- */
+function headerBlock(info = {}) {
+  const f = x => `<span class="fill">${x ? esc(x) : '&nbsp;'}</span>`;
+  return `<header class="blank-head">
+    <p class="h-title">Суммативное оценивание · География · 11 класс</p>
+    <p class="h-sub">Единица обучения III: «Население и населённые пункты»</p>
+    <p class="h-year">время выполнения — 45 минут · максимум — ${WORK.max} баллов</p>
+    <div class="h-grid">
+      <div>Ф.И. ученика: ${f(info.name)}</div><div>Всего баллов: ${f(String(WORK.max))}</div>
+      <div>Класс: ${f(info.cls)}</div><div>Набрано баллов: <span class="fill" id="hScore">${info.score ?? '&nbsp;'}</span></div>
+      <div>Дата: ${f(info.date)}</div><div>Отметка: <span class="fill" id="hMark">${info.mark ?? '&nbsp;'}</span></div>
+    </div>
+    <p class="h-var">Вариант № ${info.v !== undefined ? info.v + 1 : '__'}</p></header>`;
+}
+function scaleBoxes(n, i, max) {
+  let b = '<span class="L">L</span>';
+  for (let k = 0; k <= max; k++) b += `<span class="sb" data-k="${n}-${i}" data-v="${k}">${k}</span>`;
+  return `<div class="boxes ${max > 2 ? 'wide' : ''}">${b}</div>`;
+}
+const opt = (val, label, cur) => `<option value="${esc(val)}" ${cur === String(val) ? 'selected' : ''}>${esc(label)}</option>`;
+function partHTML(t, p, i, mode, A) {
+  const k = key(t.n, i), ro = mode !== 'test' ? 'disabled' : '';
+  if (p.t === 'tf') {
+    const v = A[k + 'v'] || '';
+    return `<div class="tf">
+      <span class="tf-fix"><input class="line" data-a="${k}f" value="${esc(A[k + 'f'])}" ${ro} placeholder="исправление" aria-label="исправление"></span>
+      <span class="vn">${['В', 'Н'].map(x => `<label class="pill ${v === x ? 'on' : ''}"><input type="radio" name="${k}" value="${x}" data-a="${k}v" ${v === x ? 'checked' : ''} ${ro}>${x}</label>`).join('')}</span>
+      <span class="tf-s">${i + 1}) ${p.s}</span></div>`;
+  }
+  if (p.t === 'mc') return `<p class="q">${t.n === 2 ? (i + 1) + ') ' : ''}${p.q}</p><div class="mc">${p.opts.map((o, j) => `<label class="ch ${A[k] === String(j) ? 'on' : ''}"><input type="radio" name="${k}" value="${j}" data-a="${k}" ${A[k] === String(j) ? 'checked' : ''} ${ro}><span class="lt">${'абвг'[j]})</span> ${o}</label>`).join('')}</div>`;
+  if (p.t === 'sel') return `<div class="selrow ${p.long ? 'long' : ''}"><span class="sq">${p.q}</span><select data-a="${k}" ${ro}><option value="">— выберите —</option>${p.opts.map(o => opt(o, o, A[k])).join('')}</select></div>`;
+  if (p.t === 'num') return `<div class="numrow"><span class="sq">${p.q}</span><input class="line num" inputmode="decimal" data-a="${k}" value="${esc(A[k])}" ${ro} placeholder="ответ"></div>`;
+  if (p.t === 'grp') return `<table class="grp"><thead><tr><th>Объект</th>${p.cats.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>
+      ${p.items.map(([name], j) => `<tr><td>${name}</td>${p.cats.map((_, c) => `<td class="c"><label class="pick"><input type="radio" name="${k}g${j}" value="${c}" data-a="${k}g${j}" ${A[k + 'g' + j] !== undefined && +A[k + 'g' + j] === c ? 'checked' : ''} ${ro}><span></span></label></td>`).join('')}</tr>`).join('')}
+      </tbody></table>`;
+  if (p.t === 'ord') return `<p class="q">${p.q}</p><div class="ord">${p.show.map(j => `<div class="ordrow"><select data-a="${k}_${j}" ${ro}><option value="">№</option>${p.items.map((_, n) => opt(n + 1, n + 1, A[k + '_' + j])).join('')}</select><span>${p.items[j]}</span></div>`).join('')}</div>`;
+  if (p.t === 'sch') return `<div class="scheme">${p.html.replace(/\{(\d)\}/g, (_, b) => `<select class="sc-sel" data-a="${k}_${b}" ${ro}><option value="">— выберите —</option>${p.opts.map(o => opt(o, o, A[k + '_' + b])).join('')}</select>`)}</div>`;
+  if (p.t === 'op') return `<p class="q">${p.q}</p><textarea class="ruled" rows="4" data-a="${k}" ${ro}>${esc(A[k])}</textarea>`;
+  return '';
+}
+/* extra(t, p, i) — блок под пунктом (разбор ученику / панель учителя) */
+function blankHTML(v, mode, A = {}, extra = null) {
+  let rows = '';
+  tasksOf(v).forEach(t => {
+    if (t.sec) rows += `<tr class="sec"><td colspan="3">${SECTIONS[t.sec]}</td></tr>`;
+    rows += `<tr class="t-head"><td class="num" rowspan="${t.parts.length + 1}">${t.n}.</td>
+      <td class="stem">${t.stem}${t.src ? `<blockquote class="src">${t.src}</blockquote>` : ''}${t.map ? mapHTML(t.map) : ''}${t.fig ? figHTML(t.fig) : ''}</td><td class="pts"><b>${t.p}</b> б.</td></tr>`;
+    t.parts.forEach((p, i) => {
+      rows += `<tr class="part" id="${key(t.n, i)}"><td class="body">${partHTML(t, p, i, mode, A)}${extra ? extra(t, p, i) : ''}</td><td class="pts">${scaleBoxes(t.n, i, maxOf(p))}</td></tr>`;
+    });
+  });
+  rows += `<tr class="total"><td></td><td>Итого:</td><td class="pts"><b id="tTotal">${WORK.max} б.</b></td></tr>`;
+  return `<table class="blank"><thead><tr><th>№</th><th>ЗАДАНИЯ</th><th>БАЛЛЫ</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="sign">Учитель _______________ Туманов Д.А.</p>`;
+}
+function paintBoxes(e, root = document) {
+  e.items.forEach(x => root.querySelectorAll(`[data-k="${x.n}-${x.i}"]`).forEach(b => b.classList.toggle('on', x.score !== null && +b.dataset.v === x.score)));
+}
+function scaleTable() {
+  const rows = SCALE.map(([min, g], i) => `<tr><td>«${g}»</td><td>${min}–${i === 0 ? WORK.max : SCALE[i - 1][0] - 1}</td></tr>`).join('');
+  return `<table class="scale"><thead><tr><th>Отметка</th><th>Баллы</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ---------- схема оценивания (для учителя) ---------- */
+function crit(p) {
+  return { tf: 'По 2 б. за каждое утверждение; 1 б., если правильно отмечена Н, но нет верного исправления.', mc: '1 б. за правильный ответ.',
+    sel: '1 б. за каждое верное соответствие.', num: '1 б. за правильный ответ.', grp: `По 1 б. за каждый правильно отнесённый объект (всего ${maxOf(p)} б.).`,
+    ord: 'По 1 б. за каждый элемент на своём месте.', sch: 'По 1 б. за каждый верно заполненный пропуск (в одной ветке — в любом порядке).',
+    op: `Оценивается по критериям (0–${maxOf(p)} б.); баллы предлагают нейросети (медиана трёх оценок), учитель может изменить.` }[p.t];
+}
+function baremPage(v) {
+  const rows = tasksOf(v).map(t => t.parts.map((p, i) => {
+    const ans = p.t === 'op' ? p.m + ' <i>Допускаются и другие правильные ответы.</i>' : esc(modelText(p));
+    const q = p.t === 'tf' ? `${i + 1})` : p.t === 'grp' ? 'Таблица' : p.t === 'sch' ? 'Схема' : p.t === 'ord' ? 'Порядок' : strip(p.q).slice(0, 60);
+    return `<tr>${i === 0 ? `<td class="num" rowspan="${t.parts.length}">${t.n}</td><td class="pts" rowspan="${t.parts.length}">${t.p}</td>` : ''}<td><span class="bq">${esc(q)}</span><br>${ans}</td><td class="crit">${crit(p)}</td></tr>`;
+  }).join('')).join('');
+  return `<header class="blank-head"><p class="h-title">Схема оценивания</p><p class="h-sub">${WORK.title}</p><p class="h-var">Вариант № ${v + 1}</p></header>
+    <table class="blank barem"><thead><tr><th>№</th><th>Баллы</th><th>Ожидаемый ответ</th><th>Критерии</th></tr></thead><tbody>${rows}
+    <tr class="total"><td colspan="2">ИТОГО</td><td></td><td class="pts"><b>${WORK.max} б.</b></td></tr></tbody></table>
+    <h3 class="sc-h">Шкала оценивания</h3>${scaleTable()}<p class="sign">Учитель: Туманов Д.А.</p>`;
+}
+
+/* сколько баллов проверяется автоматически и какие задания — развёрнутые */
+const AUTO_MAX = v => tasksOf(v).reduce((s, t) => s + t.parts.filter(p => p.t !== 'op').reduce((a, p) => a + maxOf(p), 0), 0);
+const OPEN_TASKS = v => tasksOf(v).filter(t => t.parts.some(p => p.t === 'op')).map(t => t.n);
+
+/* ===== ПАНЕЛЬ УЧИТЕЛЯ: открыть/закрыть работу, результаты, проверка, бланки ===== */
+const P = `results/${WORK.id}`;
+const ENTRY = { id: WORK.id, title: 'Суммативное оценивание · «Население и населённые пункты»', path: 'kr-geo11-u3.html', subject: 'geo', grade: '11' };
+const fbApp = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+const D = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+const AU = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+const { firebaseConfig } = await import('./firebase-config.js');
+const fb = fbApp.initializeApp(firebaseConfig);
+const db = D.getDatabase(fb), auth = AU.getAuth(fb);
+const { enhanceResults } = await import('./engine/restable.js?v=1');
+
+let RESULTS = {}, unsub = [], filterCls = '', search = '', openId = null, stopSync = null;
+enhanceResults({ db, ref: D.ref, update: D.update, path: P, records: () => RESULTS });   // сортировка, выделение, «Завершить» / «Блок»
+const fmtWhen = (a, b) => { if (!a) return '—'; const d = new Date(a), t = x => new Date(x).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return `<b>${d.toLocaleDateString('ru-RU')}</b><br><small>${t(a)} / ${b ? t(b) : '…'}</small>`; };
+const evalR = r => evaluate((r.variant || 1) - 1, r.answers || {}, r.manual || {}, r.ai || {});
+
+/* ---------- вход ---------- */
+AU.onAuthStateChanged(auth, async user => {
+  unsub.forEach(u => u()); unsub = [];
+  if (!user) return showLogin();
+  $('#who').innerHTML = `${esc(user.email)} · <a href="#" id="logout">выйти</a>`;
+  $('#logout').onclick = e => { e.preventDefault(); AU.signOut(auth); };
+  try { await D.get(D.ref(db, `settings/${WORK.id}`)); await D.get(D.ref(db, P)); }
+  catch (e) { $('#app').innerHTML = `<div class="tcard"><h2>Нет доступа</h2><p>Этот аккаунт не имеет прав учителя. Войдите тем же Google-аккаунтом, что и в Центре управления.</p></div>`; return; }
+  showDashboard();
+});
+function showLogin() {
+  $('#who').textContent = '';
+  $('#app').innerHTML = `<div class="tcard narrow"><h2>Вход для учителя</h2><p class="muted">Войдите тем же Google-аккаунтом, что и в Центре управления TechLab.</p>
+    <div class="err" id="err"></div><button class="btn primary big" id="go">Войти через Google</button>
+    <p class="muted" style="margin-top:16px">Бланки и схемы оценивания открываются и без входа: <a href="#" id="toPaper">открыть</a>.</p></div>`;
+  $('#go').onclick = async () => { try { await AU.signInWithPopup(auth, new AU.GoogleAuthProvider()); } catch (e) { $('#err').textContent = 'Не удалось войти: ' + (e.code || e.message); } };
+  $('#toPaper').onclick = e => { e.preventDefault(); showPaper(); };
+}
+
+/* ---------- панель ---------- */
+function showDashboard() {
+  $('#app').innerHTML = `
+  <a class="backlink" href="teacher/">← Центр управления</a>
+  <div class="tcard">
+    <p class="kicker">География · 11 класс · суммативное оценивание</p>
+    <h2>«Население и населённые пункты» · единица обучения III</h2>
+    <p class="muted">11 заданий · 50 баллов · 30 вариантов (вариант ученику выдаётся случайно) · 45 минут. 37 баллов проверяются автоматически; развёрнутые ответы — задания 9–11 (13 баллов) — проверяют три нейросети (Gemini, Groq, OpenRouter), итог — медиана их оценок. Любой балл можно изменить: «Открыть» → кнопки баллов.</p>
+    <p class="muted small" id="aiInfo"></p>
+    <div class="row">
+      <label class="switch"><input type="checkbox" id="swOpen"><span id="swText">…</span></label>
+      <label class="switch"><input type="checkbox" id="swRev"><span id="swRevText">…</span></label>
+    </div>
+    <p class="muted small" id="pendInfo"></p>
+    <p class="muted small" id="pinInfo"></p>
+    <div class="row">
+      <a class="btn" href="kr-geo11-u3.html" target="_blank">👁 Посмотреть работу как ученик</a>
+      <button class="btn" id="bPaper">🖨 Бланки и схемы оценивания</button>
+      <button class="btn" id="bCsv">Скачать таблицу (CSV)</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <select id="fCls"><option value="">Все классы</option></select>
+    <input id="fSearch" placeholder="Поиск по фамилии">
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="table-wrap"><table class="res"><thead><tr><th>№</th><th>Ученик</th><th>Класс</th><th>Вар.</th><th>Статус</th><th>Выходы</th><th>Дата · начало / сдано</th>
+    <th>I</th><th>II</th><th>III</th><th>Итог</th><th>Отметка</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="13" class="muted">Загрузка…</td></tr></tbody></table></div>
+  <div class="tcard"><b>Шкала оценивания</b>${scaleTable()}</div>`;
+  const sw = $('#swOpen');
+  unsub.push(D.onValue(D.ref(db, `settings/${WORK.id}/open`), s => {
+    sw.checked = !!s.val();
+    $('#swText').textContent = sw.checked ? '🟢 Работа открыта — ученики могут начинать' : '🔴 Работа закрыта — включите, чтобы ученики могли начать';
+  }));
+  sw.onchange = async () => {
+    await D.set(D.ref(db, `settings/${WORK.id}/open`), sw.checked);
+    const cur = (await D.get(D.ref(db, 'settings/current'))).val();
+    if (sw.checked) await D.set(D.ref(db, 'settings/current'), { ...ENTRY, at: Date.now() });
+    else if (cur?.id === WORK.id) await D.remove(D.ref(db, 'settings/current'));
+  };
+  unsub.push(D.onValue(D.ref(db, 'settings/current'), s => {
+    const c = s.val();
+    $('#pinInfo').innerHTML = c ? (c.id === WORK.id ? '📌 Работа показана ученикам на стартовой странице в блоке «Сейчас на уроке».'
+      : `📌 Сейчас на стартовой: <b>${esc(c.title)}</b>. Включите «Работа открыта», чтобы показать эту работу.`)
+      : 'Включите «Работа открыта» — работа появится у учеников на стартовой странице в блоке «Сейчас на уроке».';
+  }));
+  const swR = $('#swRev');
+  unsub.push(D.onValue(D.ref(db, `settings/${WORK.id}/review`), s => {
+    swR.checked = s.val() !== false;
+    $('#swRevText').textContent = swR.checked ? '💡 Разбор после сдачи: ученик видит правильные ответы и пояснения' : '🙈 Разбор скрыт: ученик видит только баллы';
+  }));
+  swR.onchange = () => D.set(D.ref(db, `settings/${WORK.id}/review`), swR.checked);
+  $('#bPaper').onclick = showPaper;
+  $('#bCsv').onclick = exportCsv;
+  $('#fCls').onchange = e => { filterCls = e.target.value; renderTable(); };
+  $('#fSearch').oninput = e => { search = e.target.value.toLowerCase(); renderTable(); };
+  unsub.push(D.onValue(D.ref(db, P), snap => {
+    RESULTS = snap.val() || {};
+    renderTable(); syncResults(); aiQueue();
+    if (openId && $('#chk')) showCheck(openId, true);
+  }));
+  // оценки сразу попадают ученикам и родителям (как в Центре управления)
+  if (!stopSync) import('./engine/sync.js?v=3').then(m => { stopSync = m.startAutoSync(db); unsub.push(() => { stopSync && stopSync(); stopSync = null; }); }).catch(e => console.warn(e));
+}
+
+/* итог в базе — его видят Центр управления, прогресс ученика и сам ученик */
+const lastSig = {};
+function syncResults() {
+  for (const [id, r] of Object.entries(RESULTS)) {
+    if (r.status !== 'submitted') continue;
+    const res = resultOf((r.variant || 1) - 1, r.answers || {}, r.manual || {}, r.ai || {});
+    const sig = JSON.stringify([res.total, res.grade, res.complete, res.items.map(x => x.s)]);
+    if (lastSig[id] === sig || r.result?.sig === sig) { lastSig[id] = sig; continue; }
+    lastSig[id] = sig; res.sig = sig;
+    D.update(D.ref(db, `${P}/${id}`), { result: res }).catch(() => {});
+  }
+}
+function rows() {
+  return Object.entries(RESULTS).filter(([, r]) => (!filterCls || r.cls === filterCls) && (!search || String(r.name).toLowerCase().includes(search)))
+    .sort((a, b) => (b[1].startedAt || 0) - (a[1].startedAt || 0));
+}
+function statusTag(r) {
+  if (r.status === 'in_progress') return Date.now() > (r.deadline || 0) + 60000 ? '<span class="tag warn">не сдал (время вышло)</span>' : '<span class="tag run">⏳ пишет</span>';
+  if (r.reason === 'blocked') return '<span class="tag bad">⛔ заблокирован</span>';
+  if (r.reason === 'teacher') return '<span class="tag warn">⏹ завершил учитель</span>';
+  return r.reason === 'timeout' ? '<span class="tag warn">⏰ время вышло</span>' : '<span class="tag done">✅ сдано</span>';
+}
+function renderTable() {
+  const classes = [...new Set(Object.values(RESULTS).map(r => r.cls).filter(Boolean))].sort();
+  const sel = $('#fCls'); if (sel) sel.innerHTML = '<option value="">Все классы</option>' + classes.map(c => `<option ${c === filterCls ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  const all = Object.values(RESULTS), sub = all.filter(r => r.status === 'submitted'), ev = sub.map(evalR), full = ev.filter(e => e.complete);
+  const waiting = ev.filter(e => !e.complete).length;
+  if ($('#pendInfo')) $('#pendInfo').innerHTML = waiting ? `✍ Ещё не проверены (задания 9–11): <b>${waiting}</b> работ(ы). Нейросети проверяют их автоматически, пока открыта эта страница; можно поставить баллы и вручную.` : (sub.length ? '✅ Все сданные работы проверены.' : '');
+  const f1 = n => String(Math.round(n * 10) / 10).replace('.', ',');
+  $('#stats').innerHTML = [['Всего', all.length], ['Пишут', all.filter(r => r.status === 'in_progress').length], ['Сдали', sub.length],
+    ['Средняя отметка', full.length ? f1(full.reduce((s, e) => s + e.grade, 0) / full.length) : '—'],
+    ['Средний балл', ev.length ? f1(ev.reduce((s, e) => s + e.total, 0) / ev.length) + ' / ' + WORK.max : '—'], ['Ждут проверки', waiting]].map(([l, n]) => `<div class="stat"><b>${n}</b>${l}</div>`).join('');
+  const list = rows(), tb = $('#tb');
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="13" class="muted">Работ пока нет. Включите «Работа открыта», и ученики смогут начать.</td></tr>'; return; }
+  tb.innerHTML = list.map(([id, r], i) => {
+    const fin = r.status === 'submitted', e = evalR(r);
+    return `<tr><td>${list.length - i}</td><td data-sort="${esc(String(r.name || '').toLowerCase())}"><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.variant}</td><td>${statusTag(r)}</td>
+      <td>${r.violations ? `<span class="tag warn">${r.violations}</span>` : '0'}</td><td data-sort="${r.submittedAt || r.startedAt || 0}">${fmtWhen(r.startedAt, r.submittedAt)}</td>
+      ${[1, 2, 3].map(s => `<td data-sort="${fin ? e.secs[s][0] : ''}">${fin ? `${e.secs[s][0]}/${e.secs[s][1]}` : '—'}</td>`).join('')}
+      <td data-sort="${fin ? e.total : ''}">${fin ? `<b>${e.total}</b> / ${WORK.max}` : '—'}</td>
+      <td data-sort="${fin ? e.grade : ''}">${fin ? (e.complete ? `<span class="grade">${e.grade}</span>` : `<span class="grade pending">≈${e.grade}</span><br><small>проверить: ${e.pending}</small>`) : '—'}</td>
+      <td class="nowrap"><button class="btn small" data-open="${id}">${fin ? 'Открыть' : 'Смотреть'}</button>
+        <button class="btn small red" data-del="${id}" title="Удалить работу">✕</button></td></tr>`;
+  }).join('');
+  tb.querySelectorAll('[data-open]').forEach(b => b.onclick = () => showCheck(b.dataset.open));
+  tb.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const r = RESULTS[b.dataset.del];
+    if (confirm(`Удалить работу «${r?.name}»? Это нельзя отменить.`)) D.remove(D.ref(db, `${P}/${b.dataset.del}`)); });
+}
+
+/* ---------- одна работа: ответы, эталон, баллы ---------- */
+function showCheck(id, refresh = false) {
+  const r = RESULTS[id]; if (!r) { closeCheck(); return; }
+  openId = id;
+  const v = (r.variant || 1) - 1, A = r.answers || {}, MAN = r.manual || {}, e = evaluate(v, A, MAN, r.ai || {});
+  const box = (t, p, i) => {
+    const x = e.items.find(y => y.n === t.n && y.i === i);
+    const src = x.man !== null ? '✍ учитель' : p.t === 'op' ? (x.empty ? 'нет ответа' : x.ai !== null ? `🤖 ИИ (${esc(r.ai?.[x.k]?.by || 'нейросети')})` : '⏳ проверяют нейросети / поставьте балл') : 'автопроверка';
+    const aiC = p.t === 'op' && r.ai?.[x.k]?.comment ? `<div class="ex">🤖 ${esc(r.ai[x.k].comment)}</div>` : '';
+    const btns = Array.from({ length: x.max + 1 }, (_, k) => `<button data-mk="${x.k}" data-v="${k}" class="${x.score === k ? 'on' : ''}">${k}</button>`).join('');
+    return `<div class="rv tch ${x.score === x.max ? 'good' : x.score ? 'mid' : x.score === 0 ? 'bad' : 'self'}">
+      <div class="model"><span>${p.t === 'op' ? 'Эталон' : 'Правильный ответ'}:</span> ${p.t === 'op' ? p.m : modelText(p)}</div>
+      ${p.ex ? `<div class="ex">💡 ${p.ex}</div>` : ''}${aiC}
+      <div class="rate">Балл: ${btns} <span class="src">${src}</span>${x.man !== null ? ` <button data-reset="${x.k}" title="Вернуть автоматический балл">↺ сбросить</button>` : ''}</div></div>`;
+  };
+  const html = `<div class="chk-bar"><b>${esc(r.name)}</b>, ${esc(r.cls)} · вариант № ${r.variant} · ${r.status === 'submitted' ? `<b>${e.total} / ${WORK.max}</b> · отметка ${e.complete ? `«${e.grade}»` : `≈${e.grade} (проверить: ${e.pending})`}` : 'ещё пишет'}
+      · выходов из окна: ${r.violations || 0}${e.pending ? ` · <a href="#" id="toPend">к непроверенному ↓</a>` : ''}
+      <span class="sp"></span><button class="btn small" id="cPrint">Печать / PDF</button><button class="btn small primary" id="cClose">Закрыть</button></div>
+    <main class="sheet">${headerBlock({ name: r.name, cls: r.cls, date: fmtDate(r.startedAt), v, score: r.status === 'submitted' ? e.total : '', mark: r.status === 'submitted' && e.complete ? e.grade : '' })}
+      ${blankHTML(v, 'review', A, box)}</main>`;
+  let ov = $('#chk');
+  const st = ov ? ov.scrollTop : 0;
+  if (!ov) { ov = document.createElement('div'); ov.id = 'chk'; ov.className = 'chk'; document.body.appendChild(ov); document.body.classList.add('noscroll'); }
+  ov.innerHTML = html; paintBoxes(e, ov);
+  if (refresh) ov.scrollTop = st;
+  $('#cClose').onclick = closeCheck;
+  if ($('#toPend')) $('#toPend').onclick = ev => { ev.preventDefault(); const t = [...ov.querySelectorAll('.rv.tch.self')][0]; t && t.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  $('#cPrint').onclick = () => window.print();
+  ov.onclick = async ev => {
+    const b = ev.target.closest('[data-mk]'), rs = ev.target.closest('[data-reset]');
+    if (b) await D.update(D.ref(db, `${P}/${id}/manual`), { [b.dataset.mk]: +b.dataset.v });
+    if (rs) await D.remove(D.ref(db, `${P}/${id}/manual/${rs.dataset.reset}`));
+  };
+}
+function closeCheck() { openId = null; $('#chk')?.remove(); document.body.classList.remove('noscroll'); }
+
+function exportCsv() {
+  const head = ['Ученик', 'Класс', 'Вариант', 'Статус', 'Выходы', 'Начало', 'I', 'II', 'III', 'Итог', 'Отметка'];
+  const lines = rows().map(([, r]) => { const e = evalR(r), fin = r.status === 'submitted';
+    return [r.name, r.cls, r.variant, fin ? 'сдано' : 'пишет', r.violations || 0, r.startedAt ? new Date(r.startedAt).toLocaleString('ru-RU') : '',
+      ...[1, 2, 3].map(s => fin ? e.secs[s][0] : ''), fin ? e.total : '', fin && e.complete ? e.grade : ''].map(x => `"${String(x).replace(/"/g, '""')}"`).join(';'); });
+  const blob = new Blob(['﻿' + [head.join(';'), ...lines].join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'geo11-summativ-naselenie.csv'; a.click();
+}
+
+/* ---------- бланки и схемы ---------- */
+function showPaper() {
+  closeCheck();
+  $('#app').innerHTML = `<a class="backlink" href="#" id="pBack">← Назад</a>
+  <div class="tcard"><p class="kicker">Для печати</p><h2>Бланки и схемы оценивания</h2>
+    <p class="muted">Пустой бланк любого варианта (если нужно писать на бумаге) и схема оценивания с эталонами ответов.</p>
+    <div class="tgrid">${VARIANTS.map((_, i) => `<div class="tv"><b>Вариант № ${i + 1}</b><button class="btn small" data-blank="${i}">Бланк</button><button class="btn small" data-barem="${i}">Схема оценивания</button></div>`).join('')}</div>
+    <b>Шкала оценивания</b>${scaleTable()}</div>`;
+  $('#pBack').onclick = e => { e.preventDefault(); auth.currentUser ? showDashboard() : showLogin(); };
+  $('#app').querySelectorAll('[data-blank],[data-barem]').forEach(b => b.onclick = () => {
+    const isB = b.dataset.barem !== undefined, v = +(b.dataset.blank ?? b.dataset.barem);
+    $('#app').innerHTML = `<div class="pbar-top"><a class="backlink" href="#" id="p2">← К списку вариантов</a><button class="btn primary" onclick="window.print()">Печать / PDF</button></div>
+      <main class="sheet">${isB ? baremPage(v) : headerBlock({ v }) + blankHTML(v, 'paper', {})}</main>`;
+    $('#p2').onclick = e => { e.preventDefault(); showPaper(); };
+  });
+}
+
+/* ---------- нейросети проверяют сданные работы, пока открыта панель учителя ---------- */
+const aiTried = {}; let aiRunning = false;
+function aiNeed(v, A, M, AIx) {
+  const need = [];
+  tasksOf(v).forEach(t => t.parts.forEach((p, i) => {
+    if (p.t !== 'op') return; const k = key(t.n, i);
+    if (Number.isFinite(M[k]) || (AIx[k] && Number.isFinite(+AIx[k].score)) || !norm(A[k])) return;
+    need.push({ k, q: strip(`${t.stem} ${t.src || ''} ${p.q}`), crit: strip(p.m), max: maxOf(p), answer: String(A[k] || '') });
+  }));
+  return need;
+}
+async function aiQueue() {
+  if (aiRunning) return;
+  const todo = Object.entries(RESULTS).filter(([id, r]) => r.status === 'submitted' && Date.now() - (r.submittedAt || 0) > 150000 && aiNeed((r.variant || 1) - 1, r.answers || {}, r.manual || {}, r.ai || {}).length
+    && !(aiTried[id] && Date.now() - aiTried[id] < 90000));
+  if ($('#aiInfo')) $('#aiInfo').innerHTML = todo.length ? `🤖 Нейросети проверяют развёрнутые ответы: осталось работ — <b>${todo.length}</b>. Не закрывайте страницу.` : '';
+  if (!todo.length) return;
+  aiRunning = true;
+  const [id, r] = todo[0]; aiTried[id] = Date.now();
+  try {
+    const items = aiNeed((r.variant || 1) - 1, r.answers || {}, r.manual || {}, r.ai || {});
+    const res = await fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'aiItems', subject: AI_SUBJECT, items }) });
+    const j = await res.json(); if (!j.ok) throw new Error(j.error || 'ai');
+    const upd = {};
+    for (const [k, x] of Object.entries(j.ai || {})) upd['ai/' + k] = { score: x.score, comment: x.comment || '', by: (j.models || []).join('+'), at: Date.now() };
+    if (j.spelling) upd['ai/spelling'] = { text: j.spelling };
+    await D.update(D.ref(db, `${P}/${id}`), upd);
+  } catch (e) { console.warn('ИИ-проверка', e); }
+  aiRunning = false; setTimeout(aiQueue, 1500);
+}
+setInterval(() => { if (auth.currentUser) aiQueue(); }, 60000);
+
+</script>
+</body>
+</html>
