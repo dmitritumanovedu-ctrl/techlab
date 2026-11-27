@@ -10,7 +10,7 @@ import { roleOf, pendingHtml, myStaff, permOf, logAction } from "../engine/staff
 import { startNotify } from "../engine/notify.js?v=2";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "../firebase-config.js";
-import { SUBJECTS, KINDS } from "../tests.js?v=8";
+import { SUBJECTS, KINDS } from "../tests.js?v=9";
 import { TYPES, esc, uid, newItem, toPublic, variantOf, renderItem, gradeAttempt, importItems, maxOf, evalFormula, fmtNum, fillParams } from "../engine/btest.js?v=1";
 import { tb, itemLabels, typeName } from "../engine/b-i18n.js?v=1";
 import { mountLangSwitch, subjName, kindT, gradeLabel, qualShow, LOCALE, LANG } from "../engine/i18n.js?v=1";
@@ -553,15 +553,36 @@ async function publish() {
 }
 
 // ---------- ИИ: составить задания ----------
+// Сервер Apps Script, который сам составляет тест нейросетями (действие "generate"). Ключи нейросетей — только на сервере.
+const GEN_URL = "https://script.google.com/macros/s/AKfycbzTeX_NfUM3BR-ujHo8prMuo4K-iEVD7upgT0vnVlunbg_Ti_3IbI50uzt3IC5_LfNEow/exec";
+const L3 = (ru, ro, en) => ({ ru, ro, en }[LANG] || ru);
+// Текст из PDF учебника (pdf.js подгружается только при выборе файла)
+async function pdfText(file) {
+  if (/\.txt$/i.test(file.name)) return (await file.text()).slice(0, 40000);
+  const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs";
+  const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  let out = "";
+  for (let i = 1; i <= Math.min(doc.numPages, 30) && out.length < 40000; i++) {
+    const c = await (await doc.getPage(i)).getTextContent();
+    out += c.items.map((x) => x.str).join(" ").replace(/\s+/g, " ") + "\n";
+  }
+  return out.slice(0, 40000);
+}
 function aiDialog() {
   const s = subjOf(T.subject);
   dialog(`<div class="bd-dlg-head"><h2>${esc(tb("ai_h"))}</h2><button type="button" class="btn small ghost" data-close>${esc(tb("close"))}</button></div>
     <p class="muted">${esc(tb("ai_p"))}</p>
     <div class="bd-grid2">${field("aTopic", tb("ai_topic"), `<input id="aTopic" value="${esc(T.title)}">`)}${field("aCount", tb("ai_count"), `<input id="aCount" inputmode="numeric" value="8">`)}</div>
+    <div class="bd-f"><span class="bd-lbl">${esc(L3("Параграф учебника (PDF) — по желанию", "Paragraful din manual (PDF) — opțional", "Textbook pages (PDF) — optional"))}</span>
+      <input type="file" id="aPdf" accept=".pdf,.txt,application/pdf,text/plain"><span class="muted small" id="aPdfSt" aria-live="polite"></span></div>
     ${field("aSrc", tb("ai_src"), `<textarea id="aSrc" rows="3" placeholder="${esc(tb("ai_srcPh"))}"></textarea>`)}
     <div class="bd-f"><span class="bd-lbl">${esc(tb("ai_types"))}</span><div class="bd-checks">${TYPES.map((ty) => `<label class="bd-check"><input type="checkbox" data-aty="${ty}" ${ty !== "sort" ? "checked" : ""}> ${esc(typeName(ty))}</label>`).join("")}</div></div>
     ${field("aLang", tb("ai_lang"), `<select id="aLang"><option value="ru">Русский</option><option value="ro" ${LANG === "ro" ? "selected" : ""}>Română</option><option value="en" ${LANG === "en" ? "selected" : ""}>English</option></select>`)}
-    <button type="button" class="btn" id="aMake">${esc(tb("ai_make"))}</button>
+    <div class="bd-aigo"><button type="button" class="btn" id="aAuto">✨ ${esc(L3("Составить автоматически", "Creează automat", "Create automatically"))}</button>
+      <button type="button" class="btn ghost" id="aMake">${esc(L3("Через свой чат с ИИ", "Prin chatul dvs. cu IA", "Via your own AI chat"))}</button></div>
+    <div class="muted small" id="aAutoSt" role="status" aria-live="polite"></div>
+    <div class="err" id="aAutoErr" role="alert"></div>
     <div id="aStep2" hidden>
       <div class="bd-cap" style="margin-top:14px">${esc(tb("ai_step1"))}</div>
       <textarea id="aPrompt" rows="6" readonly></textarea>
@@ -576,6 +597,46 @@ function aiDialog() {
     $("#aPrompt").value = aiPrompt({ topic: $("#aTopic").value, n: parseInt($("#aCount").value) || 8, src: $("#aSrc").value, types, lang: $("#aLang").value,
       subject: s ? subjName(s) : "", grade: T.grade });
     $("#aStep2").hidden = false; $("#aPrompt").scrollIntoView({ block: "center" });
+  };
+  $("#aPdf").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    $("#aPdfSt").textContent = L3("Читаю файл…", "Citesc fișierul…", "Reading the file…");
+    try { const t = await pdfText(f); $("#aSrc").value = t; $("#aPdfSt").textContent = L3(`Готово: ${t.length} знаков текста`, `Gata: ${t.length} caractere`, `Done: ${t.length} characters`);
+      if (!t.trim()) $("#aPdfSt").textContent = L3("В файле нет текста (возможно, это скан). Вставьте текст вручную.", "Fișierul nu conține text (poate e o scanare). Lipiți textul manual.", "No text in the file (maybe a scan). Paste the text instead."); }
+    catch (err) { console.warn(err); $("#aPdfSt").textContent = L3("Не удалось прочитать файл.", "Fișierul nu a putut fi citit.", "Couldn't read the file."); }
+  };
+  $("#aAuto").onclick = async () => {
+    const types = $$("[data-aty]").filter((x) => x.checked).map((x) => x.dataset.aty);
+    const btn = $("#aAuto"), st = $("#aAutoSt"), er = $("#aAutoErr");
+    btn.disabled = true; er.textContent = ""; st.textContent = L3("Нейросеть составляет задания, вторая проверяет ответы… обычно 30–90 секунд.", "Rețeaua neuronală creează itemii, a doua verifică răspunsurile… de obicei 30–90 de secunde.", "One AI model writes the tasks, a second checks the answers… usually 30–90 seconds.");
+    try {
+      const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 240000);
+      let data; try {
+        const r = await fetch(GEN_URL, { method: "POST", signal: ctrl.signal, body: JSON.stringify({ action: "generate", topic: $("#aTopic").value, n: parseInt($("#aCount").value) || 8,
+          src: $("#aSrc").value, types, lang: $("#aLang").value, subject: s ? subjName(s) : "", grade: T.grade }) });
+        data = JSON.parse(await r.text());
+      } finally { clearTimeout(tm); }
+      if (!data.ok) throw new Error(data.error || "error");
+      const items = importItems(JSON.stringify(data.items));
+      if (!items.length) throw new Error("empty");
+      const start = (T.items.length === 1 && !T.items[0].text.trim()) ? 0 : T.items.length;
+      if (start === 0) T.items = [];
+      T.items.push(...items); SEL = items[0].id; dirty(true); renderCenter();
+      const fl = (data.flags || []).map((k) => start + k);
+      dialog(`<div class="bd-dlg-head"><h2>✨ ${esc(L3("Черновик готов", "Ciorna este gata", "Draft ready"))}</h2><button type="button" class="btn small ghost" data-close>${esc(tb("close"))}</button></div>
+        <p>${esc(L3(`Добавлено заданий: ${items.length}.`, `Itemi adăugați: ${items.length}.`, `Tasks added: ${items.length}.`))}</p>
+        ${fl.length ? `<p class="bd-warn">⚠ ${esc(L3(`Проверьте задания № ${fl.join(", ")}: вторая нейросеть ответила на них иначе, чем в ключе.`, `Verificați itemii nr. ${fl.join(", ")}: a doua rețea a răspuns altfel decât în cheie.`, `Check tasks ${fl.join(", ")}: the second model's answer differs from the key.`))}</p>`
+          : data.checker ? `<p>✅ ${esc(L3("Вторая нейросеть решила задания с выбором и коротким ответом так же, как в ключе.", "A doua rețea a rezolvat itemii cu alegere și răspuns scurt la fel ca în cheie.", "The second model solved the choice and short-answer tasks the same as the key."))}</p>` : ""}
+        <p class="muted">${esc(L3("ИИ может ошибаться: просмотрите каждое задание перед публикацией. Варианты для учеников создаются автоматически — число вариантов в настройках справа.", "IA poate greși: verificați fiecare item înainte de publicare. Variantele pentru elevi se creează automat — numărul lor este în setările din dreapta.", "AI can make mistakes: review every task before publishing. Student versions are created automatically — set how many on the right."))}</p>
+        <button type="button" class="btn" data-close>${esc(L3("Смотреть задания", "Vezi itemii", "Review tasks"))}</button>`);
+    } catch (e) {
+      console.warn(e);
+      const m = String(e.message || e);
+      er.textContent = m === "limit" ? L3("На сегодня лимит составления тестов исчерпан. Попробуйте завтра или кнопкой «Через свой чат с ИИ».", "Limita de azi s-a epuizat. Încercați mâine sau cu „Prin chatul dvs. cu IA”.", "Today's limit is used up. Try tomorrow or use “Via your own AI chat”.")
+        : m === "unknown action" ? L3("Сервер ещё не обновлён: администратору нужно развернуть новую версию Apps Script.", "Serverul nu este actualizat încă: administratorul trebuie să publice noua versiune Apps Script.", "The server isn't updated yet: the admin needs to deploy the new Apps Script version.")
+        : L3("Нейросети сейчас заняты или не ответили. Попробуйте ещё раз через минуту.", "Rețelele sunt ocupate sau nu au răspuns. Încercați din nou peste un minut.", "The AI models are busy or didn't answer. Try again in a minute.");
+      st.textContent = "";
+    } finally { btn.disabled = false; }
   };
   $("#aCopy").onclick = async () => { try { await navigator.clipboard.writeText($("#aPrompt").value); $("#aCopy").textContent = tb("b_copied"); } catch (e) { $("#aPrompt").select(); } };
   $("#aImport").onclick = () => {
