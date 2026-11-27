@@ -2,10 +2,10 @@
 // Стратегия «сначала сеть, но не дольше 4 секунд»: ученики получают свежие тесты,
 // а если интернет тормозит — сразу открывается сохранённая копия (и обновляется в фоне).
 // Ответы тестов хранятся в Firebase и через этот файл НЕ проходят.
-const CACHE = "techlab-v26";
+const CACHE = "techlab-v27";
 const NET_WAIT = 4000;
 const SHELL = ["./", "index.html", "style-e2.css?v=9", "theme-classroom.css?v=4", "theme-tl2.css?v=1", "start-e2.js?v=19", "home.js?v=17", "engine/review.js?v=2", "engine/guard.js?v=2", "engine/shell.js?v=3", "install.js?v=2", "tests.js?v=9",
-  "firebase-config.js", "engine/people.js?v=2", "engine/people.js?v=3", "engine/people.js?v=4", "engine/i18n.js?v=1", "engine/fbrest.js?v=1", "engine/nav.js?v=2", "engine/outbox.js?v=1", "engine/footer.js?v=1",
+  "firebase-config.js", "engine/people.js?v=2", "engine/people.js?v=3", "engine/people.js?v=4", "engine/i18n.js?v=1", "engine/fbrest.js?v=1", "engine/nav.js?v=2", "engine/outbox.js?v=1", "engine/footer.js?v=2",
   "manifest.webmanifest", "offline.html", "privacy.html", "demo/", "engine/consent.js?v=3",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png"];
 

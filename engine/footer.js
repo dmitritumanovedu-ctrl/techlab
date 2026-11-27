@@ -1,6 +1,6 @@
 // =====================================================================
 //  TechLab · подвал сайта: учителя платформы, «Напишите нам», © 2026.
-//  Подключение: <div id="siteFoot" data-root="./"></div>  +  <script type="module" src="engine/footer.js?v=1"></script>
+//  Подключение: <div id="siteFoot" data-root="./"></div>  +  <script type="module" src="engine/footer.js?v=2"></script>
 //  data-root — путь к корню сайта от страницы ("./", "../" …). data-form="0" — без формы отзыва.
 //  Отзывы попадают в базу (feedback/) и видны только администратору на странице admin/.
 // =====================================================================
@@ -60,7 +60,7 @@ export function mountFooter(el) {
     </details>` : ""}
     <div class="tf-links">
       <a href="${root}">стартовая</a> · <a href="${root}parent/">кабинет родителя</a> · <a href="${root}privacy.html">конфиденциальность</a> ·
-      <a href="${root}teacher/">вход для учителя</a> · <a href="${root}teacher/builder.html" title="Учителя других предметов могут подать заявку и получить свой кабинет">вы учитель? присоединяйтесь</a>
+      <a href="${root}teacher/">вход для учителя</a> · <a href="${root}pro/" title="Учителя других предметов: возможности и тарифы TechLab Pro">вы учитель? присоединяйтесь</a>
     </div>
     <div class="tf-copy">© ${YEAR} <b>TechLab</b> · All rights reserved · Все права защищены<br>
       <span class="tf-a" title="Автор">A</span>Автор и администратор платформы — <b>Туманов Дмитрий</b></div>`;
