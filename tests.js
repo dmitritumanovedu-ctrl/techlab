@@ -105,7 +105,7 @@ export const TESTS = [
     teacher: "kr-geo11-teacher.html", aiSubject: "география, 11 класс" },
   { id: "geo11-kr3", type: "test", kind: "so", subject: "geo", grade: "11",
     title: "Суммативное оценивание · «Население и населённые пункты»",
-    note: "Единица обучения III · 11 заданий · 50 баллов · 30 вариантов · 45 минут · атлас, таблицы, пирамида, причинно-следственные связи · проверка ИИ", path: "kr-geo11-u3.html",
+    note: "Единица обучения III · 10 заданий · 50 баллов · 30 вариантов · 45 минут · 9 заданий на рассуждение · атлас, таблицы, пирамида · проверка ИИ", path: "kr-geo11-u3.html",
     teacher: "kr-geo11-u3-teacher.html", aiSubject: "география, 11 класс" },
 
   { id: "geo12-sr1", type: "test", kind: "sr", subject: "geo", grade: "12",
