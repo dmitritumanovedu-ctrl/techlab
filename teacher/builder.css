@@ -161,3 +161,7 @@ h1 { font-family: Unbounded, sans-serif; font-size: 24px; margin: 0 0 4px; }
 .bd-tabs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 12px; }
 .bd-tabs .muted { flex: 1 1 260px; }
 .chip-st.st-share { background: #EDE9FF; color: #5B3FD6; }
+
+/* ИИ: составить автоматически */
+.bd-aigo { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.bd-warn { background: #FFF1DE; color: #7A4300; border-radius: 10px; padding: 10px 12px; font-weight: 600; }
