@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Миссия 2 · Операция «Флешка» · 7 класс</title>
+<script src="../../../engine/guard.js?v=3"></script>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Rubik:wght@400;500;700;800&display=swap">
+<script>window.TL_READY = new Promise(function (r) { window.__tlr = r; }); function TL() { return window.TL_READY; }</script>
+<style>
+:root{--bg:#0b1430;--panel:#13204a;--panel2:#1a2b5e;--line:#2b3f7a;--ink:#eaf1ff;--muted:#a9b8e0;--yellow:#ffd54a;--cyan:#38bdf8;--green:#4ade80;--red:#f87171;--orange:#fb923c;--violet:#a78bfa}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif}
+body{min-height:100vh;background:radial-gradient(circle at 12% 8%,rgba(56,189,248,.14),transparent 40%),radial-gradient(circle at 88% 92%,rgba(167,139,250,.14),transparent 40%),var(--bg)}
+button{font-family:inherit}
+h1,h2,h3{font-family:Unbounded,sans-serif;font-weight:800;margin:0}
+.hud{position:sticky;top:0;z-index:5;background:rgba(11,20,48,.94);border-bottom:2px solid var(--line)}
+.hud-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-weight:700}
+.brand{font-family:Unbounded,sans-serif;color:var(--yellow);font-size:15px}
+.bar{display:inline-block;vertical-align:middle;width:150px;height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .4s}
+.hud .sp{margin-left:auto;color:var(--muted);font-weight:600;font-size:14px}
+main{max-width:1080px;margin:0 auto;padding:22px 16px 70px}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.muted{color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:800;font-size:16px;cursor:pointer;min-height:48px}
+.btn:active{transform:translateY(2px)}
+.go{background:var(--yellow);color:#1b1300;box-shadow:0 4px 0 #b38f12}
+.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+input[type=text],select,textarea{background:#0a1027;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:600 16px Rubik,sans-serif;width:100%;min-height:48px}
+label{display:block;font-weight:700;margin:0 0 6px;color:var(--muted);font-size:14px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1 1 300px;min-width:0}
+.hero{text-align:center;padding:20px 10px}
+.hero h1{font-size:40px;line-height:1.1;color:var(--yellow)}
+.hero h1 small{display:block;font-size:20px;color:var(--cyan);margin-top:10px}
+.notebook{background:#fffdf3;color:#1e3a8a;border-radius:14px;padding:16px 20px;background-image:linear-gradient(#dbe6fb 1px,transparent 1px);background-size:100% 28px;border:3px solid #ffd54a}
+.notebook .nb-h{font-family:Unbounded,sans-serif;color:#b45309;font-size:14px;margin-bottom:8px}
+.notebook p,.notebook li{font-size:17px;line-height:28px;margin:0}
+.notebook ul{margin:0;padding-left:22px}
+.check{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;color:#1e3a8a;cursor:pointer;min-height:44px}
+.check input{width:22px;height:22px}
+.map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:800px){.map{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.node{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:16px;text-align:left;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:160px}
+.node:disabled{opacity:.45;cursor:not-allowed}
+.node.done{border-color:var(--green)}
+.node.next{border-color:var(--yellow);box-shadow:0 0 0 4px rgba(255,213,74,.18)}
+.node .num{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Unbounded,sans-serif;color:#0b1430}
+.node .t{font-weight:800;font-size:17px}.node .d{font-size:13px;color:var(--muted)}
+.node .pts{margin-top:auto;font-size:13px;font-weight:800;color:var(--yellow)}
+.q{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+.q h3{font-family:Rubik,sans-serif;font-size:19px;margin-bottom:12px;line-height:1.35}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{background:#0f1a40;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 14px;font-weight:700;font-size:16px;cursor:pointer;text-align:left;min-height:52px}
+.opt:hover:not(:disabled){border-color:var(--cyan)}
+.opt.right{background:#0f3b26;border-color:var(--green)}.opt.wrong{background:#43141b;border-color:var(--red)}
+.opt.sel{border-color:var(--yellow);background:#2a2a10}
+.explain{margin-top:12px;padding:12px 14px;border-radius:12px;font-weight:600;line-height:1.4}
+.explain.ok{background:rgba(74,222,128,.14);color:#bbf7d0}.explain.bad{background:rgba(248,113,113,.14);color:#fecaca}
+.chat{background:#e5ddd5;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;color:#111}
+.msg{max-width:80%;background:#fff;border-radius:12px;padding:10px 12px;font-size:16px;line-height:1.4;box-shadow:0 1px 1px rgba(0,0,0,.15)}
+.msg b{display:block;font-size:13px;color:#0e7490;margin-bottom:2px}
+.post{background:#fff;color:#111;border-radius:16px;overflow:hidden;max-width:560px}
+.post .ph{position:relative;height:300px;background:linear-gradient(#7dd3fc,#fde68a 70%,#86efac 70%)}
+.hot{position:absolute;border:3px dashed transparent;border-radius:10px;background:transparent;cursor:pointer;color:#111;font:700 14px Rubik,sans-serif;padding:6px 8px}
+.hot:hover{border-color:#f97316}
+.hot.found{border-color:#16a34a;background:rgba(22,163,74,.18)}
+.big{font-family:Unbounded,sans-serif;font-size:26px;color:var(--yellow)}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--yellow);color:#1b1300;font-family:Unbounded,sans-serif;padding:10px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:20;pointer-events:none}
+.toast.on{opacity:1}
+.grade{font-family:Unbounded,sans-serif;font-size:84px;line-height:1;color:var(--yellow)}
+.moods{display:flex;gap:10px;flex-wrap:wrap}
+.moods button{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;min-height:48px}
+.moods button[aria-pressed=true]{border-color:var(--yellow)}
+.desc{display:flex;flex-direction:column;gap:8px}
+.desc div{background:var(--panel2);border-radius:10px;padding:10px 12px;font-weight:600}
+.hidden{display:none !important}
+
+.slide{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:26px;min-height:300px}
+.slide h3{font-size:24px;color:var(--yellow);margin-bottom:14px}
+.slide p,.slide li{font-size:19px;line-height:1.55}
+.dots{display:flex;gap:8px;justify-content:center;margin:14px 0}.dots i{width:12px;height:12px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--yellow)}
+.tree{font-family:Consolas,monospace;font-size:17px;line-height:1.7;background:#0a1027;border:2px solid var(--line);border-radius:14px;padding:16px;white-space:pre}
+.files{display:flex;flex-wrap:wrap;gap:10px}
+.file{background:#0f1a40;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 14px;font:700 16px Consolas,monospace;cursor:pointer;min-height:48px}
+.file.sel{border-color:var(--yellow);background:#2a2a10}
+.folders{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+@media (max-width:700px){.folders{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.folder{background:#f59e0b;color:#3b2a00;border:0;border-radius:14px;padding:16px 10px;font-weight:800;font-size:17px;cursor:pointer;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.folder small{font-weight:600}
+.steps button{display:block;width:100%;margin-bottom:8px}
+.order{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.order div{background:#0f3b26;border:2px solid var(--green);border-radius:12px;padding:10px 14px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="hud hidden" id="hud"><div class="hud-in">
+  <span class="brand">ОПЕРАЦИЯ «ФЛЕШКА»</span>
+  <span>Баллы <span class="bar"><i id="pf"></i></span> <span id="pt">0</span>/41</span>
+  <span>Монеты: <span id="cn">0</span></span>
+  <span class="sp" id="who"></span>
+</div></div>
+<main id="stage"></main>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* Связь с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "inf7-os-m2";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Теория", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+
+<script>
+(function () {
+'use strict';
+var MAX = 41;
+var LV = [
+  { k: 'q1', m: 6, t: 'Кто ты, файл?', d: 'Узнай тип файла по расширению.', c: '#38bdf8' },
+  { k: 'q2', m: 6, t: 'Наведи порядок', d: 'Разложи файлы по папкам.', c: '#f59e0b' },
+  { k: 'q3', m: 6, t: 'Путь к файлу', d: 'Найди файл по адресу в дереве папок.', c: '#4ade80' },
+  { k: 'q4', m: 6, t: 'Имя под запретом', d: 'Можно ли так назвать файл?', c: '#f472b6' },
+  { k: 'q5', m: 6, t: 'Внешние устройства', d: 'Выбери устройство под задачу.', c: '#a78bfa' },
+  { k: 'q6', m: 6, t: 'Блиц: КБ · МБ · ГБ', d: '60 секунд на единицы памяти.', c: '#fb923c' },
+  { k: 'q7', m: 5, t: 'Босс: спаси флешку', d: 'Расставь шаги в правильном порядке.', c: '#ffd54a' }
+];
+var S = { name: '', cls: '', rec: null, score: {}, open: {}, coins: 0, t0: 0, mood: '' };
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var stage = $('#stage');
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function pts() { return Object.keys(S.score).reduce(function (s, k) { return s + S.score[k]; }, 0); }
+function toast(t) { var e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { e.classList.remove('on'); }, 1300); }
+var actx; function beep(f, d) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); var o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.value = .05; o.connect(g); g.connect(actx.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + (d || .1)); o.stop(actx.currentTime + (d || .1)); } catch (e) {} }
+function ok() { beep(700, .08); setTimeout(function () { beep(1040, .1); }, 80); }
+function bad() { beep(150, .25); }
+function hud() { $('#hud').classList.remove('hidden'); $('#pt').textContent = pts(); $('#pf').style.width = (pts() / MAX * 100) + '%'; $('#cn').textContent = S.coins; $('#who').textContent = S.name + ' · ' + S.cls; }
+function prog(o) { if (S.rec) TL().then(function (t) { return t.progress(S.rec, o); }).catch(function () {}); }
+function save() { prog({ score: S.score, open: S.open, stage: Object.keys(S.score).length >= 7 ? 'Финиш' : 'Уровень ' + (Object.keys(S.score).length + 1), doneCount: Object.keys(S.score).length }); }
+function addCoin(n) { S.coins += n; hud(); }
+
+/* ---------- СТАРТ ---------- */
+function screenStart() {
+  stage.innerHTML = '<div class="hero"><div class="kicker">Информатика · 7 класс · Миссия 2 · 03.12</div>' +
+    '<h1 style="margin-top:10px">ОПЕРАЦИЯ «ФЛЕШКА»<small>Файлы и папки. Внешние устройства</small></h1>' +
+    '<p class="muted" style="font-size:18px;max-width:680px;margin:14px auto 22px">У Миши на флешке полный хаос: файлы без папок, странные имена, а скоро сдавать проект. Стань цифровым агентом — пройди теорию, 7 уровней и спаси флешку!</p></div>' +
+    '<div class="panel" style="max-width:720px;margin:0 auto"><div class="row">' +
+    '<div class="col"><label for="fio">Фамилия и имя</label><input id="fio" type="text" maxlength="60" placeholder="Иванов Артём"></div>' +
+    '<div class="col" style="flex:0 1 180px"><label for="cls">Класс</label><select id="cls"><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div></div>' +
+    '<div style="margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn go" id="go" type="button">НАЧАТЬ ОПЕРАЦИЮ ▶</button><span class="muted" id="err"></span></div></div>';
+  $('#go').onclick = async function () {
+    var fio = $('#fio').value.trim(), cls = $('#cls').value;
+    if (fio.split(/\s+/).length < 2) { $('#err').textContent = 'Напиши фамилию и имя.'; bad(); return; }
+    var b = this; b.disabled = true; $('#err').textContent = 'Подключаюсь…';
+    try {
+      var t = await Promise.race([TL(), new Promise(function (_, rj) { setTimeout(function () { rj(new Error('timeout')); }, 8000); })]);
+      if (!(await t.isOpen())) { $('#err').textContent = 'Миссия пока закрыта — подожди, пока учитель её откроет.'; b.disabled = false; return; }
+      S.rec = await t.start({ name: fio, cls: cls });
+    } catch (e) { $('#err').textContent = 'Нет связи с сайтом — покажешь результат учителю.'; }
+    S.name = fio; S.cls = cls; S.t0 = Date.now(); ok(); hud(); theory(0);
+  };
+}
+
+/* ---------- ТЕОРИЯ: 5 слайдов ---------- */
+var SL = [
+  ['Что такое файл?', '<p><b>Файл</b> — это данные (текст, рисунок, музыка, программа), сохранённые на носителе под своим <b>именем</b>.</p><p style="margin-top:12px">Имя файла = <b>имя</b> + точка + <b>расширение</b>:</p><div class="tree" style="margin-top:10px">реферат<b style="color:#ffd54a">.docx</b>   ← текстовый документ\nпесня<b style="color:#ffd54a">.mp3</b>      ← звук\nфото<b style="color:#ffd54a">.jpg</b>       ← изображение\nигра<b style="color:#ffd54a">.exe</b>       ← программа</div><p style="margin-top:10px">По расширению компьютер понимает, <b>какой программой</b> открыть файл.</p>'],
+  ['Что такое папка?', '<p><b>Папка</b> (каталог) — место, где хранятся файлы и другие папки. Папки внутри папок образуют <b>дерево</b>.</p><div class="tree" style="margin-top:12px">D:\\\n└── Школа\n    ├── Информатика\n    │   └── проект.pptx\n    └── Математика\n        └── задачи.docx</div>'],
+  ['Путь к файлу', '<p><b>Путь</b> — «адрес» файла: диск, затем все папки по порядку, через обратный слеш <b>\\</b>.</p><div class="tree" style="margin-top:12px">D:\\Школа\\Информатика\\проект.pptx</div><p style="margin-top:12px">В имени файла <b>нельзя</b> использовать символы: <b>\\ / : * ? " &lt; &gt; |</b></p>'],
+  ['Внешние устройства хранения', '<ul><li><b>USB-флешка</b> — маленькая, удобно носить с собой.</li><li><b>Внешний жёсткий диск (HDD/SSD)</b> — очень много места, для резервных копий.</li><li><b>Карта памяти</b> — в телефоне и фотоаппарате.</li><li><b>CD/DVD-диск</b> — старый носитель, мало места.</li><li><b>Облако</b> (Google Диск, OneDrive) — хранение в интернете.</li></ul>'],
+  ['Единицы памяти и безопасность', '<div class="tree">1 байт  → 1 буква\n1 КБ = 1024 байта\n1 МБ = 1024 КБ   (≈ песня 3–5 МБ)\n1 ГБ = 1024 МБ   (≈ фильм 1–4 ГБ)\n1 ТБ = 1024 ГБ</div><p style="margin-top:12px">Перед тем как вынуть флешку — <b>«Безопасное извлечение»</b>. Чужую флешку сначала проверь <b>антивирусом</b>. Важные файлы храни в <b>двух местах</b> (резервная копия).</p>']
+];
+function theory(i) {
+  stage.innerHTML = '<div class="kicker">Теория · слайд ' + (i + 1) + ' из ' + SL.length + '</div><div class="slide" style="margin-top:10px"><h3>' + SL[i][0] + '</h3>' + SL[i][1] + '</div>' +
+    '<div class="dots">' + SL.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+    '<div class="row" style="justify-content:space-between">' + (i > 0 ? '<button class="btn ghost" id="pv" type="button">◀ Назад</button>' : '<span></span>') +
+    '<button class="btn go" id="nx" type="button">' + (i < SL.length - 1 ? 'Дальше ▶' : 'К конспекту ▶') + '</button></div>';
+  if (i > 0) $('#pv').onclick = function () { theory(i - 1); };
+  $('#nx').onclick = function () { i < SL.length - 1 ? theory(i + 1) : notes(); };
+}
+function notes() {
+  prog({ stage: 'Конспект' });
+  stage.innerHTML = '<div class="kicker">Конспект</div><h2 style="font-size:26px;margin:8px 0 14px">Запиши в тетрадь</h2><div class="notebook"><div class="nb-h">ТЕМА: Файлы и папки. Внешние устройства</div>' +
+    '<p><b>Файл</b> — данные под своим именем: имя.расширение (реферат.docx).</p><p><b>Папка</b> — хранит файлы и папки; вместе — дерево папок.</p>' +
+    '<p><b>Путь</b>: D:\\Школа\\Информатика\\проект.pptx. Запрещены символы \\ / : * ? " &lt; &gt; |</p>' +
+    '<p><b>Внешние устройства:</b> флешка, внешний диск, карта памяти, CD/DVD, облако.</p><p>1 КБ = 1024 Б · 1 МБ = 1024 КБ · 1 ГБ = 1024 МБ · 1 ТБ = 1024 ГБ</p>' +
+    '<label class="check"><input type="checkbox" id="nb"> Я записал(а) конспект в тетрадь</label></div>' +
+    '<div style="margin-top:16px"><button class="btn go" id="toMap" type="button" disabled>К уровням ▶</button></div>';
+  $('#nb').onchange = function () { $('#toMap').disabled = !this.checked; };
+  $('#toMap').onclick = screenMap;
+}
+
+/* ---------- КАРТА ---------- */
+function screenMap() {
+  hud();
+  var doneN = Object.keys(S.score).length;
+  stage.innerHTML = '<div class="kicker">Карта операции</div><h2 style="font-size:28px;margin:8px 0 16px">Пройди 7 уровней по порядку</h2><div class="map" id="map"></div>' +
+    (doneN >= 7 ? '<div style="margin-top:18px"><button class="btn go" id="fin" type="button">ФИНИШ ▶</button></div>' : '');
+  LV.forEach(function (L, i) {
+    var done = S.score[L.k] != null, open = i <= doneN;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'node' + (done ? ' done' : '') + (i === doneN ? ' next' : '');
+    b.disabled = !open || done;
+    b.innerHTML = '<span class="num" style="background:' + L.c + '">' + (i + 1) + '</span><span class="t">' + L.t + '</span><span class="d">' + L.d + '</span>' +
+      '<span class="pts">' + (done ? 'Пройдено: ' + S.score[L.k] + '/' + L.m : open ? 'До ' + L.m + ' баллов' : 'Закрыто') + '</span>';
+    b.onclick = function () { prog({ stage: 'Уровень ' + (i + 1) }); [lv1, lv2, lv3, lv4, lv5, lv6, lv7][i](); };
+    $('#map').appendChild(b);
+  });
+  if (doneN >= 7) $('#fin').onclick = screenOpen;
+}
+function head(i) { var L = LV[i]; return '<div class="kicker">Уровень ' + (i + 1) + ' из 7 · до ' + L.m + ' баллов</div><h2 style="font-size:30px;margin:8px 0 14px;color:' + L.c + '">' + L.t + '</h2>'; }
+function finish(i, p) { var L = LV[i]; S.score[L.k] = Math.max(0, Math.min(L.m, Math.round(p))); save(); hud(); toast('+' + S.score[L.k] + ' баллов'); setTimeout(screenMap, 900); }
+function nextBtn(host, label, cb) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn go'; b.style.marginTop = '14px'; b.textContent = label; b.onclick = cb; host.appendChild(b); }
+function ask(host, q, cb) {
+  var box = document.createElement('div'); box.className = 'q';
+  var opts = shuffle(q.o.map(function (t, i) { return { t: t, i: i }; }));
+  box.innerHTML = '<h3>' + q.text + '</h3><div class="opts">' + opts.map(function (o) { return '<button type="button" class="opt" data-i="' + o.i + '">' + esc(o.t) + '</button>'; }).join('') + '</div>';
+  host.appendChild(box);
+  box.querySelectorAll('.opt').forEach(function (b) {
+    b.onclick = function () {
+      var right = +b.dataset.i === q.a;
+      box.querySelectorAll('.opt').forEach(function (x) { x.disabled = true; if (+x.dataset.i === q.a) x.classList.add('right'); });
+      if (!right) b.classList.add('wrong');
+      right ? (ok(), addCoin(10)) : bad();
+      var e = document.createElement('div'); e.className = 'explain ' + (right ? 'ok' : 'bad'); e.textContent = (right ? 'Верно! ' : 'Не совсем. ') + q.why; box.appendChild(e);
+      cb(right);
+    };
+  });
+}
+function series(i, qs, per) {
+  var host = $('#h'), n = 0, p = 0;
+  (function one() {
+    host.innerHTML = '<div class="muted" style="font-weight:700">Вопрос ' + (n + 1) + ' из ' + qs.length + '</div>';
+    ask(host, qs[n], function (r) { if (r) p += per; n++; nextBtn(host, n < qs.length ? 'Дальше ▶' : 'Завершить уровень ▶', function () { n < qs.length ? one() : finish(i, p); }); });
+  })();
+}
+
+/* 1. Кто ты, файл? */
+function lv1() {
+  stage.innerHTML = head(0) + '<p style="font-size:18px;margin:0">Что внутри файла? Определи по расширению.</p><div id="h"></div>';
+  series(0, shuffle([
+    { text: '<code>реферат.docx</code> — это…', o: ['Текстовый документ', 'Музыка', 'Видео', 'Программа'], a: 0, why: '.docx — документ Word.' },
+    { text: '<code>песня.mp3</code> — это…', o: ['Звук (музыка)', 'Картинка', 'Текст', 'Архив'], a: 0, why: '.mp3 — звуковой файл.' },
+    { text: '<code>каникулы.mp4</code> — это…', o: ['Видео', 'Текст', 'Таблица', 'Программа'], a: 0, why: '.mp4 — видеофайл.' },
+    { text: '<code>setup.exe</code> — это…', o: ['Программа (запускается)', 'Фотография', 'Песня', 'Текст'], a: 0, why: '.exe — исполняемая программа Windows. Незнакомые .exe не запускай!' },
+    { text: '<code>проект.zip</code> — это…', o: ['Архив (сжатые файлы)', 'Видео', 'Звук', 'Картинка'], a: 0, why: '.zip — архив, внутри может быть много файлов.' },
+    { text: '<code>оценки.xlsx</code> — это…', o: ['Электронная таблица', 'Презентация', 'Музыка', 'Видео'], a: 0, why: '.xlsx — таблица Excel.' }
+  ]), 1);
+}
+
+/* 2. Наведи порядок */
+function lv2() {
+  var F = shuffle([['море.jpg', 'Фото'], ['селфи.png', 'Фото'], ['гимн.mp3', 'Музыка'], ['рок.wav', 'Музыка'], ['доклад.docx', 'Документы'], ['таблица.xlsx', 'Документы'], ['мультик.mp4', 'Видео'], ['клип.avi', 'Видео']]);
+  var D = ['Фото', 'Музыка', 'Документы', 'Видео'];
+  stage.innerHTML = head(1) + '<p style="font-size:18px;margin:0 0 12px">На флешке Миши хаос! Нажми на файл, потом на папку, куда его положить.</p>' +
+    '<div class="panel"><div class="kicker" style="margin-bottom:10px">Файлы на флешке</div><div class="files" id="fs"></div>' +
+    '<div class="folders">' + D.map(function (d) { return '<button type="button" class="folder" data-d="' + d + '">📁 ' + d + '<small id="c-' + d + '">0 файлов</small></button>'; }).join('') + '</div><div id="fb"></div></div>';
+  var sel = null, right = 0, left = F.length, cnt = {};
+  F.forEach(function (f, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'file'; b.textContent = f[0]; b.dataset.i = i;
+    b.onclick = function () { stage.querySelectorAll('.file').forEach(function (x) { x.classList.remove('sel'); }); b.classList.add('sel'); sel = i; beep(600, .04); };
+    $('#fs').appendChild(b);
+  });
+  stage.querySelectorAll('.folder').forEach(function (fd) {
+    fd.onclick = function () {
+      if (sel == null) { toast('Сначала выбери файл'); return; }
+      var f = F[sel], el = stage.querySelector('.file[data-i="' + sel + '"]'), good = f[1] === fd.dataset.d;
+      if (good) { right++; ok(); addCoin(8); } else bad();
+      $('#fb').innerHTML = '<div class="explain ' + (good ? 'ok' : 'bad') + '">' + (good ? 'В папке «' + fd.dataset.d + '»!' : esc(f[0]) + ' — это папка «' + f[1] + '».') + '</div>';
+      cnt[f[1]] = (cnt[f[1]] || 0) + 1; $('#c-' + f[1]).textContent = cnt[f[1]] + ' файл(а)';
+      el.remove(); sel = null; left--;
+      if (!left) setTimeout(function () { finish(1, right * 6 / 8); }, 900);
+    };
+  });
+}
+
+/* 3. Путь к файлу */
+function lv3() {
+  stage.innerHTML = head(2) + '<div class="row"><div class="col" style="flex:0 1 420px"><div class="tree">D:\\\n└── Школа\n    ├── Информатика\n    │   ├── проект.pptx\n    │   └── Фото\n    │       └── схема.png\n    └── История\n        └── доклад.docx\nE:\\  (флешка)\n└── Музыка\n    └── гимн.mp3</div></div><div class="col"><div id="h"></div></div></div>';
+  series(2, shuffle([
+    { text: 'Какой путь к файлу <b>проект.pptx</b>?', o: ['D:\\Школа\\Информатика\\проект.pptx', 'D:\\Информатика\\Школа\\проект.pptx', 'E:\\Школа\\проект.pptx', 'D:\\проект.pptx'], a: 0, why: 'Диск D → Школа → Информатика → файл.' },
+    { text: 'Какой путь к файлу <b>схема.png</b>?', o: ['D:\\Школа\\Информатика\\Фото\\схема.png', 'D:\\Фото\\схема.png', 'D:\\Школа\\Фото\\схема.png', 'E:\\Фото\\схема.png'], a: 0, why: 'Папка «Фото» лежит внутри «Информатики».' },
+    { text: 'На каком устройстве лежит <b>гимн.mp3</b>?', o: ['На флешке E:', 'На диске D:', 'В папке «Школа»', 'В папке «История»'], a: 0, why: 'E:\\ — это флешка.' },
+    { text: 'Что лежит по адресу <b>D:\\Школа\\История</b>?', o: ['доклад.docx', 'проект.pptx', 'гимн.mp3', 'схема.png'], a: 0, why: 'В папке «История» — доклад.docx.' }
+  ]), 1.5);
+}
+
+/* 4. Имя под запретом */
+function lv4() {
+  var N = shuffle([['проект_7Б.docx', 1], ['что это?.txt', 0], ['фото: море.jpg', 0], ['доклад 2026.pptx', 1], ['да/нет.docx', 0], ['Иванов-задание.png', 1]]);
+  stage.innerHTML = head(3) + '<p style="font-size:18px;margin:0 0 12px">Windows не разрешает в именах символы <b>\\ / : * ? " &lt; &gt; |</b>. Можно так назвать файл?</p>' +
+    '<div class="panel"><div class="kicker" id="ni">Имя 1 из 6</div><div style="font:800 28px Consolas,monospace;margin:12px 0 16px" id="nm"></div>' +
+    '<div class="row"><button class="btn ghost col" id="yes" type="button" style="border-color:var(--green)">✅ Можно</button><button class="btn ghost col" id="no" type="button" style="border-color:var(--red)">⛔ Нельзя</button></div><div id="fb"></div></div>';
+  var i = 0, p = 0, lock = false;
+  function show() { $('#ni').textContent = 'Имя ' + (i + 1) + ' из 6'; $('#nm').textContent = N[i][0]; }
+  function pick(v) {
+    if (lock) return; lock = true;
+    var r = v === N[i][1]; if (r) { p++; ok(); addCoin(10); } else bad();
+    $('#fb').innerHTML = '<div class="explain ' + (r ? 'ok' : 'bad') + '">' + (N[i][1] ? 'Имя правильное: буквы, цифры, пробел, _ и - разрешены.' : 'Нельзя: в имени есть запрещённый символ.') + '</div>';
+    i++; setTimeout(function () { lock = false; $('#fb').innerHTML = ''; i < N.length ? show() : finish(3, p); }, 1400);
+  }
+  $('#yes').onclick = function () { pick(1); }; $('#no').onclick = function () { pick(0); };
+  show();
+}
+
+/* 5. Внешние устройства */
+function lv5() {
+  stage.innerHTML = head(4) + '<p style="font-size:18px;margin:0">Выбери лучшее устройство или действие.</p><div id="h"></div>';
+  series(4, shuffle([
+    { text: 'Принести в школу презентацию на 20 МБ.', o: ['USB-флешка', 'CD-диск', 'Внешний диск на 4 ТБ', 'Принтер'], a: 0, why: 'Флешка маленькая и удобная.' },
+    { text: 'Сделать резервную копию всех семейных фото за 10 лет (500 ГБ).', o: ['Внешний жёсткий диск', 'Флешка на 8 ГБ', 'CD-диск', 'Клавиатура'], a: 0, why: 'Внешний диск вмещает очень много.' },
+    { text: 'Где хранятся фото в телефоне, кроме его памяти?', o: ['На карте памяти', 'На мониторе', 'В колонках', 'На мышке'], a: 0, why: 'Карта памяти расширяет память телефона.' },
+    { text: 'Открыть свой файл с любого компьютера без флешки.', o: ['Облако (Google Диск)', 'Карта памяти', 'CD-диск', 'Внешний диск'], a: 0, why: 'Облако доступно через интернет.' },
+    { text: 'Что сделать перед тем, как вынуть флешку?', o: ['«Безопасное извлечение»', 'Выключить монитор', 'Удалить все файлы', 'Перезагрузить ПК'], a: 0, why: 'Иначе файлы могут повредиться.' },
+    { text: 'Друг дал флешку с файлом «фото.jpg.exe». Что делать?', o: ['Не открывать, проверить антивирусом', 'Сразу открыть', 'Переименовать в .jpg', 'Отправить всем'], a: 0, why: 'Двойное расширение .jpg.exe — признак вируса.' }
+  ]), 1);
+}
+
+/* 6. Блиц единицы памяти */
+function lv6() {
+  var Q = shuffle([
+    ['1 КБ = ?', ['1024 байта', '1000 МБ', '8 байт', '1024 ГБ'], 0], ['1 ГБ = ?', ['1024 МБ', '1024 КБ', '100 МБ', '1 ТБ'], 0],
+    ['Что больше?', ['1 ГБ', '1000 КБ', '1 МБ', '500 КБ'], 0], ['Что меньше?', ['1 байт', '1 КБ', '1 МБ', '1 ГБ'], 0],
+    ['Фильм 3 ГБ. Поместится на флешку…', ['8 ГБ', '2 ГБ', '1 ГБ', '512 МБ'], 0], ['1 ТБ = ?', ['1024 ГБ', '1024 МБ', '100 ГБ', '10 ГБ'], 0],
+    ['Песня 4 МБ, флешка 1 ГБ. Сколько примерно песен?', ['около 250', 'около 4', 'около 25', 'около 4000'], 0], ['Самая маленькая единица из этих:', ['байт', 'КБ', 'МБ', 'ГБ'], 0]
+  ]);
+  stage.innerHTML = head(5) + '<div class="panel"><div class="row" style="justify-content:space-between;align-items:center"><span class="kicker">Верно: <b id="r">0</b> · нужно 6</span><span>Время: <b class="big" id="tm">60</b></span></div>' +
+    '<div id="bq" style="margin-top:12px"><button class="btn go" id="st" type="button">СТАРТ ▶</button></div></div>';
+  var i = 0, right = 0, t = 60, timer;
+  $('#st').onclick = function () {
+    timer = setInterval(function () { t--; $('#tm').textContent = t; if (t <= 0) end(); }, 1000); show();
+  };
+  function show() {
+    if (i >= Q.length) return end();
+    var q = Q[i], o = shuffle(q[1].map(function (x, k) { return { x: x, k: k }; }));
+    $('#bq').innerHTML = '<h3 style="font-family:Rubik;font-size:22px;margin-bottom:12px">' + esc(q[0]) + '</h3><div class="opts">' + o.map(function (z) { return '<button type="button" class="opt" data-k="' + z.k + '">' + esc(z.x) + '</button>'; }).join('') + '</div>';
+    $('#bq').querySelectorAll('.opt').forEach(function (b) { b.onclick = function () { if (+b.dataset.k === q[2]) { right++; ok(); addCoin(5); } else bad(); $('#r').textContent = right; i++; show(); }; });
+  }
+  var ended = false;
+  function end() { if (ended) return; ended = true; clearInterval(timer); $('#bq').innerHTML = '<p style="font-size:20px">Верных ответов: <b class="big">' + right + '</b></p>'; nextBtn($('#bq'), 'Завершить уровень ▶', function () { finish(5, Math.min(6, right)); }); }
+}
+
+/* 7. Босс */
+function lv7() {
+  var STEPS = ['Нажать «Безопасное извлечение» на старом компьютере', 'Вставить флешку в свой компьютер', 'Проверить флешку антивирусом', 'Создать папку «Проект» и разложить файлы', 'Сделать резервную копию в облако'];
+  stage.innerHTML = head(6) + '<p style="font-size:18px;margin:0 0 12px">Миша несёт флешку с проектом из библиотеки домой. Расставь <b>5 шагов</b> в правильном порядке: нажимай по очереди.</p>' +
+    '<div class="row"><div class="col steps" id="pool"></div><div class="col"><div class="kicker">Твой порядок</div><div class="order" id="ord"></div><div id="res"></div></div></div>';
+  var picked = [];
+  shuffle(STEPS).forEach(function (s) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.textContent = s;
+    b.onclick = function () {
+      b.disabled = true; picked.push(s); $('#ord').innerHTML += '<div>' + picked.length + '. ' + esc(s) + '</div>'; beep(600, .04);
+      if (picked.length === STEPS.length) {
+        var p = picked.filter(function (x, k) { return x === STEPS[k]; }).length;
+        p >= 4 ? ok() : bad();
+        $('#res').innerHTML = '<div class="explain ' + (p === 5 ? 'ok' : 'bad') + '">' + (p === 5 ? 'Флешка спасена! Проект в безопасности.' : 'На своих местах: ' + p + ' из 5. Правильно: ' + STEPS.map(function (s, k) { return (k + 1) + ') ' + s; }).join('; ') + '.') + '</div>';
+        nextBtn($('#res'), 'Завершить уровень ▶', function () { finish(6, p); });
+      }
+    };
+    $('#pool').appendChild(b);
+  });
+}
+
+/* ---------- ОТКРЫТЫЙ ВОПРОС + ФИНИШ ---------- */
+function screenOpen() {
+  stage.innerHTML = '<div class="kicker">Последнее задание · проверит ИИ</div><h2 style="font-size:26px;margin:8px 0 14px">Объясни Мише своими словами</h2>' +
+    '<div class="q"><h3>Что такое файл и папка? Что такое путь к файлу? Назови 2 внешних устройства хранения и объясни, как правильно вынимать флешку. (4–6 предложений)</h3>' +
+    '<textarea id="ans" rows="7" maxlength="2000"></textarea></div><button class="btn go" id="nx" type="button" style="margin-top:14px">Готово ▶</button>';
+  $('#nx').onclick = function () { S.open.o1 = $('#ans').value.trim(); save(); screenFinish(); };
+}
+function screenFinish() {
+  var P = pts(), pct = Math.round(P / MAX * 100), mark = Math.max(1, Math.min(10, Math.round(pct / 10)));
+  var D = [['Определяю тип файла по расширению', S.score.q1 >= 4], ['Раскладываю файлы по папкам', S.score.q2 >= 4], ['Читаю и записываю путь к файлу', S.score.q3 >= 4],
+    ['Знаю правила имён файлов', S.score.q4 >= 4], ['Выбираю внешнее устройство под задачу', S.score.q5 >= 4], ['Сравниваю единицы памяти', S.score.q6 >= 4], ['Безопасно работаю с флешкой', S.score.q7 >= 4]];
+  stage.innerHTML = '<div class="panel" style="text-align:center"><div class="kicker">Операция завершена</div>' +
+    '<div class="row" style="justify-content:center;align-items:center;gap:30px;margin-top:12px"><div><div class="grade">' + mark + '</div><div style="font-size:18px;font-weight:800">предварительная отметка</div></div>' +
+    '<div style="text-align:left"><div>Баллы: <span class="big">' + P + '/' + MAX + '</span></div><div>Монеты: <span class="big">' + S.coins + '</span></div></div></div>' +
+    '<p class="muted">Ответ на открытый вопрос проверит ИИ, окончательную отметку поставит учитель.</p></div>' +
+    '<div class="row" style="margin-top:16px"><div class="col"><div class="panel"><h3 style="font-size:18px;margin-bottom:12px">Мои умения</h3><div class="desc">' +
+    D.map(function (d) { return '<div>' + (d[1] ? '✅ ' : '🔸 Повторить: ') + d[0] + '</div>'; }).join('') + '</div></div></div>' +
+    '<div class="col"><div class="panel"><h3 style="font-size:18px;margin-bottom:12px">Как тебе урок?</h3><div class="moods" id="moods">' +
+    ['😀 Было интересно', '🙂 Нормально', '😐 Скучновато', '🤔 Было трудно'].map(function (m) { return '<button type="button">' + m + '</button>'; }).join('') + '</div>' +
+    '<button class="btn go" id="send" type="button" style="margin-top:14px">Отправить учителю ✓</button><p class="muted" id="st"></p></div></div></div>';
+  $('#moods').querySelectorAll('button').forEach(function (b) { b.onclick = function () { S.mood = b.textContent; $('#moods').querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); }; });
+  $('#send').onclick = function () {
+    var b = this; b.disabled = true; $('#st').textContent = 'Отправляю…';
+    var data = { score: S.score, open: S.open, points: P, max: MAX, percent: pct, qual: String(mark), mark: mark, stars: P >= 38 ? 3 : P >= 30 ? 2 : P >= 20 ? 1 : 0, coins: S.coins,
+      descriptors: D.map(function (d) { return (d[1] ? '✓ ' : '✗ ') + d[0]; }), boss: { rules: [], title: 'Спаси флешку' },
+      minutes: Math.round((Date.now() - S.t0) / 60000), mood: S.mood, stage: 'Финиш', doneCount: 7 };
+    if (!S.rec) { $('#st').textContent = 'Нет связи с сайтом. Покажи этот экран учителю.'; b.disabled = false; return; }
+    TL().then(function (t) { return t.submit(S.rec, data); })
+      .then(function () { $('#st').textContent = 'Готово! Результат у учителя.'; ok(); })
+      .catch(function () { $('#st').textContent = 'Не удалось отправить. Нажми ещё раз или покажи экран учителю.'; b.disabled = false; });
+  };
+}
+
+screenStart();
+})();
+</script>
+</body>
+</html>
