@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Пиксель-рейд 2: Подготовка к контрольной · 5 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;700;800&display=swap">
+<script src="../config.js"></script>
+<style>
+:root{
+  --bg:#0b1430; --panel:#13204a; --panel2:#1a2b5e; --line:#2b3f7a;
+  --ink:#eaf1ff; --muted:#a9b8e0; --yellow:#ffd54a; --cyan:#38bdf8;
+  --green:#4ade80; --red:#f87171; --orange:#fb923c; --violet:#a78bfa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif}
+body{min-height:100vh;background:
+  radial-gradient(circle at 15% 10%, rgba(56,189,248,.12), transparent 40%),
+  radial-gradient(circle at 85% 90%, rgba(167,139,250,.12), transparent 40%), var(--bg)}
+button{font-family:inherit}
+.hud{position:sticky;top:0;z-index:5;background:rgba(11,20,48,.94);border-bottom:2px solid var(--line)}
+.hud-in{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:'Russo One',sans-serif;font-size:18px;color:var(--yellow)}
+.stat{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px}
+.xpbar{width:140px;height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));width:0;transition:width .4s}
+.timer{margin-left:auto;font-family:'Russo One',sans-serif;font-size:18px;color:var(--cyan)}
+.timer.warn{color:var(--orange)}
+.icon-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;min-width:44px;min-height:40px;cursor:pointer;font-weight:700}
+main{max-width:1100px;margin:0 auto;padding:22px 16px 60px}
+h1,h2,h3{font-family:'Russo One',sans-serif;font-weight:400;margin:0}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1 1 320px;min-width:0}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:800;font-size:16px;cursor:pointer;min-height:48px;transition:transform .08s}
+.btn:active{transform:translateY(2px)}
+.btn-go{background:var(--yellow);color:#1b1300;box-shadow:0 4px 0 #b38f12}
+.btn-go:hover{background:#ffe27a}
+.btn-blue{background:var(--cyan);color:#04223a;box-shadow:0 4px 0 #1d7fae}
+.btn-ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+input[type=text]{background:#0a1027;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:600 16px Rubik,sans-serif;width:100%;min-height:48px}
+input:focus{outline:2px solid var(--cyan)}
+label{display:block;font-weight:700;margin:0 0 6px;color:var(--muted);font-size:14px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.muted{color:var(--muted)}
+.hero{text-align:center;padding:26px 10px 10px}
+.hero h1{font-size:44px;line-height:1.05;color:var(--yellow);text-shadow:0 4px 0 #6b4f00}
+.hero h1 small{display:block;font-size:24px;color:var(--cyan);text-shadow:none;margin-top:8px}
+.avatars{display:flex;gap:10px;flex-wrap:wrap}
+.av-btn{background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:8px;cursor:pointer;color:var(--ink);min-width:84px}
+.av-btn[aria-pressed=true]{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,213,74,.25)}
+.av-btn .price{display:block;font-size:12px;font-weight:700;margin-top:4px}
+.pix{display:grid;grid-template-columns:repeat(8,1fr);margin:0 auto}
+.pix i{display:block}
+.map{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.map{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.node{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:16px;text-align:left;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:210px}
+.node:disabled{cursor:not-allowed;opacity:.5}
+.node .num{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Russo One',sans-serif;font-size:20px;color:#0b1430}
+.node.done{border-color:var(--green)}
+.node.boss{border-color:var(--violet);background:#1f1a4a}
+.node .t{font-weight:800;font-size:17px}
+.node .d{font-size:13px;color:var(--muted);line-height:1.35}
+.node .pts{margin-top:auto;font-size:13px;font-weight:800;color:var(--yellow)}
+.notebook{background:#fffdf3;color:#1e3a8a;border-radius:14px;padding:16px 18px;background-image:linear-gradient(#dbe6fb 1px,transparent 1px);background-size:100% 28px;border:3px solid #ffd54a}
+.notebook .nb-h{font-family:'Russo One',sans-serif;color:#b45309;font-size:15px;margin-bottom:6px}
+.notebook p{font-size:17px;line-height:28px;margin:0}
+.check{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;color:#1e3a8a;cursor:pointer;min-height:44px}
+.check input{width:22px;height:22px}
+.q{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+.q h3{font-family:Rubik,sans-serif;font-weight:800;font-size:19px;margin-bottom:12px;line-height:1.3}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{background:#0f1a40;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 14px;font-weight:700;font-size:16px;cursor:pointer;text-align:left;min-height:52px}
+.opt:hover:not(:disabled){border-color:var(--cyan)}
+.opt.sel{border-color:var(--yellow);background:#2a2a10}
+.opt.right{background:#0f3b26;border-color:var(--green)}
+.opt.wrong{background:#43141b;border-color:var(--red)}
+.opt:disabled{cursor:default}
+.explain{margin-top:12px;padding:12px 14px;border-radius:12px;font-weight:600;line-height:1.4}
+.explain.ok{background:rgba(74,222,128,.14);color:#bbf7d0}
+.explain.bad{background:rgba(248,113,113,.14);color:#fecaca}
+.toast{position:fixed;left:50%;top:76px;transform:translateX(-50%) scale(.9);background:var(--yellow);color:#1b1300;font-family:'Russo One',sans-serif;padding:10px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:20;pointer-events:none;font-size:18px}
+.toast.on{opacity:1;transform:translateX(-50%) scale(1)}
+.big-num{font-family:'Russo One',sans-serif;font-size:26px;color:var(--yellow)}
+canvas{display:block}
+.frame{background:#000;border-radius:14px;overflow:hidden;border:3px solid var(--line)}
+.frame canvas{width:100%;height:auto}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.swatch{height:110px;border-radius:14px;border:3px solid var(--line)}
+input[type=range]{width:100%;height:30px}
+.rng-r{accent-color:#ef4444}.rng-g{accent-color:#22c55e}.rng-b{accent-color:#3b82f6}
+.card-sit{font-size:24px;font-weight:800;line-height:1.3;min-height:70px}
+.fmt-btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.fmt-btns{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fmt{border:0;border-radius:14px;min-height:72px;font-family:'Russo One',sans-serif;font-size:24px;color:#0b1430;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.35)}
+.fmt:active{transform:translateY(3px)}
+.progress{height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--violet);transition:width .3s}
+.grade{font-family:'Russo One',sans-serif;font-size:90px;line-height:1;color:var(--yellow);text-shadow:0 6px 0 #6b4f00}
+.review{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.rv{background:var(--panel2);border-left:6px solid var(--green);border-radius:12px;padding:12px 14px}
+.rv.bad{border-left-color:var(--red)}
+.rv .qq{font-weight:800;margin-bottom:4px}
+.rv .aa{font-size:15px;color:var(--muted)}
+.hidden{display:none !important}
+table.sum{width:100%;border-collapse:collapse;font-size:16px}
+table.sum td{padding:9px 10px;border-bottom:1px solid var(--line)}
+table.sum td:last-child{font-family:'Russo One',sans-serif;color:var(--yellow);text-align:right}
+</style>
+</head>
+<body>
+
+<div class="hud hidden" id="hud">
+  <div class="hud-in">
+    <span class="brand">ПИКСЕЛЬ-РЕЙД 2</span>
+    <span class="stat" id="hudAv"></span>
+    <span class="stat">XP <span class="xpbar"><i id="xpFill"></i></span> <span id="xpNum">0</span>/60</span>
+    <span class="stat"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#ffd54a" stroke="#b38f12" stroke-width="2"/></svg><span id="coins">0</span></span>
+    <span class="timer" id="timer" title="До конца урока">45:00</span>
+    <button class="icon-btn" id="soundBtn" type="button" aria-label="Звук вкл/выкл">♪</button>
+    <button class="icon-btn" id="mapBtn" type="button">Карта</button>
+  </div>
+</div>
+<main id="stage"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const API = window.TECHLAB_RESULTS_API || '';
+const LESSON = '5 кл. Подготовка к СО: Редактирование изображений';
+const params = new URLSearchParams(location.search);
+const S = { name: params.get('name') || '', klass: params.get('klass') || '', skin: 0, coins: 0, zones: {}, startedAt: 0, sound: true, test: null, sent: false };
+const ZMAX = 15;
+const ZONES = [
+  { n: 1, title: 'Фоторедактор', desc: 'Что значит редактировать: поворот, отражение, обрезка.', min: 7, color: '#38bdf8' },
+  { n: 2, title: 'Студия эффектов', desc: 'Угадай художественный эффект по картинке.', min: 6, color: '#fb923c' },
+  { n: 3, title: 'Цвет и разрешение', desc: 'Смешай цвет в RGB, посчитай пиксели.', min: 7, color: '#4ade80' },
+  { n: 4, title: 'Сортировщик форматов', desc: 'JPG, PNG, GIF или BMP — разложи по полкам!', min: 5, color: '#ffd54a' }
+];
+const SKINS = [
+  { name: 'Пиксель', body: '#38bdf8', eye: '#0b1430' }, { name: 'Лайм', body: '#4ade80', eye: '#0b1430' },
+  { name: 'Огонь', body: '#fb923c', eye: '#3b0a00' }, { name: 'Аметист', body: '#a78bfa', eye: '#1b0b3f' }
+];
+const AV = ['..XXXX..', '.XXXXXX.', 'XXXXXXXX', 'XEEXXEEX', 'XEEXXEEX', 'XXXXXXXX', 'XX.XX.XX', 'X..XX..X'];
+
+const $ = (s, r = document) => r.querySelector(s);
+const stage = $('#stage');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const xp = () => Object.values(S.zones).reduce((s, z) => s + z, 0);
+
+/* ---------- звук ---------- */
+let actx = null;
+function beep(f, d = .12, type = 'square', v = .06) {
+  if (!S.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = f; g.gain.value = v; o.connect(g); g.connect(actx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + d); o.stop(actx.currentTime + d);
+  } catch (e) {}
+}
+const sfx = {
+  ok: () => { beep(660, .08); setTimeout(() => beep(990, .12), 80); },
+  bad: () => beep(140, .25, 'sawtooth', .05),
+  coin: () => { beep(1200, .06); setTimeout(() => beep(1600, .08), 60); },
+  win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .15), i * 120))
+};
+
+/* ---------- HUD ---------- */
+function avatarHTML(skin, size = 56) {
+  const k = SKINS[skin];
+  return `<div class="pix" style="width:${size}px;height:${size}px" aria-hidden="true">` +
+    AV.join('').split('').map(c => `<i style="background:${c === 'X' ? k.body : c === 'E' ? k.eye : 'transparent'}"></i>`).join('') + '</div>';
+}
+function hud() {
+  $('#hud').classList.remove('hidden');
+  $('#hudAv').innerHTML = avatarHTML(S.skin, 28) + `<span>${esc(S.name)}</span>`;
+  $('#xpFill').style.width = (xp() / 60 * 100) + '%';
+  $('#xpNum').textContent = xp();
+  $('#coins').textContent = S.coins;
+}
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1300); }
+function addCoins(n) { S.coins += n; sfx.coin(); hud(); }
+$('#soundBtn').onclick = () => { S.sound = !S.sound; $('#soundBtn').style.opacity = S.sound ? 1 : .4; };
+$('#mapBtn').onclick = () => { if (S.test && !S.test.done) { toast('Сначала закончи пробную контрольную'); return; } screenMap(); };
+setInterval(() => {
+  if (!S.startedAt) return;
+  const left = Math.max(0, 2700 - Math.floor((Date.now() - S.startedAt) / 1000)), t = $('#timer');
+  t.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+  t.classList.toggle('warn', left < 300);
+}, 1000);
+
+/* ---------- общие кусочки ---------- */
+function question(host, q, onDone) {
+  const box = document.createElement('div'); box.className = 'q';
+  const opts = shuffle(q.options.map((t, i) => ({ t, i })));
+  box.innerHTML = `<h3>${esc(q.text)}</h3><div class="opts">` + opts.map(o => `<button type="button" class="opt" data-i="${o.i}">${esc(o.t)}</button>`).join('') + '</div>';
+  host.appendChild(box);
+  box.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const ok = +b.dataset.i === q.answer;
+    box.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (+x.dataset.i === q.answer) x.classList.add('right'); });
+    if (!ok) b.classList.add('wrong');
+    ok ? sfx.ok() : sfx.bad();
+    const ex = document.createElement('div'); ex.className = 'explain ' + (ok ? 'ok' : 'bad');
+    ex.textContent = (ok ? 'Верно! ' : 'Не совсем. ') + (q.why || ''); box.appendChild(ex);
+    onDone(ok);
+  });
+}
+function notebook(title, html) {
+  return `<div class="notebook"><div class="nb-h">ЗАПИШИ В ТЕТРАДЬ · ${esc(title)}</div>${html}
+  <label class="check"><input type="checkbox" class="nb-check"> Я записал(а) в тетрадь</label></div>`;
+}
+function zoneHead(n) {
+  const Z = ZONES[n - 1];
+  return `<div style="margin-bottom:16px"><div class="kicker">Зона ${n} из 4 · ≈ ${Z.min} мин · до ${ZMAX} XP</div>
+    <h2 style="font-size:32px;margin-top:6px;color:${Z.color}">${Z.title}</h2></div>`;
+}
+// низ зоны: тетрадь + вопросы + кнопка завершения
+function zoneTail(n, nbTitle, nbHtml, qs, getPts) {
+  const tail = document.createElement('div');
+  tail.innerHTML = `<div id="zq"></div><div style="margin-top:18px">${notebook(nbTitle, nbHtml)}</div>
+    <div style="margin-top:16px"><button class="btn btn-go" id="fin" type="button" disabled>Завершить зону ▶</button></div>`;
+  stage.appendChild(tail);
+  let answered = 0, qpts = 0;
+  const host = $('#zq', tail);
+  const ask = i => question(host, qs[i], ok => {
+    if (ok) { qpts += 3; addCoins(10); }
+    answered++;
+    if (i + 1 < qs.length) setTimeout(() => ask(i + 1), 450); else check();
+  });
+  const state = { ready: false };
+  const check = () => { $('#fin').disabled = !(state.ready && answered === qs.length && $('.nb-check', tail).checked); };
+  $('.nb-check', tail).onchange = check;
+  $('#fin').onclick = () => {
+    S.zones[n] = Math.min(ZMAX, Math.round(getPts() + qpts));
+    sfx.win(); hud(); toast(`Зона ${n} пройдена: +${S.zones[n]} XP`);
+    setTimeout(screenMap, 900);
+  };
+  return { start: () => { if (qs.length) ask(0); }, ready: () => { state.ready = true; check(); } };
+}
+
+/* ---------- картинка для опытов ---------- */
+function drawScene(ctx, w, h) {
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#2563eb'); sky.addColorStop(.55, '#7dd3fc'); sky.addColorStop(1, '#fde68a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+  const sun = ctx.createRadialGradient(w * .8, h * .25, 2, w * .8, h * .25, h * .2);
+  sun.addColorStop(0, '#fffbe6'); sun.addColorStop(.35, '#ffd54a'); sun.addColorStop(1, 'rgba(255,213,74,0)');
+  ctx.fillStyle = sun; ctx.fillRect(0, 0, w, h);
+  const mt = (base, amp, c1, c2) => {
+    const g = ctx.createLinearGradient(0, h * (base - amp), 0, h); g.addColorStop(0, c1); g.addColorStop(1, c2);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, h);
+    for (let x = 0; x <= w; x += w / 40) ctx.lineTo(x, h * base - Math.abs(Math.sin(x / w * 6 + base * 9)) * h * amp);
+    ctx.lineTo(w, h); ctx.fill();
+  };
+  mt(.62, .28, '#64748b', '#1e3a8a'); mt(.78, .14, '#15803d', '#14532d');
+  // домик слева — чтобы было видно поворот и отражение
+  const hx = w * .12, hy = h * .62, hw = w * .2;
+  ctx.fillStyle = '#f97316'; ctx.fillRect(hx, hy, hw, hw * .8);
+  ctx.fillStyle = '#b91c1c'; ctx.beginPath(); ctx.moveTo(hx - hw * .1, hy); ctx.lineTo(hx + hw / 2, hy - hw * .55); ctx.lineTo(hx + hw * 1.1, hy); ctx.fill();
+  ctx.fillStyle = '#fde68a'; ctx.fillRect(hx + hw * .15, hy + hw * .2, hw * .25, hw * .25);
+  ctx.fillStyle = '#7c2d12'; ctx.fillRect(hx + hw * .6, hy + hw * .35, hw * .25, hw * .45);
+  ctx.fillStyle = '#22c55e'; ctx.fillRect(0, h * .9, w, h * .1);
+  for (let i = 0; i < 40; i++) { const x = w * .45 + rnd() * w * .55, y = h * .82 + rnd() * h * .12, s = h * (.03 + rnd() * .03);
+    ctx.fillStyle = '#14532d'; ctx.beginPath(); ctx.moveTo(x, y - s * 2); ctx.lineTo(x - s * .7, y); ctx.lineTo(x + s * .7, y); ctx.fill(); }
+}
+const PHOTO = document.createElement('canvas'); PHOTO.width = 640; PHOTO.height = 360; drawScene(PHOTO.getContext('2d'), 640, 360);
+const SQUARE = document.createElement('canvas'); SQUARE.width = 300; SQUARE.height = 300; drawScene(SQUARE.getContext('2d'), 300, 300);
+
+/* ================= СТАРТ ================= */
+function screenStart() {
+  stage.innerHTML = `
+  <div class="hero">
+    <div class="kicker">Технологическое воспитание · 5 класс · подготовка к контрольной</div>
+    <h1 style="margin-top:10px">ПИКСЕЛЬ-РЕЙД 2<small>Тренировка перед большой битвой</small></h1>
+    <p class="muted" style="font-size:18px;max-width:680px;margin:14px auto 26px">Повтори всё про редактирование изображений: 4 зоны-тренировки, а в конце — пробная контрольная, как настоящая. Узнай, к чему ты готов!</p>
+  </div>
+  <div class="panel" style="max-width:760px;margin:0 auto">
+    <div class="row">
+      <div class="col"><label for="nm">Фамилия и имя</label><input id="nm" type="text" maxlength="60" value="${esc(S.name)}" placeholder="Иванов Артём"></div>
+      <div class="col" style="flex:0 1 200px"><label for="kl">Класс</label><input id="kl" type="text" maxlength="8" value="${esc(S.klass)}" placeholder="5 Б"></div>
+    </div>
+    <div style="margin-top:18px"><label>Выбери героя</label><div class="avatars" id="avs"></div></div>
+    <div style="margin-top:22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-go" id="go" type="button">НАЧАТЬ ▶</button><span class="muted" id="err"></span>
+    </div>
+  </div>`;
+  SKINS.forEach((k, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'av-btn';
+    b.setAttribute('aria-pressed', S.skin === i); b.setAttribute('aria-label', k.name);
+    b.innerHTML = avatarHTML(i) + `<span class="price">${k.name}</span>`;
+    b.onclick = () => { S.skin = i; $('#avs').querySelectorAll('.av-btn').forEach((x, j) => x.setAttribute('aria-pressed', j === i)); beep(880, .05); };
+    $('#avs').appendChild(b);
+  });
+  $('#go').onclick = () => {
+    const nm = $('#nm').value.trim(), kl = $('#kl').value.trim();
+    if (nm.length < 3 || !kl) { $('#err').textContent = 'Напиши фамилию, имя и класс.'; sfx.bad(); return; }
+    S.name = nm; S.klass = kl; S.startedAt = S.startedAt || Date.now(); sfx.win(); screenMap();
+  };
+}
+
+/* ================= КАРТА ================= */
+function screenMap() {
+  hud();
+  const doneAll = ZONES.every(z => S.zones[z.n] != null) || params.get('open') === '1';
+  stage.innerHTML = `
+  <div style="margin-bottom:16px"><div class="kicker">Карта тренировки</div>
+    <h2 style="font-size:32px;margin-top:6px">Привет, ${esc(S.name.split(' ')[1] || S.name)}!</h2>
+    <p class="muted" style="margin:6px 0 0">Зоны можно проходить в любом порядке. Пробная контрольная откроется, когда пройдёшь все 4 зоны.</p></div>
+  <div class="map" id="map"></div>`;
+  ZONES.forEach(Z => {
+    const d = S.zones[Z.n];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'node' + (d != null ? ' done' : '');
+    b.innerHTML = `<span class="num" style="background:${Z.color}">${Z.n}</span><span class="t">${Z.title}</span><span class="d">${Z.desc}</span>
+      <span class="d">≈ ${Z.min} мин</span><span class="pts">${d != null ? 'Пройдено: ' + d + '/' + ZMAX + ' XP' : 'До ' + ZMAX + ' XP'}</span>`;
+    b.onclick = () => { beep(700, .05); [null, zone1, zone2, zone3, zone4][Z.n](); };
+    $('#map').appendChild(b);
+  });
+  const t = document.createElement('button'); t.type = 'button'; t.className = 'node boss'; t.disabled = !doneAll;
+  t.innerHTML = `<span class="num" style="background:var(--violet)">★</span><span class="t">Пробная контрольная</span>
+    <span class="d">15 вопросов по всем темам, 15 минут. Ответы и разбор — в конце, как на настоящей.</span>
+    <span class="pts">${S.test && S.test.done ? 'Результат: ' + S.test.right + '/15' : doneAll ? 'Открыто' : 'Закрыто — пройди 4 зоны'}</span>`;
+  t.onclick = () => S.test && S.test.done ? screenFinal() : testIntro();
+  $('#map').appendChild(t);
+}
+
+/* ================= ЗОНА 1: Фоторедактор ================= */
+function zone1() {
+  stage.innerHTML = zoneHead(1) + `
+  <p style="font-size:18px;line-height:1.45;margin:0 0 14px"><b>Редактировать изображение</b> — значит изменять готовую картинку. Заказчик прислал образец: сделай своё фото <b>точно таким же</b> с помощью инструментов. Ход засчитывается сам, когда картинки совпадут.</p>
+  <div class="row">
+    <div class="col" style="flex:0 1 260px"><div class="kicker" style="margin-bottom:6px;color:var(--yellow)">Образец</div><div class="frame"><canvas id="tg" width="300" height="300"></canvas></div></div>
+    <div class="col"><div class="kicker" style="margin-bottom:6px">Твоё фото · задание <span id="pn">1</span> из 3 · ходов: <span id="mv">0</span></div>
+      <div class="row" style="align-items:flex-start"><div class="frame" style="flex:0 1 300px"><canvas id="cur" width="300" height="300"></canvas></div>
+      <div class="tools" style="flex:1 1 220px">
+        <button class="btn btn-ghost" type="button" data-op="rot">↻ Повернуть на 90°</button>
+        <button class="btn btn-ghost" type="button" data-op="fh">⇆ Отразить по горизонтали</button>
+        <button class="btn btn-ghost" type="button" data-op="fv">⇅ Отразить по вертикали</button>
+        <button class="btn btn-ghost" type="button" data-op="reset">Сбросить</button>
+      </div></div>
+    </div>
+  </div>`;
+  const OPS = { rot: [[0, -1], [1, 0]], fh: [[-1, 0], [0, 1]], fv: [[1, 0], [0, -1]] };
+  const mul = (A, B) => [[A[0][0] * B[0][0] + A[0][1] * B[1][0], A[0][0] * B[0][1] + A[0][1] * B[1][1]], [A[1][0] * B[0][0] + A[1][1] * B[1][0], A[1][0] * B[0][1] + A[1][1] * B[1][1]]];
+  const I = [[1, 0], [0, 1]];
+  const same = (A, B) => A[0][0] === B[0][0] && A[0][1] === B[0][1] && A[1][0] === B[1][0] && A[1][1] === B[1][1];
+  const draw = (cv, M) => { const c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 300, 300);
+    c.translate(150, 150); c.transform(M[0][0], M[1][0], M[0][1], M[1][1], 0, 0); c.drawImage(SQUARE, -150, -150); };
+  const TARGETS = [['rot'], ['fh'], ['rot', 'rot', 'fh']].map(seq => seq.reduce((M, o) => mul(OPS[o], M), I));
+  let p = 0, M = I, moves = 0, pts = 0;
+  const load = () => { M = I; moves = 0; $('#pn').textContent = p + 1; $('#mv').textContent = 0; draw($('#tg'), TARGETS[p]); draw($('#cur'), M); };
+  load();
+  const qs = [
+    { text: 'Как называется операция, когда у фото убирают лишние края?', options: ['Кадрирование (обрезка)', 'Отражение', 'Поворот', 'Сжатие'], answer: 0, why: 'Кадрирование оставляет только нужную часть снимка.' },
+    { text: 'Что значит «редактировать изображение»?', options: ['Изменять готовую картинку', 'Рисовать с чистого листа', 'Удалять файл', 'Печатать на принтере'], answer: 0, why: 'Редактирование — изменение уже готового изображения: поворот, обрезка, цвета, эффекты.' }
+  ];
+  const tail = zoneTail(1, 'Редактирование', `<p><b>Редактировать</b> изображение — изменять готовую картинку.</p><p>Операции: кадрирование (обрезка), поворот, отражение, изменение размера, яркости и контраста.</p><p>Программы: Paint, Фото, Canva. Перед работой сохрани копию оригинала!</p>`, qs, () => pts);
+  stage.querySelectorAll('[data-op]').forEach(b => b.onclick = () => {
+    if (p >= 3) return;
+    const op = b.dataset.op;
+    M = op === 'reset' ? I : mul(OPS[op], M); if (op !== 'reset') moves++;
+    beep(500, .04); draw($('#cur'), M); $('#mv').textContent = moves;
+    if (same(M, TARGETS[p])) {
+      const got = moves <= 4 ? 3 : 2; pts += got; addCoins(15); sfx.ok(); toast(`Совпало! +${got} XP`);
+      p++;
+      if (p < 3) setTimeout(load, 800);
+      else { setTimeout(() => { toast('Все 3 заказа готовы!'); tail.start(); tail.ready(); }, 700); }
+    }
+  });
+}
+
+/* ================= ЗОНА 2: Студия эффектов ================= */
+function zone2() {
+  const FX = [
+    { name: 'Оттенки серого (Ч/Б)', css: 'grayscale(1)' }, { name: 'Сепия', css: 'sepia(1)' },
+    { name: 'Негатив (инверсия)', css: 'invert(1)' }, { name: 'Размытие', css: 'blur(5px)' },
+    { name: 'Пикселизация', pix: true }, { name: 'Повышенная яркость', css: 'brightness(1.7)' },
+    { name: 'Высокий контраст', css: 'contrast(2.3)' }
+  ];
+  const rounds = shuffle(FX).slice(0, 6);
+  stage.innerHTML = zoneHead(2) + `
+  <p style="font-size:18px;line-height:1.45;margin:0 0 14px"><b>Художественные эффекты</b> меняют стиль и настроение фото. Слева — оригинал, справа — фото после эффекта. Какой эффект применили?</p>
+  <div class="row">
+    <div class="col"><div class="kicker" style="margin-bottom:6px">Оригинал</div><div class="frame"><canvas id="orig" width="640" height="360"></canvas></div></div>
+    <div class="col"><div class="kicker" style="margin-bottom:6px;color:var(--orange)">Эффект <span id="rn">1</span> из 6</div><div class="frame"><canvas id="fx" width="640" height="360"></canvas></div></div>
+  </div><div id="fxq"></div>`;
+  $('#orig').getContext('2d').drawImage(PHOTO, 0, 0);
+  let r = 0, pts = 0;
+  const tail = zoneTail(2, 'Эффекты', `<p><b>Художественные эффекты:</b> оттенки серого (чёрно-белый), сепия (как старинное фото), негатив, размытие, пикселизация.</p><p>Яркость — светлее/темнее. Контраст — разница между светлым и тёмным.</p>`,
+    [{ text: 'Зачем применяют художественные эффекты?', options: ['Чтобы изменить стиль и настроение фото', 'Чтобы файл весил меньше', 'Чтобы поменять формат файла', 'Чтобы удалить фото'], answer: 0, why: 'Эффект меняет вид картинки, а не формат файла.' }], () => pts);
+  const show = () => {
+    const f = rounds[r], cv = $('#fx'), c = cv.getContext('2d');
+    $('#rn').textContent = r + 1;
+    cv.style.filter = f.css || 'none';
+    c.imageSmoothingEnabled = !f.pix;
+    if (f.pix) { const t = document.createElement('canvas'); t.width = 48; t.height = 27; t.getContext('2d').drawImage(PHOTO, 0, 0, 48, 27); c.drawImage(t, 0, 0, 640, 360); }
+    else c.drawImage(PHOTO, 0, 0);
+    const opts = shuffle([f.name, ...shuffle(FX.filter(x => x !== f)).slice(0, 3).map(x => x.name)]);
+    const host = $('#fxq'); host.innerHTML = '';
+    question(host, { text: 'Какой эффект применили?', options: opts, answer: opts.indexOf(f.name), why: 'Это «' + f.name + '».' }, ok => {
+      if (ok) { pts += 2; addCoins(10); }
+      r++;
+      setTimeout(() => { if (r < rounds.length) show(); else { host.innerHTML = ''; cv.style.filter = 'none'; toast('Все эффекты разгаданы!'); tail.start(); tail.ready(); } }, 1100);
+    });
+  };
+  show();
+}
+
+/* ================= ЗОНА 3: Цвет и разрешение ================= */
+function zone3() {
+  const TG = shuffle([{ n: 'Жёлтый', c: [255, 255, 0] }, { n: 'Пурпурный (малиновый)', c: [255, 0, 255] }, { n: 'Голубой', c: [0, 255, 255] }, { n: 'Белый', c: [255, 255, 255] }]).slice(0, 3);
+  stage.innerHTML = zoneHead(3) + `
+  <p style="font-size:18px;line-height:1.45;margin:0 0 14px">На экране любой цвет смешивается из трёх лучей: <b style="color:#f87171">красного</b>, <b style="color:#4ade80">зелёного</b> и <b style="color:#60a5fa">синего</b> — это <b>RGB</b>. Двигай ползунки и получи цвет-образец.</p>
+  <div class="row">
+    <div class="col" style="flex:0 1 220px"><div class="kicker" style="margin-bottom:6px;color:var(--yellow)">Образец <span id="cn">1</span> из 3</div><div class="swatch" id="tSw"></div><div style="margin-top:8px;font-weight:800;font-size:18px" id="tName"></div></div>
+    <div class="col" style="flex:0 1 220px"><div class="kicker" style="margin-bottom:6px">Твой цвет</div><div class="swatch" id="mSw"></div><div class="muted" style="margin-top:8px" id="rgbTxt"></div></div>
+    <div class="col">
+      <label for="r">Красный (R)</label><input class="rng-r" type="range" id="r" min="0" max="255" step="5" value="0">
+      <label for="g">Зелёный (G)</label><input class="rng-g" type="range" id="g" min="0" max="255" step="5" value="0">
+      <label for="b">Синий (B)</label><input class="rng-b" type="range" id="b" min="0" max="255" step="5" value="0">
+      <div class="row" style="align-items:center;margin-top:6px"><button class="btn btn-blue" id="chk" type="button">Проверить цвет</button><span id="hint" class="muted"></span></div>
+    </div>
+  </div>`;
+  let k = 0, tries = 0, pts = 0;
+  const tail = zoneTail(3, 'Цвет, размер, разрешение', `<p><b>RGB</b>: красный + зелёный + синий. Красный + зелёный = жёлтый. Все три = белый, ни одного = чёрный.</p><p><b>Разрешение</b> — ширина × высота в пикселях (800×600). При изменении размера сохраняй <b>пропорции</b>, иначе фото «сплющится».</p>`,
+    [{ text: 'Изображение 100×50 пикселей. Сколько в нём пикселей?', options: ['5000', '150', '500', '10050'], answer: 0, why: '100 × 50 = 5000 пикселей.' },
+     { text: 'Что будет, если маленькую картинку сильно растянуть?', options: ['Она станет размытой, появятся квадратики', 'Она станет чётче', 'Добавятся новые детали', 'Ничего не изменится'], answer: 0, why: 'Новых пикселей с деталями взять неоткуда — каждый пиксель просто становится больше.' }], () => pts);
+  const cur = () => ['r', 'g', 'b'].map(id => +$('#' + id).value);
+  const paint = () => { const c = cur(); $('#mSw').style.background = `rgb(${c})`; $('#rgbTxt').textContent = `R ${c[0]} · G ${c[1]} · B ${c[2]}`; };
+  const load = () => { const t = TG[k]; $('#cn').textContent = k + 1; $('#tSw').style.background = `rgb(${t.c})`; $('#tName').textContent = t.n; tries = 0; $('#hint').textContent = ''; ['r', 'g', 'b'].forEach(id => $('#' + id).value = 0); paint(); };
+  ['r', 'g', 'b'].forEach(id => $('#' + id).oninput = paint);
+  load();
+  $('#chk').onclick = () => {
+    if (k >= 3) return;
+    const c = cur(), t = TG[k].c; tries++;
+    if (c.every((v, i) => Math.abs(v - t[i]) <= 45)) {
+      const got = tries <= 2 ? 3 : 2; pts += got; addCoins(15); sfx.ok(); toast(`Цвет совпал! +${got} XP`); k++;
+      if (k < 3) setTimeout(load, 700); else { $('#chk').disabled = true; tail.start(); tail.ready(); }
+    } else {
+      sfx.bad();
+      const names = ['красного', 'зелёного', 'синего'], i = c.map((v, j) => Math.abs(v - t[j])).reduce((m, d, j, a) => d > a[m] ? j : m, 0);
+      $('#hint').textContent = 'Подсказка: проверь, сколько ' + names[i] + (c[i] < t[i] ? ' — нужно больше.' : ' — нужно меньше.');
+      if (tries >= 4) { pts += 1; toast('Ответ: R ' + t[0] + ' G ' + t[1] + ' B ' + t[2]); k++; if (k < 3) setTimeout(load, 1400); else { $('#chk').disabled = true; tail.start(); tail.ready(); } }
+    }
+  };
+}
+
+/* ================= ЗОНА 4: Сортировщик ================= */
+function zone4() {
+  const FMT = { JPG: '#38bdf8', PNG: '#4ade80', GIF: '#fb923c', BMP: '#a78bfa' };
+  const CARDS = shuffle([
+    ['Фото с экскурсии отправить другу в мессенджере', 'JPG'], ['Логотип с прозрачным фоном', 'PNG'],
+    ['Смайлик, который подмигивает', 'GIF'], ['Рисунок совсем без сжатия, самый тяжёлый файл', 'BMP'],
+    ['Скриншот с текстом — буквы должны быть чёткими', 'PNG'], ['Стикер, который двигается', 'GIF'],
+    ['100 фотографий, а на флешке мало места', 'JPG'], ['Схема для учебника без потерь качества', 'PNG'],
+    ['Бегущая строка «С Новым годом!»', 'GIF'], ['Фото пейзажа для сайта, чтобы быстро грузилось', 'JPG']
+  ]);
+  stage.innerHTML = zoneHead(4) + `
+  <div class="panel"><div class="kicker">Карточка <span id="ci">1</span> из 10 · серия: <span id="streak">0</span></div><div class="card-sit" id="sit" style="margin-top:8px"></div></div>
+  <div class="fmt-btns" style="margin-top:14px">${Object.keys(FMT).map(f => `<button class="fmt" type="button" data-f="${f}" style="background:${FMT[f]}">${f}</button>`).join('')}</div>
+  <div id="fb" style="min-height:52px"></div>`;
+  let i = 0, right = 0, streak = 0, lock = false;
+  const tail = zoneTail(4, 'Форматы', `<p><b>JPG</b> — фото, лёгкий, сжатие с потерей качества. <b>PNG</b> — без потерь, прозрачный фон.</p><p><b>GIF</b> — анимация, 256 цветов. <b>BMP</b> — без сжатия, самый тяжёлый. Формат видно по <b>расширению</b>: кот<b>.png</b></p>`, [], () => right * 1.5);
+  const show = () => { $('#ci').textContent = i + 1; $('#sit').textContent = CARDS[i][0]; };
+  show();
+  stage.querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
+    if (lock || i >= CARDS.length) return; lock = true;
+    const ok = b.dataset.f === CARDS[i][1];
+    if (ok) { right++; streak++; sfx.ok(); addCoins(streak >= 3 ? 15 : 8); } else { streak = 0; sfx.bad(); }
+    $('#streak').textContent = streak;
+    $('#fb').innerHTML = `<div class="explain ${ok ? 'ok' : 'bad'}">${ok ? (streak >= 3 ? 'Серия x' + streak + '! ' : 'Верно! ') : 'Нет — здесь нужен ' + CARDS[i][1] + '.'}</div>`;
+    i++;
+    setTimeout(() => {
+      lock = false;
+      if (i < CARDS.length) show();
+      else { $('#sit').textContent = `Готово! Верно: ${right} из 10`; $('#fb').innerHTML = ''; stage.querySelectorAll('.fmt').forEach(x => x.disabled = true); tail.ready(); }
+    }, ok ? 500 : 1300);
+  });
+}
+
+/* ================= ПРОБНАЯ КОНТРОЛЬНАЯ ================= */
+const BANK = {
+  'Редактирование': [
+    { text: 'Что значит «редактировать изображение»?', options: ['Изменять готовую картинку', 'Рисовать с чистого листа', 'Удалять файл с картинкой', 'Печатать картинку'], answer: 0, why: 'Редактирование — изменение готового изображения.' },
+    { text: 'Как называется удаление лишних краёв фотографии?', options: ['Кадрирование (обрезка)', 'Отражение', 'Сжатие', 'Размытие'], answer: 0, why: 'Кадрирование оставляет нужную часть снимка.' },
+    { text: 'Фото снято «боком». Что нужно сделать, чтобы оно стало ровным?', options: ['Повернуть на 90°', 'Отразить по горизонтали', 'Сохранить в GIF', 'Применить размытие'], answer: 0, why: 'Поворот на 90° ставит снимок ровно.' },
+    { text: 'Какая программа НЕ является графическим редактором?', options: ['Калькулятор', 'Paint', 'Canva', 'Фото (Windows)'], answer: 0, why: 'Калькулятор не работает с изображениями.' },
+    { text: 'Отражение по горизонтали меняет местами…', options: ['левую и правую стороны', 'верх и низ', 'цвета', 'размер и вес'], answer: 0, why: 'Как в зеркале: левое становится правым.' },
+    { text: 'Что лучше сделать перед редактированием важного фото?', options: ['Сохранить копию оригинала', 'Удалить оригинал', 'Сжать до 10%', 'Переименовать в .txt'], answer: 0, why: 'Копия позволит вернуться к оригиналу, если что-то пойдёт не так.' }
+  ],
+  'Эффекты': [
+    { text: 'Какой эффект делает фото чёрно-белым?', options: ['Оттенки серого', 'Сепия', 'Негатив', 'Пикселизация'], answer: 0, why: 'Оттенки серого убирают цвет.' },
+    { text: 'Эффект «старинной фотографии» в коричневых тонах — это…', options: ['Сепия', 'Негатив', 'Размытие', 'Контраст'], answer: 0, why: 'Сепия даёт тёплый коричневый оттенок.' },
+    { text: 'Эффект «Негатив» (инверсия) делает белое…', options: ['чёрным', 'красным', 'прозрачным', 'ещё белее'], answer: 0, why: 'Негатив меняет каждый цвет на противоположный.' },
+    { text: 'Какой эффект делает картинку нечёткой?', options: ['Размытие', 'Контраст', 'Сепия', 'Поворот'], answer: 0, why: 'Размытие смягчает границы.' },
+    { text: 'При эффекте «Пикселизация» картинка…', options: ['превращается в крупные квадратики', 'начинает двигаться', 'становится прозрачной', 'становится чёрно-белой'], answer: 0, why: 'Пикселизация собирает картинку из крупных квадратов.' },
+    { text: 'Зачем применяют художественные эффекты?', options: ['Чтобы изменить стиль и настроение фото', 'Чтобы уменьшить вес файла', 'Чтобы сменить формат', 'Чтобы удалить фото'], answer: 0, why: 'Эффекты меняют вид картинки.' }
+  ],
+  'Цвет и разрешение': [
+    { text: 'Из каких трёх цветов на экране смешиваются все остальные (RGB)?', options: ['Красный, зелёный, синий', 'Красный, жёлтый, синий', 'Чёрный, белый, серый', 'Голубой, розовый, жёлтый'], answer: 0, why: 'R — red, G — green, B — blue.' },
+    { text: 'Красный + зелёный в RGB дают…', options: ['жёлтый', 'коричневый', 'фиолетовый', 'чёрный'], answer: 0, why: 'Красный и зелёный свет вместе дают жёлтый.' },
+    { text: 'Изображение 100×50 пикселей. Сколько в нём пикселей?', options: ['5000', '150', '500', '1050'], answer: 0, why: '100 × 50 = 5000.' },
+    { text: 'Разрешение изображения — это…', options: ['количество пикселей по ширине и высоте', 'вес файла', 'название формата', 'яркость картинки'], answer: 0, why: 'Например, 1920×1080 пикселей.' },
+    { text: 'Если маленькую картинку сильно растянуть, она…', options: ['станет размытой, с квадратиками', 'станет чётче', 'станет меньше весить', 'начнёт двигаться'], answer: 0, why: 'Пиксели просто становятся крупнее.' },
+    { text: 'Чтобы при изменении размера фото не «сплющилось», нужно…', options: ['сохранять пропорции', 'менять только ширину', 'сохранить в BMP', 'включить негатив'], answer: 0, why: 'Ширина и высота должны меняться вместе.' },
+    { text: 'Настройка «Яркость» делает картинку…', options: ['светлее или темнее', 'больше или меньше', 'анимированной', 'прозрачной'], answer: 0, why: 'Яркость — сколько света в картинке.' }
+  ],
+  'Форматы': [
+    { text: 'В каком формате может быть прозрачный фон?', options: ['PNG', 'JPG', 'BMP', 'TXT'], answer: 0, why: 'Прозрачность — особенность PNG.' },
+    { text: 'Какой формат умеет анимацию?', options: ['GIF', 'BMP', 'JPG', 'DOCX'], answer: 0, why: 'GIF — формат движущихся картинок.' },
+    { text: 'Какой формат сжимает фото с потерей качества?', options: ['JPG', 'PNG', 'BMP', 'GIF'], answer: 0, why: 'JPG выбрасывает часть деталей, зато лёгкий.' },
+    { text: 'Какой формат без сжатия и обычно самый тяжёлый?', options: ['BMP', 'JPG', 'PNG', 'GIF'], answer: 0, why: 'BMP хранит каждый пиксель как есть.' },
+    { text: 'Что такое расширение файла?', options: ['Буквы после точки в имени файла', 'Размер картинки', 'Папка с файлом', 'Яркость картинки'], answer: 0, why: 'В «фото.jpg» расширение — jpg.' },
+    { text: 'Сколько цветов максимум в формате GIF?', options: ['256', '16', '1000', 'Миллионы'], answer: 0, why: 'GIF ограничен 256 цветами.' }
+  ]
+};
+function testIntro() {
+  stage.innerHTML = `
+  <div class="panel" style="max-width:760px;margin:0 auto;text-align:center">
+    <div class="kicker" style="color:var(--violet)">Финальное испытание</div>
+    <h2 style="font-size:36px;margin:10px 0;color:var(--violet)">Пробная контрольная</h2>
+    <p style="font-size:18px;line-height:1.5">15 вопросов по всем 4 темам · 15 минут.<br>Подсказок нет — как на настоящей контрольной 10 декабря.<br>Правильные ответы и разбор ошибок — в конце.</p>
+    <button class="btn btn-go" id="startT" type="button" style="margin-top:10px">НАЧАТЬ КОНТРОЛЬНУЮ ▶</button>
+  </div>`;
+  $('#startT').onclick = startTest;
+}
+function startTest() {
+  const pick = { 'Редактирование': 4, 'Эффекты': 4, 'Цвет и разрешение': 4, 'Форматы': 3 };
+  const qs = [];
+  Object.keys(pick).forEach(t => shuffle(BANK[t]).slice(0, pick[t]).forEach(q => {
+    const opts = shuffle(q.options.map((x, i) => ({ x, i })));
+    qs.push({ topic: t, text: q.text, why: q.why, options: opts.map(o => o.x), answer: opts.findIndex(o => o.i === q.answer) });
+  }));
+  S.test = { qs: shuffle(qs), ans: [], i: 0, ends: Date.now() + 15 * 60000, done: false };
+  showTestQ();
+  S.test.timer = setInterval(() => {
+    const el = $('#tLeft'); const left = Math.max(0, Math.round((S.test.ends - Date.now()) / 1000));
+    if (el) el.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+    if (left <= 0) { toast('Время вышло!'); finishTest(); }
+  }, 1000);
+}
+function showTestQ() {
+  const T = S.test, q = T.qs[T.i];
+  stage.innerHTML = `
+  <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div class="kicker" style="color:var(--violet)">Вопрос ${T.i + 1} из ${T.qs.length} · ${esc(q.topic)}</div>
+    <div>Осталось: <span class="big-num" id="tLeft">15:00</span></div></div>
+  <div class="progress"><i style="width:${T.i / T.qs.length * 100}%"></i></div>
+  <div class="q" style="margin-top:16px"><h3>${esc(q.text)}</h3><div class="opts">${q.options.map((o, i) => `<button type="button" class="opt" data-i="${i}">${esc(o)}</button>`).join('')}</div></div>
+  <div style="margin-top:16px"><button class="btn btn-go" id="nextQ" type="button" disabled>${T.i + 1 < T.qs.length ? 'Следующий вопрос ▶' : 'Сдать работу ✓'}</button></div>`;
+  let sel = -1;
+  stage.querySelectorAll('.opt').forEach(b => b.onclick = () => { sel = +b.dataset.i; stage.querySelectorAll('.opt').forEach(x => x.classList.toggle('sel', x === b)); $('#nextQ').disabled = false; beep(600, .04); });
+  $('#nextQ').onclick = () => { T.ans[T.i] = sel; T.i++; if (T.i < T.qs.length) showTestQ(); else finishTest(); };
+}
+function finishTest() {
+  const T = S.test; if (T.done) return;
+  clearInterval(T.timer); T.done = true;
+  T.right = T.qs.filter((q, i) => T.ans[i] === q.answer).length;
+  screenFinal();
+}
+
+/* ================= ИТОГИ ================= */
+function screenFinal() {
+  hud();
+  const T = S.test, n = T.qs.length, pct = Math.round(T.right / n * 100);
+  const g = pct >= 85 ? 'ОХ' : pct >= 65 ? 'Х' : pct >= 45 ? 'У' : 'Н';
+  const gName = { 'ОХ': 'Очень хорошо', 'Х': 'Хорошо', 'У': 'Удовлетворительно', 'Н': 'Нужно повторить' }[g];
+  const byTopic = {};
+  T.qs.forEach((q, i) => { byTopic[q.topic] = byTopic[q.topic] || [0, 0]; byTopic[q.topic][1]++; if (T.ans[i] === q.answer) byTopic[q.topic][0]++; });
+  const weak = Object.keys(byTopic).filter(t => byTopic[t][0] / byTopic[t][1] < .75);
+  stage.innerHTML = `
+  <div class="panel" style="text-align:center">
+    <div class="kicker">Пробная контрольная завершена</div>
+    <div class="row" style="justify-content:center;align-items:center;gap:30px;margin-top:14px">
+      ${avatarHTML(S.skin, 96)}
+      <div><div class="grade">${g}</div><div style="font-size:20px;font-weight:800">${gName}</div></div>
+      <div style="text-align:left"><div>Верно: <span class="big-num">${T.right}/${n}</span></div><div>Тренировка: <span class="big-num">${xp()}/60 XP</span></div></div>
+    </div>
+    <table class="sum" style="max-width:520px;margin:18px auto 0">${Object.keys(byTopic).map(t => `<tr><td style="text-align:left">${esc(t)}</td><td>${byTopic[t][0]}/${byTopic[t][1]}</td></tr>`).join('')}</table>
+    <p style="font-size:18px;margin:16px 0 0">${weak.length ? 'Перед контрольной повтори: <b style="color:var(--orange)">' + weak.map(esc).join(', ') + '</b>' : 'Ты готов(а) к контрольной! Так держать.'}</p>
+    <p id="sendState" class="muted" style="margin-top:10px">Отправляю результат учителю…</p>
+  </div>
+  <div style="margin-top:16px">${notebook('Итог подготовки', `<p>Мой результат пробной контрольной: <b>${T.right}/${n} — ${g}</b>.</p><p>Повторить дома: ${weak.length ? weak.map(esc).join(', ') : 'все темы для закрепления'}. Контрольная — 10 декабря.</p>`)}</div>
+  <h2 style="margin:24px 0 6px;font-size:24px">Разбор ответов</h2>
+  <div class="review">${T.qs.map((q, i) => { const ok = T.ans[i] === q.answer; return `<div class="rv ${ok ? '' : 'bad'}"><div class="qq">${i + 1}. ${esc(q.text)}</div>
+    <div class="aa">${ok ? '✓ Верно: ' + esc(q.options[q.answer]) : '✗ Твой ответ: ' + esc(T.ans[i] >= 0 ? q.options[T.ans[i]] : 'нет ответа') + ' · Правильно: <b style="color:var(--green)">' + esc(q.options[q.answer]) + '</b>'} — ${esc(q.why)}</div></div>`; }).join('')}</div>
+  <div style="margin-top:18px"><button class="btn btn-ghost" id="again" type="button">Пройти пробную контрольную ещё раз</button></div>`;
+  sfx.win();
+  $('#again').onclick = () => { S.test = null; S.sent = false; testIntro(); };
+  if (S.sent) { $('#sendState').textContent = 'Результат уже отправлен учителю.'; return; }
+  if (API.indexOf('http') !== 0) { $('#sendState').textContent = 'Покажи этот экран учителю.'; return; }
+  const details = { zones: Object.fromEntries(Object.entries(S.zones).map(([k, v]) => ['Зона ' + k, v + '/15'])), topics: Object.fromEntries(Object.entries(byTopic).map(([k, v]) => [k, v[0] + '/' + v[1]])) };
+  fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveResult', name: S.name, klass: S.klass, lesson: LESSON, score: T.right, max: n, grade: g, details }) })
+    .then(r => r.json()).then(d => { if (!d.ok) throw new Error(d.error); S.sent = true; $('#sendState').textContent = 'Результат отправлен учителю.'; })
+    .catch(() => { $('#sendState').textContent = 'Не удалось отправить. Покажи этот экран учителю.'; });
+}
+
+screenStart();
+})();
+</script>
+</body>
+</html>
