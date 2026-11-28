@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — Домашнее задание (проверка)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
+<script src="config.js"></script>
+<script src="widget.js"></script>
+<style>
+  body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f4f8ff;color:#0f1e3d}
+  header{background:#1e3a8a;color:#fff;padding:16px 20px;font-weight:800;font-size:20px}
+  header span{color:#93c5fd}
+  main{max-width:1000px;margin:0 auto;padding:24px 20px}
+  .pick{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid #c7d7f2;border-radius:14px;padding:14px 16px;margin-bottom:20px}
+  select{border:1px solid #c7d7f2;border-radius:10px;padding:10px;font:600 15px Inter,sans-serif;min-height:44px}
+  .note{font-size:13px;color:#4b5a7a}
+</style>
+</head>
+<body>
+<header>Tech<span>Lab</span> · комната ученика</header>
+<main>
+  <div class="pick">
+    <label for="k"><strong>Проверка: класс ученика</strong></label>
+    <select id="k"></select>
+    <span class="note">Эта страница — для проверки. В настоящей комнате класс берётся из кода ученика.</span>
+  </div>
+  <div id="homework"></div>
+</main>
+<script>
+  var sel = document.getElementById('k');
+  (window.TECHLAB_GRADES || []).forEach(function (g) {
+    (window.TECHLAB_LETTERS || []).forEach(function (l) {
+      var o = document.createElement('option'); o.value = g + l; o.textContent = g + ' «' + l + '»'; sel.appendChild(o);
+    });
+  });
+  sel.onchange = function () { TechLabHomework.mount('#homework', sel.value); };
+  TechLabHomework.mount('#homework', sel.value);
+</script>
+</body>
+</html>

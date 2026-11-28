@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Пиксель-рейд: Битва форматов · 5 класс</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;700;800&display=swap">
+<script src="../../homework/config.js"></script>
+<style>
+:root{
+  --bg:#0b1430; --panel:#13204a; --panel2:#1a2b5e; --line:#2b3f7a;
+  --ink:#eaf1ff; --muted:#a9b8e0; --yellow:#ffd54a; --cyan:#38bdf8;
+  --green:#4ade80; --red:#f87171; --orange:#fb923c; --violet:#a78bfa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif}
+body{min-height:100vh;background:
+  radial-gradient(circle at 15% 10%, rgba(56,189,248,.12), transparent 40%),
+  radial-gradient(circle at 85% 90%, rgba(167,139,250,.12), transparent 40%), var(--bg)}
+button{font-family:inherit}
+.hud{position:sticky;top:0;z-index:5;background:rgba(11,20,48,.94);border-bottom:2px solid var(--line)}
+.hud-in{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:'Russo One',sans-serif;font-size:18px;color:var(--yellow);letter-spacing:.03em}
+.stat{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px}
+.xpbar{width:140px;height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));width:0;transition:width .4s}
+.hearts span{color:var(--red);font-size:18px;letter-spacing:2px}
+.timer{margin-left:auto;font-family:'Russo One',sans-serif;font-size:18px;color:var(--cyan)}
+.timer.warn{color:var(--orange)}
+.icon-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;min-width:44px;min-height:40px;cursor:pointer;font-weight:700}
+main{max-width:1100px;margin:0 auto;padding:22px 16px 60px}
+h1,h2,h3{font-family:'Russo One',sans-serif;font-weight:400;margin:0}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1 1 320px;min-width:0}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:800;font-size:16px;cursor:pointer;min-height:48px;transition:transform .08s}
+.btn:active{transform:translateY(2px)}
+.btn-go{background:var(--yellow);color:#1b1300;box-shadow:0 4px 0 #b38f12}
+.btn-go:hover{background:#ffe27a}
+.btn-blue{background:var(--cyan);color:#04223a;box-shadow:0 4px 0 #1d7fae}
+.btn-ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+input[type=text],select{background:#0a1027;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:600 16px Rubik,sans-serif;width:100%;min-height:48px}
+input:focus,select:focus{outline:2px solid var(--cyan)}
+label{display:block;font-weight:700;margin:0 0 6px;color:var(--muted);font-size:14px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.muted{color:var(--muted)}
+/* старт */
+.hero{text-align:center;padding:26px 10px 10px}
+.hero h1{font-size:46px;line-height:1.05;color:var(--yellow);text-shadow:0 4px 0 #6b4f00}
+.hero h1 small{display:block;font-size:24px;color:var(--cyan);text-shadow:none;margin-top:8px}
+.avatars{display:flex;gap:10px;flex-wrap:wrap}
+.av-btn{background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:8px;cursor:pointer;position:relative;color:var(--ink);min-width:84px}
+.av-btn[aria-pressed=true]{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,213,74,.25)}
+.av-btn .price{display:block;font-size:12px;font-weight:700;margin-top:4px;color:var(--yellow)}
+.pix{display:grid;grid-template-columns:repeat(8,1fr);width:56px;height:56px;margin:0 auto}
+.pix i{display:block}
+/* карта */
+.map{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
+@media (max-width:820px){.map{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.node{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:16px;text-align:left;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:200px}
+.node:disabled{cursor:not-allowed;opacity:.5}
+.node .num{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Russo One',sans-serif;font-size:20px;color:#0b1430}
+.node.done{border-color:var(--green)}
+.node.next{border-color:var(--yellow);box-shadow:0 0 0 4px rgba(255,213,74,.18);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(255,213,74,.06)}}
+.node .t{font-weight:800;font-size:17px}
+.node .d{font-size:13px;color:var(--muted);line-height:1.35}
+.node .pts{margin-top:auto;font-size:13px;font-weight:800;color:var(--yellow)}
+/* тетрадь */
+.notebook{background:#fffdf3;color:#1e3a8a;border-radius:14px;padding:16px 18px;background-image:linear-gradient(#dbe6fb 1px,transparent 1px);background-size:100% 28px;border:3px solid #ffd54a}
+.notebook .nb-h{font-family:'Russo One',sans-serif;color:#b45309;font-size:15px;margin-bottom:6px}
+.notebook p,.notebook li{font-size:17px;line-height:28px;margin:0}
+.notebook ul{margin:0;padding-left:20px}
+.check{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;color:#1e3a8a;cursor:pointer;min-height:44px}
+.check input{width:22px;height:22px}
+/* вопросы */
+.q{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+.q h3{font-family:Rubik,sans-serif;font-weight:800;font-size:19px;margin-bottom:12px;line-height:1.3}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{background:#0f1a40;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 14px;font-weight:700;font-size:16px;cursor:pointer;text-align:left;min-height:52px}
+.opt:hover:not(:disabled){border-color:var(--cyan)}
+.opt.right{background:#0f3b26;border-color:var(--green)}
+.opt.wrong{background:#43141b;border-color:var(--red)}
+.opt:disabled{cursor:default}
+.explain{margin-top:12px;padding:12px 14px;border-radius:12px;font-weight:600;line-height:1.4}
+.explain.ok{background:rgba(74,222,128,.14);color:#bbf7d0}
+.explain.bad{background:rgba(248,113,113,.14);color:#fecaca}
+.toast{position:fixed;left:50%;top:76px;transform:translateX(-50%) scale(.9);background:var(--yellow);color:#1b1300;font-family:'Russo One',sans-serif;padding:10px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:20;pointer-events:none;font-size:18px}
+.toast.on{opacity:1;transform:translateX(-50%) scale(1)}
+/* уровень 1 */
+.screen{background:#000;border-radius:14px;overflow:hidden;border:3px solid var(--line)}
+.screen canvas{display:block;width:100%;image-rendering:pixelated}
+input[type=range]{width:100%;accent-color:var(--yellow);height:30px}
+.big-num{font-family:'Russo One',sans-serif;font-size:26px;color:var(--yellow)}
+/* уровень 2 */
+.lab-btns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.measure{width:100%;border-collapse:collapse;margin-top:10px;font-size:16px}
+.measure th,.measure td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left}
+.measure th{color:var(--muted);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.measure td.size{font-family:'Russo One',sans-serif;color:var(--yellow)}
+.bar{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--orange),var(--red));min-width:4px}
+/* уровень 3 */
+.arena{position:relative;height:420px;border-radius:18px;border:3px solid var(--line);overflow:hidden;
+  background:linear-gradient(rgba(56,189,248,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.06) 1px,transparent 1px),#08102a;background-size:28px 28px}
+.target{position:absolute;width:110px;height:110px;border-radius:50%;border:4px solid #fff;font-family:'Russo One',sans-serif;font-size:24px;color:#0b1430;cursor:crosshair;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(255,255,255,.12)}
+.target:focus{outline:4px solid var(--yellow)}
+.situation{font-size:22px;font-weight:800;line-height:1.3;min-height:58px}
+.combo{font-family:'Russo One',sans-serif;color:var(--orange)}
+.boom{position:absolute;pointer-events:none;font-family:'Russo One',sans-serif;font-size:26px;animation:up .8s forwards}
+@keyframes up{to{transform:translateY(-60px);opacity:0}}
+/* уровень 4 */
+.client{display:flex;gap:14px;align-items:flex-start;background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:16px}
+.client .face{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bubble{background:#fff;color:#0b1430;border-radius:14px;padding:12px 14px;font-size:17px;font-weight:600;line-height:1.4;position:relative}
+.steps{display:flex;gap:6px}
+.steps i{width:28px;height:8px;border-radius:4px;background:var(--line)}
+.steps i.on{background:var(--yellow)}
+.steps i.ok{background:var(--green)}
+/* босс */
+.boss-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.boss{width:150px;height:150px;border-radius:24px;background:var(--violet);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Russo One',sans-serif;color:#1b0b3f;font-size:30px;border:4px solid #ddd6fe;transition:transform .15s}
+.boss small{font-size:13px}
+.boss.hit{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-8px) rotate(-3deg)}75%{transform:translateX(8px) rotate(3deg)}}
+.hp{height:18px;border-radius:9px;background:#0a1027;border:2px solid var(--line);overflow:hidden}
+.hp i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--orange));transition:width .4s}
+/* финал */
+.grade{font-family:'Russo One',sans-serif;font-size:90px;line-height:1;color:var(--yellow);text-shadow:0 6px 0 #6b4f00}
+.badges{display:flex;gap:10px;flex-wrap:wrap}
+.badge{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:700;font-size:14px}
+.badge.got{border-color:var(--yellow);color:var(--yellow)}
+.hidden{display:none !important}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+
+<div class="hud hidden" id="hud">
+  <div class="hud-in">
+    <span class="brand">ПИКСЕЛЬ-РЕЙД</span>
+    <span class="stat" id="hudAv"></span>
+    <span class="stat" title="Опыт">XP <span class="xpbar"><i id="xpFill"></i></span> <span id="xpNum">0</span>/100</span>
+    <span class="stat" title="Монеты"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#ffd54a" stroke="#b38f12" stroke-width="2"/><text x="10" y="14" font-size="10" text-anchor="middle" fill="#6b4f00" font-weight="800">P</text></svg><span id="coins">0</span></span>
+    <span class="stat hearts" title="Жизни"><span id="hearts"></span></span>
+    <span class="timer" id="timer" title="До конца урока">45:00</span>
+    <button class="icon-btn" id="soundBtn" type="button" aria-label="Звук вкл/выкл">♪</button>
+    <button class="icon-btn" id="mapBtn" type="button">Карта</button>
+  </div>
+</div>
+
+<main id="stage"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+/* ================= состояние ================= */
+const API = window.TECHLAB_HW_API || '';
+const LESSON = '5 кл. Графические форматы (Пиксель-рейд)';
+const params = new URLSearchParams(location.search);
+const S = {
+  name: params.get('name') || '', klass: params.get('klass') || '',
+  skin: 0, ownedSkins: [0], coins: 0, hearts: 5,
+  levels: {}, unlocked: 1, startedAt: 0, sent: false, sound: true
+};
+const MAX = { 1: 12, 2: 24, 3: 24, 4: 20, 5: 20 };
+const LEVELS = [
+  { n: 1, title: 'Пиксельная лупа', desc: 'Разгадай, из чего сделана любая цифровая картинка.', min: 5, color: '#38bdf8' },
+  { n: 2, title: 'Лаборатория сжатия', desc: 'Сохрани фото в разных форматах и взвесь файлы.', min: 12, color: '#4ade80' },
+  { n: 3, title: 'Тир форматов', desc: 'Аркада! Стреляй в формат, который подходит.', min: 7, color: '#fb923c' },
+  { n: 4, title: 'Ателье «Пиксель»', desc: 'Выполни заказы клиентов и заработай монеты.', min: 9, color: '#ffd54a' },
+  { n: 5, title: 'Босс: Тяжеловес BMP', desc: 'Финальная битва знаний. Победи босса!', min: 7, color: '#a78bfa' }
+];
+const SKINS = [
+  { name: 'Пиксель', body: '#38bdf8', eye: '#0b1430', price: 0 },
+  { name: 'Лайм', body: '#4ade80', eye: '#0b1430', price: 0 },
+  { name: 'Огонь', body: '#fb923c', eye: '#3b0a00', price: 60 },
+  { name: 'Аметист', body: '#a78bfa', eye: '#1b0b3f', price: 120 },
+  { name: 'Золото', body: '#ffd54a', eye: '#3b2a00', price: 200 }
+];
+const AV = ['..XXXX..', '.XXXXXX.', 'XXXXXXXX', 'XEEXXEEX', 'XEEXXEEX', 'XXXXXXXX', 'XX.XX.XX', 'X..XX..X'];
+
+const $ = (s, r = document) => r.querySelector(s);
+const stage = $('#stage');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const kb = b => b >= 1048576 ? (b / 1048576).toFixed(2).replace('.', ',') + ' МБ' : Math.max(1, Math.round(b / 1024)) + ' КБ';
+const score = () => Object.values(S.levels).reduce((s, l) => s + l.score, 0);
+
+/* ================= звук ================= */
+let actx = null;
+function beep(freq, dur = 0.12, type = 'square', vol = 0.06) {
+  if (!S.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+    o.connect(g); g.connect(actx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.stop(actx.currentTime + dur);
+  } catch (e) {}
+}
+const sfx = {
+  ok: () => { beep(660, .08); setTimeout(() => beep(990, .12), 80); },
+  bad: () => beep(140, .25, 'sawtooth', .05),
+  coin: () => { beep(1200, .06); setTimeout(() => beep(1600, .08), 60); },
+  win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .15), i * 120))
+};
+
+/* ================= HUD ================= */
+function avatarHTML(skin, size = 56) {
+  const k = SKINS[skin];
+  return `<div class="pix" style="width:${size}px;height:${size}px" aria-hidden="true">` +
+    AV.join('').split('').map(c => `<i style="background:${c === 'X' ? k.body : c === 'E' ? k.eye : 'transparent'}"></i>`).join('') + '</div>';
+}
+function hud() {
+  $('#hud').classList.remove('hidden');
+  $('#hudAv').innerHTML = avatarHTML(S.skin, 28) + `<span>${esc(S.name)}</span>`;
+  $('#xpFill').style.width = score() + '%';
+  $('#xpNum').textContent = score();
+  $('#coins').textContent = S.coins;
+  $('#hearts').textContent = '♥'.repeat(S.hearts) + '♡'.repeat(Math.max(0, 5 - S.hearts));
+}
+function toast(t) {
+  const el = $('#toast'); el.textContent = t; el.classList.add('on');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1300);
+}
+function addCoins(n) { S.coins += n; if (n > 0) sfx.coin(); hud(); }
+function loseHeart() {
+  S.hearts--;
+  if (S.hearts <= 0) {
+    S.hearts = 5; S.coins = Math.max(0, S.coins - 30);
+    toast('Жизни кончились! −30 монет, щит восстановлен');
+  }
+  hud();
+}
+$('#soundBtn').onclick = () => { S.sound = !S.sound; $('#soundBtn').style.opacity = S.sound ? 1 : .4; };
+$('#mapBtn').onclick = () => { stopAll(); screenMap(); };
+
+function tick() {
+  if (!S.startedAt) return;
+  const left = Math.max(0, 45 * 60 - Math.floor((Date.now() - S.startedAt) / 1000));
+  const t = $('#timer');
+  t.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+  t.classList.toggle('warn', left < 300);
+}
+setInterval(tick, 1000);
+
+let loops = [];
+function stopAll() { loops.forEach(f => f()); loops = []; }
+
+/* ================= общий вопрос ================= */
+function question(host, q, onDone) {
+  const box = document.createElement('div'); box.className = 'q';
+  const opts = q.shuffle === false ? q.options.map((t, i) => ({ t, i })) : shuffle(q.options.map((t, i) => ({ t, i })));
+  box.innerHTML = `<h3>${esc(q.text)}</h3><div class="opts">` +
+    opts.map(o => `<button type="button" class="opt" data-i="${o.i}">${esc(o.t)}</button>`).join('') + '</div>';
+  host.appendChild(box);
+  box.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const ok = +b.dataset.i === q.answer;
+    box.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (+x.dataset.i === q.answer) x.classList.add('right'); });
+    if (!ok) b.classList.add('wrong');
+    ok ? sfx.ok() : sfx.bad();
+    const ex = document.createElement('div');
+    ex.className = 'explain ' + (ok ? 'ok' : 'bad');
+    ex.textContent = (ok ? 'Верно! ' : 'Не совсем. ') + (q.why || '');
+    box.appendChild(ex);
+    onDone(ok);
+  });
+  return box;
+}
+function notebook(title, html, onCheck) {
+  const id = 'nb' + Math.random().toString(36).slice(2, 7);
+  return `<div class="notebook"><div class="nb-h">ЗАПИШИ В ТЕТРАДЬ · ${esc(title)}</div>${html}
+    <label class="check" for="${id}"><input type="checkbox" id="${id}" class="nb-check"> Я записал(а) в тетрадь</label></div>`;
+}
+function finishLevel(n, pts, extra = {}) {
+  S.levels[n] = Object.assign({ score: Math.min(MAX[n], Math.round(pts)), max: MAX[n] }, extra);
+  S.unlocked = Math.max(S.unlocked, n + 1);
+  sfx.win(); hud();
+  toast(`Уровень ${n} пройден: +${S.levels[n].score} XP`);
+  setTimeout(() => n === 5 ? screenFinal() : screenMap(), 900);
+}
+function levelHead(n) {
+  const L = LEVELS[n - 1];
+  return `<div class="row" style="align-items:flex-end;margin-bottom:16px">
+    <div class="col"><div class="kicker">Уровень ${n} · ≈ ${L.min} мин · до ${MAX[n]} XP</div><h2 style="font-size:32px;margin-top:6px;color:${L.color}">${L.title}</h2></div></div>`;
+}
+
+/* ================= картинка-«фото» для опытов ================= */
+function drawScene(ctx, w, h) {
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, '#2563eb'); sky.addColorStop(.55, '#7dd3fc'); sky.addColorStop(1, '#fde68a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+  const sun = ctx.createRadialGradient(w * .78, h * .28, 2, w * .78, h * .28, h * .22);
+  sun.addColorStop(0, '#fffbe6'); sun.addColorStop(.35, '#ffd54a'); sun.addColorStop(1, 'rgba(255,213,74,0)');
+  ctx.fillStyle = sun; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 6; i++) { // облака
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    const cx = rnd() * w, cy = rnd() * h * .3 + h * .06;
+    for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(cx + k * w * .02, cy + rnd() * 6, w * .03, h * .03, 0, 0, 7); ctx.fill(); }
+  }
+  const mt = (base, amp, c1, c2) => {
+    const g = ctx.createLinearGradient(0, h * (base - amp), 0, h); g.addColorStop(0, c1); g.addColorStop(1, c2);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, h);
+    for (let x = 0; x <= w; x += w / 40) ctx.lineTo(x, h * base - Math.abs(Math.sin(x / w * 7 + base * 9)) * h * amp - rnd() * h * .02);
+    ctx.lineTo(w, h); ctx.fill();
+  };
+  mt(.62, .3, '#64748b', '#1e3a8a'); mt(.75, .16, '#15803d', '#14532d'); mt(.88, .08, '#22c55e', '#166534');
+  for (let i = 0; i < 70; i++) { // ёлки
+    const x = rnd() * w, y = h * .8 + rnd() * h * .18, s = h * (.03 + rnd() * .04);
+    ctx.fillStyle = rnd() > .5 ? '#14532d' : '#065f46';
+    ctx.beginPath(); ctx.moveTo(x, y - s * 2); ctx.lineTo(x - s * .7, y); ctx.lineTo(x + s * .7, y); ctx.fill();
+  }
+  // «шум» как на настоящем фото
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (rnd() - .5) * 26; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  ctx.putImageData(img, 0, 0);
+}
+const PHOTO = document.createElement('canvas'); PHOTO.width = 800; PHOTO.height = 450;
+drawScene(PHOTO.getContext('2d'), 800, 450);
+
+/* ================= экраны ================= */
+function screenStart() {
+  stage.innerHTML = `
+  <div class="hero">
+    <div class="kicker">Технологическое воспитание · 5 класс</div>
+    <h1 style="margin-top:10px">ПИКСЕЛЬ-РЕЙД<small>Битва графических форматов</small></h1>
+    <p class="muted" style="font-size:18px;max-width:640px;margin:14px auto 26px">5 уровней, монеты, жизни и финальный босс. Узнай, чем JPG отличается от PNG, GIF и BMP — и докажи это в бою.</p>
+  </div>
+  <div class="panel" style="max-width:760px;margin:0 auto">
+    <div class="row">
+      <div class="col"><label for="nm">Фамилия и имя</label><input id="nm" type="text" maxlength="60" value="${esc(S.name)}" placeholder="Иванов Артём"></div>
+      <div class="col" style="flex:0 1 200px"><label for="kl">Класс</label><input id="kl" type="text" maxlength="8" value="${esc(S.klass)}" placeholder="5 Б"></div>
+    </div>
+    <div style="margin-top:18px"><label>Выбери героя</label><div class="avatars" id="avs"></div>
+      <p class="muted" style="font-size:13px;margin:8px 0 0">Остальных героев можно купить за монеты на карте уровней.</p></div>
+    <div style="margin-top:22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-go" id="go" type="button">ИГРАТЬ ▶</button>
+      <span class="muted" id="err"></span>
+    </div>
+  </div>`;
+  const avs = $('#avs');
+  SKINS.slice(0, 2).forEach((k, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'av-btn';
+    b.setAttribute('aria-pressed', S.skin === i); b.setAttribute('aria-label', k.name);
+    b.innerHTML = avatarHTML(i) + `<span class="price" style="color:var(--ink)">${k.name}</span>`;
+    b.onclick = () => { S.skin = i; avs.querySelectorAll('.av-btn').forEach((x, j) => x.setAttribute('aria-pressed', j === i)); beep(880, .05); };
+    avs.appendChild(b);
+  });
+  S.ownedSkins = [0, 1];
+  $('#go').onclick = () => {
+    const nm = $('#nm').value.trim(), kl = $('#kl').value.trim();
+    if (nm.length < 3 || !kl) { $('#err').textContent = 'Напиши фамилию, имя и класс.'; sfx.bad(); return; }
+    S.name = nm; S.klass = kl; S.startedAt = S.startedAt || Date.now();
+    sfx.win(); hud(); screenMap();
+  };
+}
+
+function screenMap() {
+  hud();
+  const all = S.unlocked > 5;
+  stage.innerHTML = `
+  <div class="row" style="align-items:flex-end;margin-bottom:16px">
+    <div class="col"><div class="kicker">Карта рейда</div><h2 style="font-size:32px;margin-top:6px">Привет, ${esc(S.name.split(' ')[1] || S.name)}!</h2>
+      <p class="muted" style="margin:6px 0 0">Проходи уровни по порядку. Тетрадь держи рядом — в некоторых уровнях нужно записывать.</p></div>
+    ${all ? '<button class="btn btn-go" id="toFinal" type="button">Итоги ▶</button>' : ''}
+  </div>
+  <div class="map" id="map"></div>
+  <div class="panel" style="margin-top:22px">
+    <div class="kicker" style="color:var(--yellow)">Магазин героев</div>
+    <p class="muted" style="margin:6px 0 12px">Монеты дают за правильные ответы. Купи героя и выбери его.</p>
+    <div class="avatars" id="shop"></div>
+  </div>`;
+  const map = $('#map');
+  LEVELS.forEach(L => {
+    const done = S.levels[L.n], open = L.n <= S.unlocked, next = L.n === S.unlocked;
+    const b = document.createElement('button'); b.type = 'button';
+    b.className = 'node' + (done ? ' done' : '') + (next ? ' next' : '');
+    b.disabled = !open;
+    b.innerHTML = `<span class="num" style="background:${L.color}">${L.n}</span><span class="t">${L.title}</span>
+      <span class="d">${L.desc}</span><span class="d">≈ ${L.min} мин</span>
+      <span class="pts">${done ? 'Пройден: ' + done.score + '/' + MAX[L.n] + ' XP' : open ? 'До ' + MAX[L.n] + ' XP' : 'Закрыто'}</span>`;
+    b.onclick = () => { beep(700, .05); [null, level1, level2, level3, level4, level5][L.n](); };
+    map.appendChild(b);
+  });
+  const shop = $('#shop');
+  SKINS.forEach((k, i) => {
+    const own = S.ownedSkins.includes(i);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'av-btn';
+    b.setAttribute('aria-pressed', S.skin === i);
+    b.innerHTML = avatarHTML(i) + `<span class="price">${own ? (S.skin === i ? 'Выбран' : 'Выбрать') : k.price + ' монет'}</span>`;
+    b.onclick = () => {
+      if (!own) {
+        if (S.coins < k.price) { toast('Не хватает монет'); sfx.bad(); return; }
+        S.coins -= k.price; S.ownedSkins.push(i); sfx.coin();
+      }
+      S.skin = i; screenMap();
+    };
+    shop.appendChild(b);
+  });
+  if (all) $('#toFinal').onclick = screenFinal;
+}
+
+/* ---------- Уровень 1: Пиксельная лупа ---------- */
+function level1() {
+  stage.innerHTML = levelHead(1) + `
+  <div class="row">
+    <div class="col">
+      <div class="screen"><canvas id="cv" width="16" height="9"></canvas></div>
+      <div class="panel" style="margin-top:12px">
+        <label for="res">Двигай ползунок: сколько пикселей в ширину?</label>
+        <input type="range" id="res" min="8" max="400" value="12">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <span>Разрешение: <span class="big-num" id="resTxt"></span></span>
+          <span class="muted" id="resTip"></span>
+        </div>
+      </div>
+    </div>
+    <div class="col" id="qs">
+      <p style="font-size:18px;line-height:1.45;margin:0 0 6px">Любая картинка на экране собрана из крошечных цветных квадратиков, как мозаика. Подвинь ползунок влево и вправо — что происходит с картинкой?</p>
+    </div>
+  </div>
+  <div style="margin-top:18px">${notebook('Уровень 1', `<p><b>Пиксель</b> — самая маленькая цветная точка цифрового изображения.</p><p><b>Разрешение</b> — сколько пикселей по ширине и высоте (например, 800×450).</p><p>Больше пикселей → картинка чётче, но файл тяжелее.</p>`)}</div>
+  <div style="margin-top:16px"><button class="btn btn-go" id="next" type="button" disabled>Завершить уровень ▶</button></div>`;
+  const cv = $('#cv'), ctx = cv.getContext('2d'), res = $('#res');
+  const draw = () => {
+    const w = +res.value, h = Math.round(w * 9 / 16);
+    cv.width = w; cv.height = h; ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(PHOTO, 0, 0, w, h);
+    $('#resTxt').textContent = w + '×' + h;
+    $('#resTip').textContent = w < 40 ? 'Видны квадратики-пиксели!' : w < 160 ? 'Уже похоже на картинку' : 'Чётко!';
+  };
+  res.oninput = draw; draw();
+  let pts = 0, answered = 0;
+  const qs = [
+    { text: 'Из чего состоит цифровая картинка?', options: ['Из пикселей', 'Из букв', 'Из линий-волн', 'Из звуков'], answer: 0, why: 'Пиксель — маленький цветной квадратик, из них собрана любая картинка на экране.' },
+    { text: 'Картинка размером 8×8 пикселей. Сколько в ней всего пикселей?', options: ['16', '64', '88', '8'], answer: 1, why: '8 × 8 = 64 пикселя.' },
+    { text: 'Чем больше пикселей (выше разрешение), тем картинка…', options: ['чётче', 'бледнее', 'меньше весит', 'становится чёрно-белой'], answer: 0, why: 'Больше пикселей — больше деталей. Но и файл становится тяжелее.' }
+  ];
+  const host = $('#qs');
+  const ask = i => question(host, qs[i], ok => {
+    if (ok) { pts += 4; addCoins(10); } else loseHeart();
+    answered++;
+    if (i + 1 < qs.length) setTimeout(() => ask(i + 1), 500); else check();
+  });
+  ask(0);
+  const check = () => { $('#next').disabled = !(answered === qs.length && $('.nb-check').checked); };
+  $('.nb-check').onchange = check;
+  $('#next').onclick = () => finishLevel(1, pts);
+}
+
+/* ---------- Уровень 2: Лаборатория сжатия ---------- */
+function level2() {
+  stage.innerHTML = levelHead(2) + `
+  <div class="row">
+    <div class="col">
+      <div class="screen"><canvas id="view" width="800" height="450"></canvas></div>
+      <p class="muted" id="viewCap" style="margin:8px 0 0">Оригинал. Нажимай кнопки справа — компьютер по-настоящему сохранит фото и взвесит файл.</p>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <div class="lab-btns">
+          <button class="btn btn-ghost" data-f="BMP" type="button">Сохранить в BMP</button>
+          <button class="btn btn-ghost" data-f="PNG" type="button">Сохранить в PNG</button>
+          <button class="btn btn-ghost" data-f="JPG90" type="button">JPG, качество 90%</button>
+          <button class="btn btn-ghost" data-f="JPG10" type="button">JPG, качество 10%</button>
+        </div>
+        <label for="q" style="margin-top:14px">Свой опыт: качество JPG <span id="qv">50</span>%</label>
+        <input type="range" id="q" min="1" max="100" value="50">
+        <div class="row" style="align-items:center;justify-content:space-between">
+          <span>Вес: <span class="big-num" id="qsize">—</span></span>
+          <button class="btn btn-blue" id="dl" type="button">Скачать мой JPG</button>
+        </div>
+      </div>
+      <table class="measure"><thead><tr><th>Формат</th><th>Вес файла</th><th style="width:40%">Сравнение</th></tr></thead><tbody id="tbl"></tbody></table>
+    </div>
+  </div>
+  <div id="after" class="hidden">
+    <div style="margin-top:18px">${notebook('Опыт «Сколько весит картинка?»', `<p>Перерисуй таблицу: <b>Формат — Вес файла</b> (свои цифры!).</p><p><b>Вывод:</b> BMP — без сжатия, самый тяжёлый. PNG — сжатие без потерь. JPG — сжатие с потерей качества, очень лёгкий.</p>`)}</div>
+    <div id="qs"></div>
+    <div style="margin-top:16px"><button class="btn btn-go" id="next" type="button" disabled>Завершить уровень ▶</button></div>
+  </div>`;
+  const view = $('#view').getContext('2d');
+  view.drawImage(PHOTO, 0, 0);
+  const sizes = {};
+  const blobOf = (type, q) => new Promise(r => PHOTO.toBlob(b => r(b), type, q));
+  const showBlob = (blob, cap) => {
+    const url = URL.createObjectURL(blob), img = new Image();
+    img.onload = () => { view.drawImage(img, 0, 0); URL.revokeObjectURL(url); };
+    img.src = url; $('#viewCap').textContent = cap;
+  };
+  const labels = { BMP: 'BMP', PNG: 'PNG', JPG90: 'JPG 90%', JPG10: 'JPG 10%' };
+  const renderTbl = () => {
+    const mx = Math.max(...Object.values(sizes), 1);
+    $('#tbl').innerHTML = Object.keys(labels).map(k => `<tr><td><b>${labels[k]}</b></td><td class="size">${sizes[k] ? kb(sizes[k]) : '?'}</td>
+      <td>${sizes[k] ? `<div class="bar" style="width:${Math.max(3, sizes[k] / mx * 100)}%"></div>` : ''}</td></tr>`).join('');
+  };
+  renderTbl();
+  stage.querySelectorAll('[data-f]').forEach(b => b.onclick = async () => {
+    const f = b.dataset.f; let blob;
+    if (f === 'BMP') {
+      sizes.BMP = 800 * 450 * 3 + 54; view.drawImage(PHOTO, 0, 0);
+      $('#viewCap').textContent = 'BMP хранит каждый пиксель как есть: 800 × 450 × 3 байта цвета. Никакого сжатия!';
+    } else if (f === 'PNG') {
+      blob = await blobOf('image/png'); sizes.PNG = blob.size; showBlob(blob, 'PNG: сжатие без потерь — картинка точно как оригинал.');
+    } else {
+      const q = f === 'JPG90' ? .9 : .1;
+      blob = await blobOf('image/jpeg', q); sizes[f] = blob.size;
+      showBlob(blob, f === 'JPG90' ? 'JPG 90%: почти не отличить от оригинала, а весит намного меньше.' : 'JPG 10%: файл крошечный, но посмотри на небо — квадратики и пятна!');
+    }
+    b.style.borderColor = 'var(--green)'; addCoins(5); renderTbl();
+    if (Object.keys(sizes).length === 4 && $('#after').classList.contains('hidden')) {
+      $('#after').classList.remove('hidden'); toast('Все 4 замера готовы!'); startQs();
+    }
+  });
+  let lastJpg = null;
+  const q = $('#q');
+  const runQ = async () => {
+    $('#qv').textContent = q.value;
+    lastJpg = await blobOf('image/jpeg', q.value / 100);
+    $('#qsize').textContent = kb(lastJpg.size);
+    showBlob(lastJpg, 'JPG ' + q.value + '%: двигай ползунок и следи за весом и качеством.');
+  };
+  q.onchange = runQ;
+  $('#dl').onclick = async () => {
+    if (!lastJpg) await runQ();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(lastJpg);
+    a.download = 'peizazh_' + q.value + '.jpg'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  let pts = 0, answered = 0;
+  function startQs() {
+    const qs = [
+      { text: 'Какой формат в опыте оказался самым тяжёлым?', options: ['BMP', 'PNG', 'JPG 90%', 'JPG 10%'], answer: 0, why: 'BMP не сжимает картинку совсем, поэтому весит больше всех.' },
+      { text: 'Что случилось с картинкой в JPG при качестве 10%?', options: ['Появились квадратики и пятна', 'Она стала чётче', 'Она стала двигаться', 'Ничего не изменилось'], answer: 0, why: 'JPG выбрасывает часть деталей. Чем ниже качество, тем заметнее «квадратики».' },
+      { text: 'Сжатие в JPG — это сжатие…', options: ['с потерей качества', 'без потерь', 'со звуком', 'с анимацией'], answer: 0, why: 'JPG теряет часть деталей. PNG сжимает без потерь.' }
+    ];
+    const host = $('#qs');
+    const ask = i => question(host, qs[i], ok => {
+      if (ok) { pts += 8; addCoins(10); } else loseHeart();
+      answered++;
+      if (i + 1 < qs.length) setTimeout(() => ask(i + 1), 500); else check();
+    });
+    ask(0);
+  }
+  const check = () => { $('#next').disabled = !(answered === 3 && $('.nb-check').checked); };
+  $('.nb-check').onchange = check;
+  $('#next').onclick = () => finishLevel(2, pts, { sizes: Object.fromEntries(Object.entries(sizes).map(([k, v]) => [k, kb(v)])) });
+}
+
+/* ---------- Уровень 3: Тир форматов ---------- */
+function level3() {
+  const SIT = shuffle([
+    ['Фото с телефона нужно быстро отправить другу', 'JPG'],
+    ['Логотип школы с прозрачным фоном', 'PNG'],
+    ['Смайлик, который подмигивает', 'GIF'],
+    ['Скриншот с текстом — буквы должны быть чёткими', 'PNG'],
+    ['Мем-анимация для чата класса', 'GIF'],
+    ['Фото на сайт, чтобы страница грузилась быстро', 'JPG'],
+    ['Рисунок совсем без сжатия, как в старом Paint', 'BMP'],
+    ['Значок с прозрачным фоном для презентации', 'PNG'],
+    ['Бегущая строка-анимация «С Новым годом!»', 'GIF'],
+    ['100 фото с экскурсии, а на флешке мало места', 'JPG'],
+    ['Самый тяжёлый файл: каждый пиксель без сжатия', 'BMP'],
+    ['Стикер, который двигается', 'GIF'],
+    ['Фото пейзажа для соцсети', 'JPG'],
+    ['Схема для учебника: чёткие линии без потерь', 'PNG']
+  ]).slice(0, 12);
+  const FMT = { JPG: '#38bdf8', PNG: '#4ade80', GIF: '#fb923c', BMP: '#a78bfa' };
+  stage.innerHTML = levelHead(3) + `
+  <div class="panel" style="margin-bottom:12px">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div><div class="kicker">Ситуация <span id="si">1</span> из 12</div><div class="situation" id="sit">Нажми СТАРТ</div></div>
+      <div style="text-align:right"><div>Время: <span class="big-num" id="tl">90</span></div><div class="combo" id="combo"></div></div>
+    </div>
+  </div>
+  <div class="arena" id="arena"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:20px">
+    <p style="font-size:18px;max-width:520px;margin:0">Сверху появляется ситуация. По арене летают форматы. Попади в тот, который подходит! Серия верных ответов — комбо и бонусные монеты.</p>
+    <button class="btn btn-go" id="startArc" type="button">СТАРТ ▶</button></div></div>`;
+  const arena = $('#arena');
+  let idx = 0, hits = 0, combo = 0, timeLeft = 90, running = false, raf = 0, timerId = 0;
+  const tgs = [];
+  const place = () => {
+    const W = arena.clientWidth - 110, H = arena.clientHeight - 110;
+    tgs.forEach(t => { t.x = Math.random() * W; t.y = Math.random() * H; const sp = 1.4 + idx * 0.18; const a = Math.random() * 6.28; t.vx = Math.cos(a) * sp; t.vy = Math.sin(a) * sp; });
+  };
+  const showSit = () => { $('#si').textContent = idx + 1; $('#sit').textContent = SIT[idx][0]; place(); };
+  let ended = false;
+  const end = () => {
+    if (ended) return; ended = true;
+    running = false; cancelAnimationFrame(raf); clearInterval(timerId);
+    tgs.forEach(t => t.el.remove());
+    arena.innerHTML = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center">
+      <h2 style="font-size:34px;color:var(--yellow)">Попаданий: ${hits} из 12</h2>
+      <p class="muted" style="margin:0">+${hits * 2} XP</p>
+      <button class="btn btn-go" id="fin3" type="button">Завершить уровень ▶</button></div>`;
+    $('#fin3').onclick = () => finishLevel(3, hits * 2, { hits });
+  };
+  loops.push(() => { running = false; cancelAnimationFrame(raf); clearInterval(timerId); });
+  const shoot = (fmt, t) => {
+    if (!running) return;
+    const right = SIT[idx][1] === fmt;
+    const fx = document.createElement('div'); fx.className = 'boom';
+    fx.style.left = (t.x + 30) + 'px'; fx.style.top = (t.y + 20) + 'px';
+    fx.style.color = right ? 'var(--green)' : 'var(--red)';
+    if (right) { hits++; combo++; sfx.ok(); addCoins(combo >= 3 ? 15 : 8); fx.textContent = combo >= 3 ? 'КОМБО x' + combo + '!' : '+2 XP'; }
+    else { combo = 0; sfx.bad(); loseHeart(); fx.textContent = 'Это ' + SIT[idx][1] + '!'; }
+    $('#combo').textContent = combo >= 2 ? 'Комбо x' + combo : '';
+    arena.appendChild(fx); setTimeout(() => fx.remove(), 800);
+    idx++;
+    if (idx >= SIT.length) setTimeout(end, 400); else showSit();
+  };
+  $('#startArc').onclick = () => {
+    arena.innerHTML = '';
+    Object.keys(FMT).forEach(f => {
+      const el = document.createElement('button'); el.type = 'button'; el.className = 'target';
+      el.style.background = FMT[f]; el.textContent = f; el.setAttribute('aria-label', 'Формат ' + f);
+      arena.appendChild(el);
+      const t = { el, x: 0, y: 0, vx: 0, vy: 0 }; tgs.push(t);
+      el.onclick = () => shoot(f, t);
+    });
+    running = true; showSit();
+    const step = () => {
+      const W = arena.clientWidth - 110, H = arena.clientHeight - 110;
+      tgs.forEach(t => {
+        t.x += t.vx; t.y += t.vy;
+        if (t.x < 0 || t.x > W) { t.vx *= -1; t.x = Math.max(0, Math.min(W, t.x)); }
+        if (t.y < 0 || t.y > H) { t.vy *= -1; t.y = Math.max(0, Math.min(H, t.y)); }
+        t.el.style.transform = `translate(${t.x}px,${t.y}px)`;
+      });
+      if (running) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    timerId = setInterval(() => { timeLeft--; $('#tl').textContent = timeLeft; if (timeLeft <= 0) end(); }, 1000);
+  };
+}
+
+/* ---------- Уровень 4: Ателье ---------- */
+function level4() {
+  const REASONS = ['умеет прозрачный фон', 'сильно сжимает фото — файл лёгкий', 'умеет анимацию', 'сохраняет без потерь качества'];
+  const ORD = [
+    { who: 'Директор школы', color: '#38bdf8', text: 'Нужен логотип для сайта школы. Фон должен быть прозрачным, чтобы логотип красиво лёг на любую страницу!', f: 'PNG', r: 0 },
+    { who: 'Бабушка', color: '#fb923c', text: 'Внучек, пришли мне 30 фото с праздника в Viber. Интернет у меня слабенький…', f: 'JPG', r: 1 },
+    { who: 'Одноклассник', color: '#4ade80', text: 'Сделай смайлик, который подмигивает, — хочу поздравить друга с днём рождения!', f: 'GIF', r: 2 },
+    { who: 'Типография', color: '#a78bfa', text: 'Схема пойдёт в учебник. Нужны идеально чёткие линии — ни одной потери качества.', f: 'PNG', r: 3 }
+  ];
+  let i = 0, pts = 0;
+  const render = () => {
+    const o = ORD[i];
+    stage.innerHTML = levelHead(4) + `
+    <div class="steps" style="margin-bottom:12px">${ORD.map((_, k) => `<i class="${k < i ? 'ok' : k === i ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="client"><div class="face" style="background:${o.color}">${avatarHTML(i % 5, 44)}</div>
+      <div style="flex:1"><div class="kicker">Заказ № ${i + 1} · клиент: ${o.who}</div><div class="bubble" style="margin-top:8px">«${o.text}»</div></div></div>
+    <div id="qs"></div>`;
+    const host = $('#qs'); let got = 0;
+    question(host, { text: 'Шаг 1. В каком формате сохранить?', options: ['JPG', 'PNG', 'GIF', 'BMP'], answer: ['JPG', 'PNG', 'GIF', 'BMP'].indexOf(o.f), shuffle: false, why: 'Правильный формат — ' + o.f + '.' }, ok => {
+      if (ok) { got += 3; addCoins(10); } else loseHeart();
+      setTimeout(() => question(host, { text: 'Шаг 2. Почему именно ' + o.f + '? Этот формат…', options: REASONS, answer: o.r, why: o.f + ' ' + REASONS[o.r] + '.' }, ok2 => {
+        if (ok2) { got += 2; addCoins(10); } else loseHeart();
+        pts += got;
+        const nb = document.createElement('div'); nb.style.marginTop = '14px';
+        nb.innerHTML = `<div class="explain ${got === 5 ? 'ok' : 'bad'}">${got === 5 ? 'Клиент доволен! Заказ принят.' : 'Клиент просит доработку, но заказ засчитан частично.'}</div>
+          <button class="btn btn-go" style="margin-top:12px" type="button" id="nx">${i < ORD.length - 1 ? 'Следующий заказ ▶' : 'Завершить уровень ▶'}</button>`;
+        host.appendChild(nb);
+        $('#nx').onclick = () => { i++; if (i < ORD.length) render(); else finishLevel(4, pts); };
+      }), 500);
+    });
+  };
+  render();
+}
+
+/* ---------- Уровень 5: Босс ---------- */
+function level5() {
+  const QS = shuffle([
+    { text: 'Правда или ложь: JPG сжимает картинку с потерей качества.', options: ['Правда', 'Ложь'], answer: 0, shuffle: false, why: 'JPG выбрасывает часть деталей, зато файл лёгкий.' },
+    { text: 'Правда или ложь: у PNG может быть прозрачный фон.', options: ['Правда', 'Ложь'], answer: 0, shuffle: false, why: 'Прозрачность — суперсила PNG.' },
+    { text: 'Правда или ложь: GIF показывает миллионы цветов.', options: ['Правда', 'Ложь'], answer: 1, shuffle: false, why: 'В GIF максимум 256 цветов.' },
+    { text: 'Правда или ложь: BMP обычно весит меньше, чем JPG.', options: ['Правда', 'Ложь'], answer: 1, shuffle: false, why: 'Наоборот: BMP без сжатия — самый тяжёлый.' },
+    { text: 'Файл называется «кот.png». Какой у него формат?', options: ['PNG', 'JPG', 'GIF', 'Не узнать'], answer: 0, why: 'Формат подсказывает расширение — буквы после точки.' },
+    { text: 'Какой формат умеет анимацию?', options: ['GIF', 'BMP', 'JPG', 'Никакой'], answer: 0, why: 'GIF — формат движущихся картинок.' },
+    { text: 'Сколько цветов максимум может быть в GIF?', options: ['256', '16', '1000', 'Миллионы'], answer: 0, why: 'GIF ограничен 256 цветами — поэтому фото в нём выглядят хуже.' },
+    { text: 'Что такое расширение файла?', options: ['Буквы после точки в имени файла', 'Размер картинки', 'Папка, где лежит файл', 'Название программы'], answer: 0, why: 'Например, в «фото.jpg» расширение — jpg.' },
+    { text: 'Какой формат чаще всего используют для фотографий в интернете?', options: ['JPG', 'BMP', 'GIF', 'TXT'], answer: 0, why: 'JPG делает фото лёгкими и почти не портит их.' },
+    { text: 'Картинка «весит» 3 МБ. Что это значит?', options: ['Таков размер файла', 'Столько в ней цветов', 'Такая у неё ширина', 'Столько она открывается'], answer: 0, why: 'Вес — это размер файла в байтах (КБ, МБ).' }
+  ]);
+  let hp = 100, i = 0, pts = 0;
+  stage.innerHTML = levelHead(5) + `
+  <div class="panel boss-wrap">
+    <div class="boss" id="boss">BMP<small>ТЯЖЕЛОВЕС</small></div>
+    <div style="flex:1;min-width:240px">
+      <div class="kicker" style="color:var(--violet)">Здоровье босса</div>
+      <div class="hp" style="margin:8px 0"><i id="hp" style="width:100%"></i></div>
+      <p class="muted" style="margin:0" id="taunt">«Ха! Я вешу 1 мегабайт, меня не победить!» — каждый верный ответ бьёт босса на 10.</p>
+    </div>
+  </div>
+  <div id="qs"></div>`;
+  const TAUNTS = ['«Ой! Ты знаешь форматы!»', '«Я всё равно тяжелее всех!»', '«Меня даже не сжать!»', '«Не может быть…»'];
+  const ask = () => {
+    const host = $('#qs'); host.innerHTML = '';
+    question(host, QS[i], ok => {
+      if (ok) {
+        hp -= 10; pts += 2; addCoins(10);
+        $('#boss').classList.remove('hit'); void $('#boss').offsetWidth; $('#boss').classList.add('hit');
+        $('#taunt').textContent = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
+      } else { loseHeart(); $('#taunt').textContent = '«Ха-ха! Мимо!» — босс бьёт тебя.'; }
+      $('#hp').style.width = Math.max(0, hp) + '%';
+      i++;
+      const nb = document.createElement('button'); nb.type = 'button'; nb.className = 'btn btn-go'; nb.style.marginTop = '12px';
+      nb.textContent = i < QS.length ? 'Следующий удар ▶' : 'Итоги битвы ▶';
+      nb.onclick = () => i < QS.length ? ask() : finishLevel(5, pts, { bossHp: hp });
+      host.appendChild(nb);
+    });
+  };
+  ask();
+}
+
+/* ---------- Итоги ---------- */
+function screenFinal() {
+  stopAll(); hud();
+  const sc = score();
+  const g = sc >= 85 ? 'ОХ' : sc >= 65 ? 'Х' : sc >= 45 ? 'У' : 'Н';
+  const gName = { 'ОХ': 'Очень хорошо', 'Х': 'Хорошо', 'У': 'Удовлетворительно', 'Н': 'Нужно повторить' }[g];
+  const L = S.levels;
+  const badges = [
+    ['Исследователь', !!L[2]], ['Снайпер (10+ попаданий)', L[3] && L[3].hits >= 10],
+    ['Лучший мастер ателье', L[4] && L[4].score === 20], ['Победитель босса', L[5] && L[5].bossHp <= 0],
+    ['Богач (200+ монет)', S.coins >= 200]
+  ];
+  stage.innerHTML = `
+  <div class="panel" style="text-align:center">
+    <div class="kicker">Рейд завершён</div>
+    <div class="row" style="justify-content:center;align-items:center;gap:30px;margin-top:14px">
+      ${avatarHTML(S.skin, 96)}
+      <div><div class="grade">${g}</div><div style="font-size:20px;font-weight:800">${gName}</div></div>
+      <div style="text-align:left"><div>Опыт: <span class="big-num">${sc}/100</span></div><div>Монеты: <span class="big-num">${S.coins}</span></div></div>
+    </div>
+    <table class="measure" style="max-width:560px;margin:18px auto 0">${LEVELS.map(l => `<tr><td>${l.n}. ${l.title}</td><td class="size">${L[l.n] ? L[l.n].score : 0}/${MAX[l.n]}</td></tr>`).join('')}</table>
+    <div class="badges" style="justify-content:center;margin-top:16px">${badges.map(b => `<span class="badge ${b[1] ? 'got' : ''}">${b[1] ? '★ ' : '☆ '}${b[0]}</span>`).join('')}</div>
+    <p id="sendState" class="muted" style="margin-top:16px">Отправляю результат учителю…</p>
+  </div>
+  <div style="margin-top:16px">${notebook('Итог урока', `<p>Сегодня я узнал(а): JPG — лёгкий, для фото; PNG — без потерь и с прозрачным фоном; GIF — анимация, 256 цветов; BMP — без сжатия, самый тяжёлый.</p><p>Мой результат: <b>${sc}/100 — ${g}</b>. Домашнее задание — в моей комнате TechLab.</p>`)}</div>
+  <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-ghost" id="again" type="button">Сыграть ещё раз</button></div>`;
+  sfx.win();
+  $('#again').onclick = () => { S.levels = {}; S.unlocked = 1; S.hearts = 5; S.sent = false; screenMap(); };
+  if (S.sent) { $('#sendState').textContent = 'Результат уже отправлен учителю.'; return; }
+  if (!API || API.indexOf('http') !== 0) { $('#sendState').textContent = 'Покажи этот экран учителю.'; return; }
+  const details = {}; Object.keys(L).forEach(k => details['L' + k] = L[k].score + '/' + MAX[k]);
+  if (L[2] && L[2].sizes) details.sizes = L[2].sizes;
+  fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveResult', name: S.name, klass: S.klass, lesson: LESSON, score: sc, max: 100, grade: g, details }) })
+    .then(r => r.json()).then(d => {
+      if (!d.ok) throw new Error(d.error);
+      S.sent = true; $('#sendState').textContent = 'Результат отправлен учителю.';
+    }).catch(() => { $('#sendState').textContent = 'Не удалось отправить. Покажи этот экран учителю.'; });
+}
+
+screenStart();
+})();
+</script>
+</body>
+</html>

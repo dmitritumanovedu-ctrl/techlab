@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — Администратор: задания и объявления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script src="config.js"></script>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-d:#1e3a8a; --blue-l:#dbeafe; --bg:#f4f8ff;
+    --line:#c7d7f2; --ink:#0f1e3d; --muted:#4b5a7a; --warm:#ea580c; --warm-l:#fff1e6;
+    --ok:#166534; --ok-l:#dcfce7; --bad:#991b1b; --bad-l:#fee2e2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--blue-d);color:#fff}
+  .bar{max-width:1100px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{font-weight:800;font-size:20px;letter-spacing:.02em}
+  .logo span{color:#93c5fd}
+  .who{margin-left:auto;font-size:14px;opacity:.9;display:flex;gap:10px;align-items:center}
+  main{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+  h1{font-size:28px;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 22px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .tab{border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 16px;border-radius:10px;font:600 15px Inter,sans-serif;cursor:pointer;min-height:44px}
+  .tab[aria-selected="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  @media (max-width:760px){.grid2{grid-template-columns:1fr}}
+  label{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
+  .field{margin-bottom:16px}
+  input[type=text],input[type=password],input[type=date],select,textarea{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:15px Inter,sans-serif;color:var(--ink);background:#fff}
+  textarea{min-height:130px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--blue)}
+  .btn{border:0;border-radius:10px;padding:12px 18px;font:700 15px Inter,sans-serif;cursor:pointer;min-height:44px}
+  .btn-main{background:var(--warm);color:#fff}
+  .btn-main:hover{background:#c2410c}
+  .btn-blue{background:var(--blue);color:#fff}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn-del{background:var(--bad-l);color:var(--bad)}
+  .btn:disabled{opacity:.55;cursor:wait}
+  .targets{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .trow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font:600 14px Inter,sans-serif;cursor:pointer;color:var(--ink);min-height:36px}
+  .chip.big{background:var(--blue-l);border-color:#93c5fd}
+  .chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+  .drop{border:2px dashed #93c5fd;border-radius:12px;padding:18px;text-align:center;color:var(--muted);background:#f8fbff;cursor:pointer}
+  .drop strong{color:var(--blue)}
+  .msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-weight:600;display:none}
+  .msg.ok{display:block;background:var(--ok-l);color:var(--ok)}
+  .msg.err{display:block;background:var(--bad-l);color:var(--bad)}
+  .list{display:flex;flex-direction:column;gap:12px}
+  .item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+  .item .body{flex:1;min-width:0}
+  .badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;margin-right:6px}
+  .b-hw{background:var(--blue-l);color:var(--blue-d)}
+  .b-an{background:var(--warm-l);color:#9a3412}
+  .meta{font-size:13px;color:var(--muted);margin-top:4px}
+  .item h3{margin:6px 0 4px;font-size:17px}
+  .item p{margin:0;white-space:pre-line;font-size:14px;color:#24324f}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #e3ecfb}
+  th{color:var(--muted);font-weight:600}
+  .tbl{overflow-x:auto}
+  .login{max-width:420px;margin:60px auto}
+  .hidden{display:none !important}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .hint{font-size:13px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">Tech<span>Lab</span> · администратор</div>
+    <div class="who" id="who"></div>
+  </div>
+</header>
+
+<main>
+  <!-- Вход -->
+  <section id="loginBox" class="login card">
+    <h1>Вход для учителя</h1>
+    <p class="sub">Пароль задаётся в Apps Script: Свойства скрипта → ADMIN_KEY.</p>
+    <div class="field">
+      <label for="pwd">Пароль администратора</label>
+      <input id="pwd" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-blue" id="loginBtn" type="button">Войти</button>
+    <div class="msg" id="loginMsg"></div>
+  </section>
+
+  <!-- Панель -->
+  <section id="panel" class="hidden">
+    <h1>Задания и объявления</h1>
+    <p class="sub">Выберите классы — ученики увидят запись в своей комнате TechLab.</p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="homework" aria-selected="true" type="button">Домашнее задание</button>
+      <button class="tab" role="tab" data-tab="announce" aria-selected="false" type="button">Объявление</button>
+      <button class="tab" role="tab" data-tab="list" aria-selected="false" type="button">Опубликовано</button>
+      <button class="tab" role="tab" data-tab="results" aria-selected="false" type="button">Результаты игр</button>
+    </div>
+
+    <!-- Форма (ДЗ и объявление) -->
+    <div id="formBox" class="card">
+      <div class="grid2">
+        <div>
+          <div class="field" id="subjectField">
+            <label for="subject">Предмет</label>
+            <select id="subject"></select>
+          </div>
+          <div class="field">
+            <label for="title" id="titleLabel">Тема задания</label>
+            <input id="title" type="text" maxlength="200" placeholder="Например: Графические форматы">
+          </div>
+          <div class="field">
+            <label for="text" id="textLabel">Что нужно сделать</label>
+            <textarea id="text" maxlength="5000" placeholder="Например: стр. 45, упр. 3. Сохраните рисунок в PNG и JPG и сравните размер файлов."></textarea>
+          </div>
+          <div class="field" id="dueField">
+            <label for="due">Сдать до</label>
+            <input id="due" type="date">
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>Кому</label>
+            <div class="targets" id="targets"></div>
+            <div class="hint" id="targetsHint">Ничего не выбрано</div>
+          </div>
+          <div class="field">
+            <label for="file">Файл (по желанию, до 10 МБ)</label>
+            <div class="drop" id="drop" tabindex="0" role="button" aria-label="Прикрепить файл">
+              <strong>Выберите файл</strong> или перетащите сюда<br>
+              <span id="fileName" class="hint">PDF, Word, картинка, презентация…</span>
+            </div>
+            <input id="file" type="file" class="hidden">
+            <button class="btn btn-ghost hidden" id="fileClear" type="button" style="margin-top:8px">Убрать файл</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-main" id="sendBtn" type="button">Опубликовать</button>
+        <span class="hint" id="sendState"></span>
+      </div>
+      <div class="msg" id="sendMsg"></div>
+    </div>
+
+    <!-- Опубликовано -->
+    <div id="listBox" class="hidden">
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn btn-ghost" id="reloadList" type="button">Обновить</button>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+
+    <!-- Результаты -->
+    <div id="resBox" class="hidden card">
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn btn-ghost" id="reloadRes" type="button">Обновить</button>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Время</th><th>Ученик</th><th>Класс</th><th>Урок</th><th>Баллы</th><th>Квалификатив</th></tr></thead>
+        <tbody id="resBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var API = window.TECHLAB_HW_API;
+  var KEY_STORE = 'techlab_admin_key';
+  var key = '';
+  try { key = sessionStorage.getItem(KEY_STORE) || ''; } catch (e) {}
+  var mode = 'homework';
+  var chosen = {};       // выбранные классы: 'ALL', '5', '5Б' …
+  var pickedFile = null; // {name, mime, data}
+
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
+  function post(body) {
+    if (!API || API.indexOf('http') !== 0) return Promise.reject(new Error('Вставьте адрес Apps Script в config.js'));
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d.ok) throw new Error(d.error || 'Ошибка сервера'); return d; });
+  }
+  function show(el, text, ok) { el.className = 'msg ' + (ok ? 'ok' : 'err'); el.textContent = text; }
+
+  /* --- вход --- */
+  function enter() {
+    $('loginBox').classList.add('hidden');
+    $('panel').classList.remove('hidden');
+    $('who').innerHTML = 'Учитель · <button class="btn btn-ghost" id="logout" type="button" style="min-height:34px;padding:6px 12px">Выйти</button>';
+    $('logout').onclick = function () { try { sessionStorage.removeItem(KEY_STORE); } catch (e) {} location.reload(); };
+  }
+  $('loginBtn').onclick = function () {
+    var k = $('pwd').value.trim();
+    if (!k) return;
+    $('loginBtn').disabled = true;
+    post({ action: 'login', key: k }).then(function () {
+      key = k;
+      try { sessionStorage.setItem(KEY_STORE, k); } catch (e) {}
+      enter();
+    }).catch(function (e) { show($('loginMsg'), e.message, false); })
+      .finally(function () { $('loginBtn').disabled = false; });
+  };
+  $('pwd').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('loginBtn').click(); });
+  if (key) enter();
+
+  /* --- предметы --- */
+  (window.TECHLAB_SUBJECTS || ['Другое']).forEach(function (s) {
+    var o = document.createElement('option'); o.textContent = s; $('subject').appendChild(o);
+  });
+
+  /* --- выбор классов --- */
+  function chip(code, label, big) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip' + (big ? ' big' : '');
+    b.textContent = label; b.dataset.code = code;
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = function () {
+      if (chosen[code]) delete chosen[code]; else chosen[code] = true;
+      paintTargets();
+    };
+    return b;
+  }
+  function buildTargets() {
+    var box = $('targets'); box.innerHTML = '';
+    var r0 = document.createElement('div'); r0.className = 'trow';
+    r0.appendChild(chip('ALL', 'Все классы', true)); box.appendChild(r0);
+    (window.TECHLAB_GRADES || []).forEach(function (g) {
+      var r = document.createElement('div'); r.className = 'trow';
+      r.appendChild(chip(g, 'Все ' + g, true));
+      (window.TECHLAB_LETTERS || []).forEach(function (l) { r.appendChild(chip(g + l, g + ' «' + l + '»')); });
+      box.appendChild(r);
+    });
+  }
+  function paintTargets() {
+    var list = Object.keys(chosen);
+    document.querySelectorAll('#targets .chip').forEach(function (b) {
+      b.setAttribute('aria-pressed', chosen[b.dataset.code] ? 'true' : 'false');
+    });
+    $('targetsHint').textContent = list.length ? 'Увидят: ' + list.map(nice).join(', ') : 'Ничего не выбрано';
+  }
+  function nice(c) {
+    if (c === 'ALL') return 'все классы';
+    if (/^\d+$/.test(c)) return 'все ' + c + '-е';
+    return c.replace(/^(\d+)(.*)$/, '$1 «$2»');
+  }
+  buildTargets(); paintTargets();
+
+  /* --- файл --- */
+  function takeFile(f) {
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { show($('sendMsg'), 'Файл больше 10 МБ — уменьшите его или дайте ссылку в тексте.', false); return; }
+    var rd = new FileReader();
+    rd.onload = function () {
+      pickedFile = { name: f.name, mime: f.type || 'application/octet-stream', data: String(rd.result).split(',')[1] };
+      $('fileName').textContent = f.name + ' · ' + Math.round(f.size / 1024) + ' КБ';
+      $('fileClear').classList.remove('hidden');
+    };
+    rd.readAsDataURL(f);
+  }
+  $('drop').onclick = function () { $('file').click(); };
+  $('drop').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } };
+  $('file').onchange = function () { takeFile(this.files[0]); };
+  $('drop').ondragover = function (e) { e.preventDefault(); };
+  $('drop').ondrop = function (e) { e.preventDefault(); takeFile(e.dataTransfer.files[0]); };
+  $('fileClear').onclick = function () {
+    pickedFile = null; $('file').value = '';
+    $('fileName').textContent = 'PDF, Word, картинка, презентация…';
+    this.classList.add('hidden');
+  };
+
+  /* --- вкладки --- */
+  function setTab(t) {
+    document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === t ? 'true' : 'false'); });
+    var isForm = t === 'homework' || t === 'announce';
+    $('formBox').classList.toggle('hidden', !isForm);
+    $('listBox').classList.toggle('hidden', t !== 'list');
+    $('resBox').classList.toggle('hidden', t !== 'results');
+    if (isForm) {
+      mode = t;
+      var hw = t === 'homework';
+      $('subjectField').classList.toggle('hidden', !hw);
+      $('dueField').classList.toggle('hidden', !hw);
+      $('titleLabel').textContent = hw ? 'Тема задания' : 'Заголовок объявления';
+      $('textLabel').textContent = hw ? 'Что нужно сделать' : 'Текст объявления';
+      $('sendBtn').textContent = hw ? 'Опубликовать задание' : 'Опубликовать объявление';
+    }
+    if (t === 'list') loadList();
+    if (t === 'results') loadResults();
+  }
+  document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { setTab(b.dataset.tab); }; });
+  setTab('homework');
+
+  /* --- публикация --- */
+  $('sendBtn').onclick = function () {
+    var targets = Object.keys(chosen);
+    if (!targets.length) { show($('sendMsg'), 'Выберите, кому отправить.', false); return; }
+    if (!$('title').value.trim() && !$('text').value.trim()) { show($('sendMsg'), 'Напишите тему или текст.', false); return; }
+    var btn = this; btn.disabled = true;
+    $('sendState').textContent = pickedFile ? 'Загружаю файл на Google Диск…' : 'Публикую…';
+    post({
+      action: 'addItem', key: key, type: mode,
+      subject: mode === 'homework' ? $('subject').value : '',
+      title: $('title').value, text: $('text').value,
+      due: mode === 'homework' ? $('due').value : '',
+      targets: targets, file: pickedFile
+    }).then(function () {
+      show($('sendMsg'), 'Готово! Ученики увидят это в своей комнате: ' + targets.map(nice).join(', ') + '.', true);
+      $('title').value = ''; $('text').value = ''; $('due').value = '';
+      $('fileClear').click();
+    }).catch(function (e) { show($('sendMsg'), e.message, false); })
+      .finally(function () { btn.disabled = false; $('sendState').textContent = ''; });
+  };
+
+  /* --- список --- */
+  function fmtDate(s) {
+    if (!s) return '';
+    var d = new Date(s); if (isNaN(d)) return s;
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  }
+  function loadList() {
+    $('list').innerHTML = '<div class="hint">Загружаю…</div>';
+    post({ action: 'adminList', key: key }).then(function (d) {
+      if (!d.items.length) { $('list').innerHTML = '<div class="card">Пока ничего не опубликовано.</div>'; return; }
+      $('list').innerHTML = d.items.map(function (it) {
+        var hw = it.type === 'homework';
+        return '<div class="item"><div class="body">' +
+          '<span class="badge ' + (hw ? 'b-hw' : 'b-an') + '">' + (hw ? 'Домашнее задание' : 'Объявление') + '</span>' +
+          (it.subject ? '<span class="badge b-hw">' + esc(it.subject) + '</span>' : '') +
+          '<h3>' + esc(it.title) + '</h3><p>' + esc(it.text) + '</p>' +
+          '<div class="meta">Кому: ' + it.targets.map(nice).map(esc).join(', ') +
+          ' · опубликовано ' + fmtDate(it.created) + (it.due ? ' · сдать до ' + fmtDate(it.due) : '') +
+          (it.fileUrl ? ' · <a href="' + esc(it.fileUrl) + '" target="_blank" rel="noopener">' + esc(it.fileName || 'файл') + '</a>' : '') +
+          '</div></div><button class="btn btn-del" type="button" data-del="' + esc(it.id) + '">Удалить</button></div>';
+      }).join('');
+      document.querySelectorAll('[data-del]').forEach(function (b) {
+        b.onclick = function () {
+          if (!confirm('Удалить запись? Ученики её больше не увидят, файл уйдёт в корзину Диска.')) return;
+          b.disabled = true;
+          post({ action: 'deleteItem', key: key, id: b.dataset.del }).then(loadList)
+            .catch(function (e) { b.disabled = false; window.console && console.warn(e); });
+        };
+      });
+    }).catch(function (e) { $('list').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; });
+  }
+  $('reloadList').onclick = loadList;
+
+  /* --- результаты --- */
+  function loadResults() {
+    $('resBody').innerHTML = '<tr><td colspan="6">Загружаю…</td></tr>';
+    post({ action: 'results', key: key }).then(function (d) {
+      if (!d.items.length) { $('resBody').innerHTML = '<tr><td colspan="6">Результатов пока нет.</td></tr>'; return; }
+      $('resBody').innerHTML = d.items.map(function (r) {
+        var t = new Date(r.time);
+        return '<tr><td>' + esc(isNaN(t) ? r.time : t.toLocaleString('ru-RU')) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.klass) +
+          '</td><td>' + esc(r.lesson) + '</td><td>' + esc(r.score) + ' / ' + esc(r.max) + '</td><td><strong>' + esc(r.grade) + '</strong></td></tr>';
+      }).join('');
+    }).catch(function (e) { $('resBody').innerHTML = '<tr><td colspan="6">' + esc(e.message) + '</td></tr>'; });
+  }
+  $('reloadRes').onclick = loadResults;
+})();
+</script>
+</body>
+</html>
