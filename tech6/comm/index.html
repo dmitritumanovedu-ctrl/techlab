@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Миссия 3 · Цифровой щит · 6 класс</title>
+<script src="../../../engine/guard.js?v=3"></script>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Rubik:wght@400;500;700;800&display=swap">
+<script>window.TL_READY = new Promise(function (r) { window.__tlr = r; }); function TL() { return window.TL_READY; }</script>
+<style>
+:root{--bg:#0b1430;--panel:#13204a;--panel2:#1a2b5e;--line:#2b3f7a;--ink:#eaf1ff;--muted:#a9b8e0;--yellow:#ffd54a;--cyan:#38bdf8;--green:#4ade80;--red:#f87171;--orange:#fb923c;--violet:#a78bfa}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif}
+body{min-height:100vh;background:radial-gradient(circle at 12% 8%,rgba(56,189,248,.14),transparent 40%),radial-gradient(circle at 88% 92%,rgba(167,139,250,.14),transparent 40%),var(--bg)}
+button{font-family:inherit}
+h1,h2,h3{font-family:Unbounded,sans-serif;font-weight:800;margin:0}
+.hud{position:sticky;top:0;z-index:5;background:rgba(11,20,48,.94);border-bottom:2px solid var(--line)}
+.hud-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-weight:700}
+.brand{font-family:Unbounded,sans-serif;color:var(--yellow);font-size:15px}
+.bar{width:150px;height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .4s}
+.hud .sp{margin-left:auto;color:var(--muted);font-weight:600;font-size:14px}
+main{max-width:1080px;margin:0 auto;padding:22px 16px 70px}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.muted{color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:800;font-size:16px;cursor:pointer;min-height:48px}
+.btn:active{transform:translateY(2px)}
+.go{background:var(--yellow);color:#1b1300;box-shadow:0 4px 0 #b38f12}
+.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+input[type=text],select,textarea{background:#0a1027;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:600 16px Rubik,sans-serif;width:100%;min-height:48px}
+label{display:block;font-weight:700;margin:0 0 6px;color:var(--muted);font-size:14px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1 1 300px;min-width:0}
+.hero{text-align:center;padding:20px 10px}
+.hero h1{font-size:40px;line-height:1.1;color:var(--yellow)}
+.hero h1 small{display:block;font-size:20px;color:var(--cyan);margin-top:10px}
+.notebook{background:#fffdf3;color:#1e3a8a;border-radius:14px;padding:16px 20px;background-image:linear-gradient(#dbe6fb 1px,transparent 1px);background-size:100% 28px;border:3px solid #ffd54a}
+.notebook .nb-h{font-family:Unbounded,sans-serif;color:#b45309;font-size:14px;margin-bottom:8px}
+.notebook p,.notebook li{font-size:17px;line-height:28px;margin:0}
+.notebook ul{margin:0;padding-left:22px}
+.check{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;color:#1e3a8a;cursor:pointer;min-height:44px}
+.check input{width:22px;height:22px}
+.map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:800px){.map{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.node{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:16px;text-align:left;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:160px}
+.node:disabled{opacity:.45;cursor:not-allowed}
+.node.done{border-color:var(--green)}
+.node.next{border-color:var(--yellow);box-shadow:0 0 0 4px rgba(255,213,74,.18)}
+.node .num{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Unbounded,sans-serif;color:#0b1430}
+.node .t{font-weight:800;font-size:17px}.node .d{font-size:13px;color:var(--muted)}
+.node .pts{margin-top:auto;font-size:13px;font-weight:800;color:var(--yellow)}
+.q{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+.q h3{font-family:Rubik,sans-serif;font-size:19px;margin-bottom:12px;line-height:1.35}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{background:#0f1a40;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 14px;font-weight:700;font-size:16px;cursor:pointer;text-align:left;min-height:52px}
+.opt:hover:not(:disabled){border-color:var(--cyan)}
+.opt.right{background:#0f3b26;border-color:var(--green)}.opt.wrong{background:#43141b;border-color:var(--red)}
+.opt.sel{border-color:var(--yellow);background:#2a2a10}
+.explain{margin-top:12px;padding:12px 14px;border-radius:12px;font-weight:600;line-height:1.4}
+.explain.ok{background:rgba(74,222,128,.14);color:#bbf7d0}.explain.bad{background:rgba(248,113,113,.14);color:#fecaca}
+.chat{background:#e5ddd5;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;color:#111}
+.msg{max-width:80%;background:#fff;border-radius:12px;padding:10px 12px;font-size:16px;line-height:1.4;box-shadow:0 1px 1px rgba(0,0,0,.15)}
+.msg b{display:block;font-size:13px;color:#0e7490;margin-bottom:2px}
+.post{background:#fff;color:#111;border-radius:16px;overflow:hidden;max-width:560px}
+.post .ph{position:relative;height:300px;background:linear-gradient(#7dd3fc,#fde68a 70%,#86efac 70%)}
+.hot{position:absolute;border:3px dashed transparent;border-radius:10px;background:transparent;cursor:pointer;color:#111;font:700 14px Rubik,sans-serif;padding:6px 8px}
+.hot:hover{border-color:#f97316}
+.hot.found{border-color:#16a34a;background:rgba(22,163,74,.18)}
+.big{font-family:Unbounded,sans-serif;font-size:26px;color:var(--yellow)}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--yellow);color:#1b1300;font-family:Unbounded,sans-serif;padding:10px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:20;pointer-events:none}
+.toast.on{opacity:1}
+.grade{font-family:Unbounded,sans-serif;font-size:84px;line-height:1;color:var(--yellow)}
+.moods{display:flex;gap:10px;flex-wrap:wrap}
+.moods button{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;min-height:48px}
+.moods button[aria-pressed=true]{border-color:var(--yellow)}
+.desc{display:flex;flex-direction:column;gap:8px}
+.desc div{background:var(--panel2);border-radius:10px;padding:10px 12px;font-weight:600}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="hud hidden" id="hud"><div class="hud-in">
+  <span class="brand">ЦИФРОВОЙ ЩИТ</span>
+  <span>Баллы <span class="bar"><i id="pf"></i></span> <span id="pt">0</span>/36</span>
+  <span>Монеты: <span id="cn">0</span></span>
+  <span class="sp" id="who"></span>
+</div></div>
+<main id="stage"></main>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* Связь с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech6-comm-m3";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Бортовой журнал", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+
+<script>
+(function () {
+'use strict';
+var MAX = 36;
+var LV = [
+  { k: 'q1', t: 'Инструменты связи', d: 'Выбери лучший способ связаться.', c: '#38bdf8' },
+  { k: 'q2', t: 'С кем общаемся?', d: 'Знаю в жизни или только по сети?', c: '#4ade80' },
+  { k: 'q3', t: 'Детектор опасностей', d: 'Найди опасные сообщения в чате.', c: '#fb923c' },
+  { k: 'q4', t: 'Скрытые опасности', d: 'Что лишнего видно в этом посте?', c: '#f472b6' },
+  { k: 'q5', t: 'Что делать?', d: 'Правильный поступок в трудной ситуации.', c: '#a78bfa' },
+  { k: 'q6', t: 'Босс: правила щита', d: 'Собери свои правила безопасного общения.', c: '#ffd54a' }
+];
+var S = { name: '', cls: '', rec: null, score: {}, open: {}, coins: 0, t0: 0, mood: '', rules: [] };
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var stage = $('#stage');
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function pts() { return Object.keys(S.score).reduce(function (s, k) { return s + S.score[k]; }, 0); }
+function toast(t) { var e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { e.classList.remove('on'); }, 1300); }
+var actx; function beep(f, d) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); var o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.value = .05; o.connect(g); g.connect(actx.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + (d || .1)); o.stop(actx.currentTime + (d || .1)); } catch (e) {} }
+function ok() { beep(700, .08); setTimeout(function () { beep(1040, .1); }, 80); }
+function bad() { beep(150, .25); }
+function hud() { $('#hud').classList.remove('hidden'); $('#pt').textContent = pts(); $('#pf').style.width = (pts() / MAX * 100) + '%'; $('#cn').textContent = S.coins; $('#who').textContent = S.name + ' · ' + S.cls; }
+function stageLabel() { return Object.keys(S.score).length >= 6 ? 'Финиш' : 'Уровень ' + (Object.keys(S.score).length + 1); }
+function save() { if (S.rec) TL().then(function (t) { return t.progress(S.rec, { score: S.score, open: S.open, stage: stageLabel(), doneCount: Object.keys(S.score).length }); }).catch(function () {}); }
+function addCoin(n) { S.coins += n; hud(); }
+
+/* ---------- СТАРТ ---------- */
+function screenStart() {
+  var q = new URLSearchParams(location.search);
+  stage.innerHTML = '<div class="hero"><div class="kicker">Технологическое воспитание · 6 класс · Миссия 3 · 09.12</div>' +
+    '<h1 style="margin-top:10px">ЦИФРОВОЙ ЩИТ<small>С кем мы общаемся в сети и какие там опасности</small></h1>' +
+    '<p class="muted" style="font-size:18px;max-width:640px;margin:14px auto 22px">6 уровней, монеты и финальный босс. Научись выбирать способ связи, отличать своих от чужих и замечать опасности — даже скрытые.</p></div>' +
+    '<div class="panel" style="max-width:720px;margin:0 auto"><div class="row">' +
+    '<div class="col"><label for="fio">Фамилия и имя</label><input id="fio" type="text" maxlength="60" placeholder="Иванова Мария" value="' + esc(q.get('name') || '') + '"></div>' +
+    '<div class="col" style="flex:0 1 180px"><label for="cls">Класс</label><select id="cls"><option>6 «А»</option><option>6 «Б»</option><option>6 «В»</option><option>6 «Г»</option></select></div></div>' +
+    '<div style="margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn go" id="go" type="button">НАЧАТЬ МИССИЮ ▶</button><span class="muted" id="err"></span></div></div>';
+  $('#go').onclick = async function () {
+    var fio = $('#fio').value.trim(), cls = $('#cls').value;
+    if (fio.split(/\s+/).length < 2) { $('#err').textContent = 'Напиши фамилию и имя.'; bad(); return; }
+    var b = this; b.disabled = true; $('#err').textContent = 'Подключаюсь…';
+    try {
+      var t = await Promise.race([TL(), new Promise(function (_, rj) { setTimeout(function () { rj(new Error('timeout')); }, 8000); })]);
+      if (!(await t.isOpen())) { $('#err').textContent = 'Миссия пока закрыта — подожди, пока учитель её откроет.'; b.disabled = false; return; }
+      S.rec = await t.start({ name: fio, cls: cls });
+    } catch (e) { $('#err').textContent = 'Нет связи с сайтом — результат сохранится, когда связь появится.'; }
+    S.name = fio; S.cls = cls; S.t0 = Date.now(); ok(); hud(); screenJournal();
+  };
+}
+
+/* ---------- БОРТОВОЙ ЖУРНАЛ ---------- */
+function screenJournal() {
+  stage.innerHTML = '<div class="kicker">Бортовой журнал</div><h2 style="font-size:28px;margin:8px 0 16px">Запиши в тетрадь — это пригодится в игре</h2>' +
+    '<div class="notebook"><div class="nb-h">ТЕМА: С кем общаемся? Инструменты коммуникации. Опасности в сети</div>' +
+    '<p><b>Цели:</b> выбирать инструмент связи; отличать знакомых от незнакомцев; распознавать опасности и знать, что делать.</p>' +
+    '<p style="margin-top:8px"><b>Инструменты коммуникации:</b> мессенджеры (Viber, WhatsApp, Telegram), электронная почта, видеозвонки, социальные сети, форумы, SMS.</p>' +
+    '<p style="margin-top:8px"><b>С кем общаемся:</b> безопасно — с теми, кого знаешь в жизни (семья, друзья, учителя). Человек «только из сети» — незнакомец, даже если он мил и пишет давно.</p>' +
+    '<p style="margin-top:8px"><b>Известные опасности:</b> мошенники и «выигрыши», просьбы о пароле или коде из SMS, травля (кибербуллинг), вирусы в ссылках.</p>' +
+    '<p style="margin-top:8px"><b>Скрытые опасности:</b> то, что мы выдаём сами: адрес, школа, геометка на фото, номер телефона, «мы уехали до воскресенья».</p>' +
+    '<p style="margin-top:8px"><b>Правило:</b> не отвечай, сделай скриншот, заблокируй, пожалуйся и <b>расскажи взрослому</b>.</p>' +
+    '<label class="check"><input type="checkbox" id="nb"> Я записал(а) тему и конспект в тетрадь</label></div>' +
+    '<div style="margin-top:16px"><button class="btn go" id="toMap" type="button" disabled>К уровням ▶</button></div>';
+  $('#nb').onchange = function () { $('#toMap').disabled = !this.checked; };
+  $('#toMap').onclick = function () { if (S.rec) TL().then(function (t) { t.progress(S.rec, { stage: 'Карта уровней' }); }).catch(function () {}); screenMap(); };
+}
+
+/* ---------- КАРТА ---------- */
+function screenMap() {
+  hud();
+  var doneN = Object.keys(S.score).length;
+  stage.innerHTML = '<div class="kicker">Карта миссии</div><h2 style="font-size:28px;margin:8px 0 16px">Пройди 6 уровней по порядку</h2><div class="map" id="map"></div>' +
+    (doneN >= 6 ? '<div style="margin-top:18px"><button class="btn go" id="fin" type="button">ФИНИШ ▶</button></div>' : '');
+  LV.forEach(function (L, i) {
+    var done = S.score[L.k] != null, open = i <= doneN;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'node' + (done ? ' done' : '') + (i === doneN ? ' next' : '');
+    b.disabled = !open || done;
+    b.innerHTML = '<span class="num" style="background:' + L.c + '">' + (i + 1) + '</span><span class="t">' + L.t + '</span><span class="d">' + L.d + '</span>' +
+      '<span class="pts">' + (done ? 'Пройдено: ' + S.score[L.k] + '/6' : open ? 'До 6 баллов' : 'Закрыто') + '</span>';
+    b.onclick = function () { if (S.rec) TL().then(function (t) { t.progress(S.rec, { stage: 'Уровень ' + (i + 1) }); }).catch(function () {}); [lv1, lv2, lv3, lv4, lv5, lv6][i](); };
+    $('#map').appendChild(b);
+  });
+  if (doneN >= 6) $('#fin').onclick = screenFinish;
+}
+function head(i) { var L = LV[i]; return '<div class="kicker">Уровень ' + (i + 1) + ' из 6 · до 6 баллов</div><h2 style="font-size:30px;margin:8px 0 14px;color:' + L.c + '">' + L.t + '</h2>'; }
+function finish(k, p) { S.score[k] = Math.max(0, Math.min(6, Math.round(p))); save(); hud(); toast('+' + S.score[k] + ' баллов'); setTimeout(screenMap, 900); }
+function nextBtn(host, label, cb) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn go'; b.style.marginTop = '14px'; b.textContent = label; b.onclick = cb; host.appendChild(b); }
+
+/* общий вопрос с выбором */
+function ask(host, q, cb) {
+  var box = document.createElement('div'); box.className = 'q';
+  var opts = shuffle(q.o.map(function (t, i) { return { t: t, i: i }; }));
+  box.innerHTML = '<h3>' + q.text + '</h3><div class="opts">' + opts.map(function (o) { return '<button type="button" class="opt" data-i="' + o.i + '">' + esc(o.t) + '</button>'; }).join('') + '</div>';
+  host.appendChild(box);
+  box.querySelectorAll('.opt').forEach(function (b) {
+    b.onclick = function () {
+      var right = +b.dataset.i === q.a;
+      box.querySelectorAll('.opt').forEach(function (x) { x.disabled = true; if (+x.dataset.i === q.a) x.classList.add('right'); });
+      if (!right) b.classList.add('wrong');
+      right ? (ok(), addCoin(10)) : bad();
+      var e = document.createElement('div'); e.className = 'explain ' + (right ? 'ok' : 'bad'); e.textContent = (right ? 'Верно! ' : 'Не совсем. ') + q.why; box.appendChild(e);
+      cb(right);
+    };
+  });
+}
+function series(host, qs, perRight, k) {
+  var i = 0, p = 0;
+  (function one() {
+    host.innerHTML = '<div class="muted" style="font-weight:700">Вопрос ' + (i + 1) + ' из ' + qs.length + '</div>';
+    ask(host, qs[i], function (r) { if (r) p += perRight; i++; nextBtn(host, i < qs.length ? 'Дальше ▶' : 'Завершить уровень ▶', function () { i < qs.length ? one() : finish(k, p); }); });
+  })();
+}
+
+/* ---------- 1. Инструменты связи ---------- */
+function lv1() {
+  stage.innerHTML = head(0) + '<p style="font-size:18px;margin:0">Для каждой ситуации выбери <b>самый подходящий</b> инструмент.</p><div id="h"></div>';
+  series($('#h'), shuffle([
+    { text: 'Нужно отправить учителю реферат файлом и подписать письмо.', o: ['Электронная почта', 'SMS', 'Сторис в соцсети', 'Голосовое сообщение'], a: 0, why: 'Почта подходит для официальных писем с файлами.' },
+    { text: 'Бабушка в другом городе хочет увидеть внука прямо сейчас.', o: ['Видеозвонок', 'Электронная почта', 'Форум', 'Комментарий под постом'], a: 0, why: 'Видеозвонок — живое общение с изображением.' },
+    { text: 'Быстро договориться с другом, во сколько встретиться.', o: ['Мессенджер', 'Бумажное письмо', 'Форум', 'Электронная почта'], a: 0, why: 'Мессенджер — быстрые короткие сообщения.' },
+    { text: 'Найти ответ на вопрос по игре, который задавали другие люди.', o: ['Форум', 'SMS другу', 'Видеозвонок', 'Электронная почта учителю'], a: 0, why: 'На форуме вопросы и ответы видят все и могут найти.' },
+    { text: 'Нет интернета, но нужно сообщить маме, что задерживаешься.', o: ['SMS или звонок', 'Мессенджер', 'Электронная почта', 'Соцсеть'], a: 0, why: 'SMS и звонок работают по мобильной сети без интернета.' },
+    { text: 'Класс делится фото с экскурсии только между собой.', o: ['Закрытая группа в мессенджере', 'Открытый пост для всех', 'Форум', 'SMS каждому'], a: 0, why: 'Закрытая группа — только для своих, фото не увидят чужие.' }
+  ]), 1, 'q1');
+}
+
+/* ---------- 2. С кем общаемся ---------- */
+function lv2() {
+  var C = shuffle([
+    ['Мама в Viber', 1], ['Одноклассник Саша (сидит с тобой за партой)', 1], ['Учитель информатики в школьной группе', 1],
+    ['«Аня, 12 лет», написала в игре, хочет дружить', 0], ['«Служба поддержки игры» просит код из SMS', 0], ['Друг друга, которого ты никогда не видел(а)', 0]
+  ]);
+  stage.innerHTML = head(1) + '<p style="font-size:18px;margin:0 0 12px">Кто тебе пишет? Реши для каждого контакта.</p>' +
+    '<div class="panel"><div class="kicker" id="ci">Контакт 1 из 6</div><div style="font-size:24px;font-weight:800;margin:10px 0 16px" id="who2"></div>' +
+    '<div class="row"><button class="btn ghost col" id="real" type="button" style="border-color:var(--green)">✅ Знаю в жизни — свой</button><button class="btn ghost col" id="net" type="button" style="border-color:var(--red)">⚠️ Только из сети — незнакомец</button></div><div id="fb"></div></div>';
+  var i = 0, p = 0, lock = false;
+  function show() { $('#ci').textContent = 'Контакт ' + (i + 1) + ' из 6'; $('#who2').textContent = C[i][0]; }
+  function pick(v) {
+    if (lock) return; lock = true;
+    var right = v === C[i][1];
+    if (right) { p++; ok(); addCoin(10); } else bad();
+    $('#fb').innerHTML = '<div class="explain ' + (right ? 'ok' : 'bad') + '">' + (C[i][1] ? 'Это свой человек — ты знаешь его в жизни.' : 'Это незнакомец: ты не можешь проверить, кто он на самом деле. Не сообщай ему личное.') + '</div>';
+    i++;
+    setTimeout(function () { lock = false; $('#fb').innerHTML = ''; if (i < C.length) show(); else finish('q2', p); }, 1500);
+  }
+  $('#real').onclick = function () { pick(1); }; $('#net').onclick = function () { pick(0); };
+  show();
+}
+
+/* ---------- 3. Детектор опасностей ---------- */
+function lv3() {
+  var M = shuffle([
+    ['Неизвестный', 'Поздравляем! Вы выиграли iPhone 16! Перейдите по ссылке и введите данные карты родителей 🎁', 1, 'Фишинг: «выигрыш», ссылка, данные карты.'],
+    ['Учитель', 'Завтра урок в 9:00 в кабинете 21. Возьмите наушники.', 0, 'Обычное сообщение от учителя.'],
+    ['«Поддержка игры»', 'Ваш аккаунт заблокируют! Пришлите пароль и код из SMS для проверки.', 1, 'Никакая поддержка не просит пароль и код из SMS.'],
+    ['Новый «друг»', 'Ты классная! Скинь фото и скажи, где живёшь, я приеду в гости 😉', 1, 'Незнакомец просит фото и адрес — опасно.'],
+    ['Одноклассники', 'Давайте все вместе напишем Пете, что он глупый, и выкинем его из чата 😂', 1, 'Это кибербуллинг (травля). Не участвуй, расскажи взрослому.'],
+    ['Мама', 'Купи, пожалуйста, хлеб по дороге домой.', 0, 'Обычная просьба от мамы.']
+  ]);
+  stage.innerHTML = head(2) + '<p style="font-size:18px;margin:0 0 12px">Сообщения приходят по одному. Опасное или безопасное?</p>' +
+    '<div class="chat" id="chat"></div><div class="row" style="margin-top:12px"><button class="btn ghost col" id="safe" type="button" style="border-color:var(--green)">🛡 Безопасно</button><button class="btn ghost col" id="danger" type="button" style="border-color:var(--red)">🚨 Опасно!</button></div><div id="fb"></div>';
+  var i = 0, p = 0, lock = false;
+  function show() { var m = M[i]; $('#chat').innerHTML += '<div class="msg"><b>' + esc(m[0]) + '</b>' + esc(m[1]) + '</div>'; }
+  function pick(v) {
+    if (lock) return; lock = true;
+    var right = v === M[i][2];
+    if (right) { p++; ok(); addCoin(10); } else bad();
+    $('#fb').innerHTML = '<div class="explain ' + (right ? 'ok' : 'bad') + '">' + esc(M[i][3]) + '</div>';
+    i++;
+    setTimeout(function () { lock = false; $('#fb').innerHTML = ''; if (i < M.length) show(); else finish('q3', p); }, 1700);
+  }
+  $('#safe').onclick = function () { pick(0); }; $('#danger').onclick = function () { pick(1); };
+  show();
+}
+
+/* ---------- 4. Скрытые опасности в посте ---------- */
+function lv4() {
+  var H = [
+    { id: 'geo', l: '📍 Кишинёв, ул. Цветочная, 12', x: 10, y: 10, why: 'Точный адрес дома в геометке.' },
+    { id: 'away', l: '«Уезжаем всей семьёй до воскресенья!»', x: 10, y: 52, why: 'Все знают, что дома никого нет.' },
+    { id: 'school', l: '🏫 Форма с названием школы', x: 330, y: 120, why: 'По форме видно, где ты учишься.' },
+    { id: 'phone', l: '📞 Мой номер: 069 123 456', x: 10, y: 250, why: 'Номер телефона открыт для всех.' },
+    { id: 'ticket', l: '🎫 Билет на самолёт с кодом', x: 300, y: 210, why: 'По коду билета можно изменить бронь.' },
+    { id: 'pet', l: 'Пароль — кличка кота Барсик 🐱', x: 120, y: 160, why: 'Подсказка к паролю — нельзя!' }
+  ];
+  stage.innerHTML = head(3) + '<p style="font-size:18px;margin:0 0 12px">Девочка выложила пост. Найди <b>6 вещей</b>, которые нельзя показывать всем. Нажимай на опасные места. Ошибки отнимают баллы!</p>' +
+    '<div class="row"><div class="col" style="flex:0 1 560px"><div class="post"><div style="padding:10px 14px;font-weight:700;color:#111">masha_2014 · Публичный аккаунт 🌍</div><div class="ph" id="ph"></div>' +
+    '<div style="padding:10px 14px;color:#333">❤ 124 · Отдыхаем! 🌴</div></div></div>' +
+    '<div class="col"><div class="panel"><div>Найдено: <span class="big" id="fc">0</span>/6</div><div id="fl" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>' +
+    '<button class="btn ghost" id="safeArea" type="button" style="margin-top:12px">☀️ Пальма и море (нажми, если считаешь опасным)</button>' +
+    '<div id="done4"></div></div></div></div>';
+  var found = {}, miss = 0;
+  H.forEach(function (h) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'hot'; b.textContent = h.l;
+    b.style.left = h.x + 'px'; b.style.top = h.y + 'px'; b.style.background = 'rgba(255,255,255,.85)';
+    b.onclick = function () {
+      if (found[h.id]) return; found[h.id] = 1; b.classList.add('found'); ok(); addCoin(10);
+      $('#fc').textContent = Object.keys(found).length;
+      $('#fl').innerHTML += '<div class="explain ok" style="margin:0;padding:8px 10px">' + esc(h.why) + '</div>';
+      check();
+    };
+    $('#ph').appendChild(b);
+  });
+  $('#safeArea').onclick = function () { miss++; bad(); this.disabled = true; this.textContent = 'Пальма и море — это не опасно 🙂 (−1)'; };
+  function check() {
+    if (Object.keys(found).length === 6) { $('#done4').innerHTML = ''; nextBtn($('#done4'), 'Завершить уровень ▶', function () { finish('q4', 6 - miss); }); }
+  }
+}
+
+/* ---------- 5. Что делать? ---------- */
+function lv5() {
+  stage.innerHTML = head(4) + '<p style="font-size:18px;margin:0">Выбери правильный поступок.</p><div id="h"></div>';
+  series($('#h'), shuffle([
+    { text: 'В общем чате тебя обзывают и смеются над твоим фото.', o: ['Сделать скриншоты и рассказать взрослому', 'Ответить ещё грубее', 'Молчать и никому не говорить', 'Удалить свой аккаунт навсегда'], a: 0, why: 'Скриншоты — доказательства, взрослый поможет остановить травлю.' },
+    { text: 'Незнакомец настойчиво зовёт встретиться «погулять».', o: ['Не идти, рассказать родителям', 'Пойти одному днём', 'Пойти с другом', 'Дать свой адрес, пусть придёт сам'], a: 0, why: 'Встречи с людьми из сети — только с разрешения и при участии родителей.' },
+    { text: 'Пришло письмо: «Ваш аккаунт взломан, срочно введите пароль по ссылке».', o: ['Не нажимать ссылку, показать взрослому', 'Быстро ввести пароль', 'Переслать письмо друзьям', 'Ответить и спросить, кто это'], a: 0, why: 'Это фишинг: настоящие сервисы не просят пароль по ссылке.' },
+    { text: 'Ты случайно отправил(а) свой номер телефона в открытый чат.', o: ['Удалить сообщение и сказать родителям', 'Ничего не делать', 'Отправить ещё и адрес', 'Выйти из интернета навсегда'], a: 0, why: 'Удали как можно скорее и предупреди взрослых.' },
+    { text: 'Друг просит твой пароль от игры «на минутку».', o: ['Вежливо отказать: пароль — только мой', 'Дать, ведь это друг', 'Дать, но потом сменить', 'Написать пароль в общем чате'], a: 0, why: 'Пароль не дают даже друзьям.' },
+    { text: 'Незнакомый аккаунт пишет гадости каждый день.', o: ['Заблокировать и пожаловаться', 'Отвечать каждый раз', 'Попросить друзей тоже писать гадости', 'Поставить лайк'], a: 0, why: 'Блокировка и жалоба остановят обидчика.' }
+  ]), 1, 'q5');
+}
+
+/* ---------- 6. Босс: правила ---------- */
+function lv6() {
+  var R = shuffle([
+    ['Общаюсь в сети только с теми, кого знаю в жизни', 1], ['Никому не говорю пароль и код из SMS', 1], ['Не публикую адрес, телефон и название школы', 1],
+    ['Если что-то пугает — рассказываю взрослому', 1], ['Не перехожу по подозрительным ссылкам', 1], ['Блокирую и жалуюсь на обидчиков', 1],
+    ['Встречаюсь с новыми друзьями из сети без родителей', 0], ['Отвечаю грубостью на грубость', 0], ['Делюсь паролем с лучшим другом', 0], ['Выкладываю геометку на каждом фото', 0]
+  ]);
+  stage.innerHTML = head(5) + '<p style="font-size:18px;margin:0 0 12px">Босс «Хакер-Тролль» атакует! Собери свой <b>цифровой щит</b>: выбери <b>6 верных правил</b>. За каждое неверное правило босс отнимает балл.</p>' +
+    '<div class="opts" id="rs"></div><div style="margin-top:14px"><span class="muted">Выбрано: <b id="rc">0</b>/6</span></div>' +
+    '<button class="btn go" id="hit" type="button" style="margin-top:12px" disabled>⚔ Ударить босса щитом</button><div id="res"></div>';
+  var sel = {};
+  R.forEach(function (r, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.textContent = r[0];
+    b.onclick = function () { if (sel[i]) delete sel[i]; else if (Object.keys(sel).length < 6) sel[i] = 1; b.classList.toggle('sel', !!sel[i]); $('#rc').textContent = Object.keys(sel).length; $('#hit').disabled = Object.keys(sel).length !== 6; beep(600, .04); };
+    $('#rs').appendChild(b);
+  });
+  $('#hit').onclick = function () {
+    var good = 0, badN = 0;
+    $('#rs').querySelectorAll('.opt').forEach(function (b, i) { b.disabled = true; if (R[i][1]) b.classList.add('right'); if (sel[i] && !R[i][1]) { b.classList.add('wrong'); badN++; } if (sel[i] && R[i][1]) good++; });
+    S.rules = Object.keys(sel).map(function (i) { return R[i][0]; });
+    var p = Math.max(0, good - badN);
+    p >= 5 ? ok() : bad();
+    this.disabled = true;
+    $('#res').innerHTML = '<div class="explain ' + (p >= 5 ? 'ok' : 'bad') + '">' + (p === 6 ? 'Щит непробиваем! Босс повержен!' : 'Верных правил: ' + good + ', ошибок: ' + badN + '. Зелёным отмечены правильные правила — запомни их.') + '</div>';
+    nextBtn($('#res'), 'Завершить уровень ▶', function () { finish('q6', p); });
+  };
+}
+
+/* ---------- ФИНИШ ---------- */
+function screenFinish() {
+  var P = pts(), pct = Math.round(P / MAX * 100);
+  var qual = pct >= 85 ? 'ОХ' : pct >= 65 ? 'Х' : pct >= 45 ? 'У' : 'Н';
+  var qn = { 'ОХ': 'Очень хорошо', 'Х': 'Хорошо', 'У': 'Удовлетворительно', 'Н': 'Нужно повторить' }[qual];
+  var D = [
+    ['Выбираю инструмент связи для ситуации', S.score.q1 >= 4], ['Отличаю знакомых от незнакомцев в сети', S.score.q2 >= 4],
+    ['Распознаю опасные сообщения', S.score.q3 >= 4], ['Не выдаю личную информацию в постах', S.score.q4 >= 4],
+    ['Знаю, что делать в опасной ситуации', S.score.q5 >= 4], ['Соблюдаю правила безопасного общения', S.score.q6 >= 4]
+  ];
+  stage.innerHTML = '<div class="panel" style="text-align:center"><div class="kicker">Миссия завершена</div>' +
+    '<div class="row" style="justify-content:center;align-items:center;gap:30px;margin-top:12px"><div><div class="grade">' + qual + '</div><div style="font-size:20px;font-weight:800">' + qn + '</div></div>' +
+    '<div style="text-align:left"><div>Баллы: <span class="big">' + P + '/' + MAX + '</span></div><div>Монеты: <span class="big">' + S.coins + '</span></div></div></div></div>' +
+    '<div class="row" style="margin-top:16px"><div class="col"><div class="panel"><h3 style="font-size:18px;margin-bottom:12px">Мои умения (дескрипторы)</h3><div class="desc">' +
+    D.map(function (d) { return '<div>' + (d[1] ? '✅ ' : '🔸 Повторить: ') + d[0] + '</div>'; }).join('') + '</div></div></div>' +
+    '<div class="col"><div class="panel"><h3 style="font-size:18px;margin-bottom:12px">Как тебе урок?</h3><div class="moods" id="moods">' +
+    ['😀 Было интересно', '🙂 Нормально', '😐 Скучновато', '🤔 Было трудно'].map(function (m) { return '<button type="button">' + m + '</button>'; }).join('') + '</div>' +
+    '<div class="notebook" style="margin-top:14px"><div class="nb-h">ЗАПИШИ ИТОГ</div><p>Мой цифровой щит: общаюсь со «своими», не выдаю личное, не перехожу по странным ссылкам, рассказываю взрослым.</p><p>Результат: <b>' + P + '/' + MAX + ' — ' + qual + '</b></p></div>' +
+    '<button class="btn go" id="send" type="button" style="margin-top:14px">Отправить учителю ✓</button><p class="muted" id="st"></p></div></div></div>';
+  $('#moods').querySelectorAll('button').forEach(function (b) { b.onclick = function () { S.mood = b.textContent; $('#moods').querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); }; });
+  $('#send').onclick = function () {
+    var b = this; b.disabled = true; $('#st').textContent = 'Отправляю…';
+    var data = { score: S.score, open: S.open, points: P, max: MAX, percent: pct, qual: qual, stars: P >= 34 ? 3 : P >= 27 ? 2 : P >= 18 ? 1 : 0, coins: S.coins,
+      descriptors: D.map(function (d) { return (d[1] ? '✓ ' : '✗ ') + d[0]; }), boss: { rules: S.rules, title: 'Правила цифрового щита' },
+      minutes: Math.round((Date.now() - S.t0) / 60000), mood: S.mood, stage: 'Финиш', doneCount: 6 };
+    if (!S.rec) { $('#st').textContent = 'Нет связи с сайтом. Покажи этот экран учителю.'; b.disabled = false; return; }
+    TL().then(function (t) { return t.submit(S.rec, data); })
+      .then(function () { $('#st').textContent = 'Готово! Результат у учителя.'; ok(); })
+      .catch(function () { $('#st').textContent = 'Не удалось отправить. Нажми ещё раз или покажи экран учителю.'; b.disabled = false; });
+  };
+}
+
+screenStart();
+})();
+</script>
+</body>
+</html>
