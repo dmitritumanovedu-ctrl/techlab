@@ -1,0 +1,39 @@
+.my-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.my-s { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px; position: relative; }
+.my-s .ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 23px; background: #E8EDFF; }
+.my-s b.n { display: block; font-size: 17px; margin-top: 10px; }
+.my-s .cls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.my-c { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 700; border-radius: 9px; padding: 5px 6px 5px 10px; background: #E3F3EA; color: #2E8B57; }
+.my-c button { border: 0; background: rgba(0,0,0,.06); border-radius: 6px; cursor: pointer; font-size: 12px; padding: 2px 6px; color: inherit; }
+.my-add { font: inherit; font-size: 13px; font-weight: 700; border: 1.5px dashed #C9D3FF; background: #F8FAFF; color: #2E4BFF; border-radius: 9px; padding: 5px 10px; cursor: pointer; }
+.my-st { position: absolute; top: 14px; right: 14px; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 3px 9px; }
+.my-st.ok { background: #E3F3EA; color: #2E8B57; } .my-st.wait { background: #FDEEE3; color: #B5612A; }
+.my-new { border: 2px dashed #C9D3FF; background: #F8FAFF; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #2E4BFF; font-weight: 700; min-height: 170px; cursor: pointer; font: inherit; font-weight: 700; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font: inherit; font-size: 13px; font-weight: 600; border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 11px; cursor: pointer; color: var(--ink); }
+.pill.on { background: #2E4BFF; color: #fff; border-color: #2E4BFF; }
+.pill:disabled { opacity: .45; cursor: default; }
+.hint { background: #FDEEE3; color: #7A4A1F; border-radius: 12px; padding: 10px 12px; font-size: 13px; margin-top: 12px; line-height: 1.45; }
+.my-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.my-row { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 14px; }
+.my-row .sp { flex: 1; }
+.my-code { font: 700 12px ui-monospace, monospace; background: #F0F3FA; border-radius: 6px; padding: 3px 7px; letter-spacing: .04em; }
+.my-badge { background: #F29A3A; color: #2B1600; font-size: 12px; font-weight: 800; border-radius: 999px; padding: 2px 8px; }
+.my-x { border: 0; background: rgba(0,0,0,.06); border-radius: 6px; cursor: pointer; font-size: 12px; padding: 4px 7px; color: inherit; }
+.my-head { display: flex; align-items: center; gap: 16px; }
+.my-codebox { background: #FFF7EC; border: 1px solid #F6DDB8; border-radius: 14px; padding: 10px 14px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.my-codebox small { font-size: 11px; font-weight: 800; color: #7A4300; letter-spacing: .05em; }
+.my-codebox b { font: 800 22px ui-monospace, monospace; letter-spacing: .06em; }
+.my-2col { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; align-items: start; }
+.my-sw { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.my-sw input { position: absolute; opacity: 0; }
+.my-sw span { width: 34px; height: 20px; border-radius: 999px; background: #C7D3EA; position: relative; transition: background .15s; }
+.my-sw span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+.my-sw input:checked + span { background: #1E8A5A; }
+.my-sw input:checked + span::after { left: 17px; }
+.my-sw input:focus-visible + span { outline: 3px solid #F29A3A; outline-offset: 2px; }
+@media (max-width: 860px) { .my-2col { grid-template-columns: 1fr; } .my-head { flex-wrap: wrap; } }
+.my-sws { display: flex; gap: 16px; align-items: center; flex: none; margin-left: auto; }
+.req .who { flex: 1 1 260px; min-width: 0; }
+.my-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.my-row b { white-space: nowrap; }
