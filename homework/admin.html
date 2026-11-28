@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script src="config.js"></script>
+<script src="../lessons/config.js"></script>
 <style>
   :root{
     --blue:#1d4ed8; --blue-d:#1e3a8a; --blue-l:#dbeafe; --bg:#f4f8ff;
@@ -100,6 +101,7 @@
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="homework" aria-selected="true" type="button">Домашнее задание</button>
       <button class="tab" role="tab" data-tab="announce" aria-selected="false" type="button">Объявление</button>
+      <button class="tab" role="tab" data-tab="lesson" aria-selected="false" type="button">Кнопка урока</button>
       <button class="tab" role="tab" data-tab="list" aria-selected="false" type="button">Опубликовано</button>
       <button class="tab" role="tab" data-tab="results" aria-selected="false" type="button">Результаты игр</button>
     </div>
@@ -116,7 +118,12 @@
             <label for="title" id="titleLabel">Тема задания</label>
             <input id="title" type="text" maxlength="200" placeholder="Например: Графические форматы">
           </div>
-          <div class="field">
+          <div class="field hidden" id="urlField">
+            <label for="url">Ссылка на урок</label>
+            <input id="url" type="text" maxlength="500" placeholder="https://dmitritumanovedu-ctrl.github.io/techlab/review-5/index.html">
+            <div class="hint">Откройте урок в браузере и скопируйте адрес из адресной строки.</div>
+          </div>
+          <div class="field" id="textField">
             <label for="text" id="textLabel">Что нужно сделать</label>
             <textarea id="text" maxlength="5000" placeholder="Например: стр. 45, упр. 3. Сохраните рисунок в PNG и JPG и сравните размер файлов."></textarea>
           </div>
@@ -131,7 +138,7 @@
             <div class="targets" id="targets"></div>
             <div class="hint" id="targetsHint">Ничего не выбрано</div>
           </div>
-          <div class="field">
+          <div class="field" id="fileField">
             <label for="file">Файл (по желанию, до 10 МБ)</label>
             <div class="drop" id="drop" tabindex="0" role="button" aria-label="Прикрепить файл">
               <strong>Выберите файл</strong> или перетащите сюда<br>
@@ -280,18 +287,20 @@
   /* --- вкладки --- */
   function setTab(t) {
     document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === t ? 'true' : 'false'); });
-    var isForm = t === 'homework' || t === 'announce';
+    var isForm = t === 'homework' || t === 'announce' || t === 'lesson';
     $('formBox').classList.toggle('hidden', !isForm);
     $('listBox').classList.toggle('hidden', t !== 'list');
     $('resBox').classList.toggle('hidden', t !== 'results');
     if (isForm) {
       mode = t;
-      var hw = t === 'homework';
-      $('subjectField').classList.toggle('hidden', !hw);
+      var hw = t === 'homework', ls = t === 'lesson';
+      $('subjectField').classList.toggle('hidden', t === 'announce');
       $('dueField').classList.toggle('hidden', !hw);
-      $('titleLabel').textContent = hw ? 'Тема задания' : 'Заголовок объявления';
-      $('textLabel').textContent = hw ? 'Что нужно сделать' : 'Текст объявления';
-      $('sendBtn').textContent = hw ? 'Опубликовать задание' : 'Опубликовать объявление';
+      $('urlField').classList.toggle('hidden', !ls);
+      $('fileField').classList.toggle('hidden', ls);
+      $('titleLabel').textContent = hw ? 'Тема задания' : ls ? 'Название кнопки (тема урока)' : 'Заголовок объявления';
+      $('textLabel').textContent = hw ? 'Что нужно сделать' : ls ? 'Короткое описание (по желанию)' : 'Текст объявления';
+      $('sendBtn').textContent = hw ? 'Опубликовать задание' : ls ? 'Добавить кнопку урока' : 'Опубликовать объявление';
     }
     if (t === 'list') loadList();
     if (t === 'results') loadResults();
@@ -304,17 +313,19 @@
     var targets = Object.keys(chosen);
     if (!targets.length) { show($('sendMsg'), 'Выберите, кому отправить.', false); return; }
     if (!$('title').value.trim() && !$('text').value.trim()) { show($('sendMsg'), 'Напишите тему или текст.', false); return; }
+    if (mode === 'lesson' && ($('url').value.trim().indexOf('http') !== 0 || !$('title').value.trim())) { show($('sendMsg'), 'Для кнопки нужны название и ссылка (https://…).', false); return; }
     var btn = this; btn.disabled = true;
     $('sendState').textContent = pickedFile ? 'Загружаю файл на Google Диск…' : 'Публикую…';
     post({
       action: 'addItem', key: key, type: mode,
-      subject: mode === 'homework' ? $('subject').value : '',
+      subject: mode !== 'announce' ? $('subject').value : '',
+      url: mode === 'lesson' ? $('url').value.trim() : '',
       title: $('title').value, text: $('text').value,
       due: mode === 'homework' ? $('due').value : '',
-      targets: targets, file: pickedFile
+      targets: targets, file: mode === 'lesson' ? null : pickedFile
     }).then(function () {
       show($('sendMsg'), 'Готово! Ученики увидят это в своей комнате: ' + targets.map(nice).join(', ') + '.', true);
-      $('title').value = ''; $('text').value = ''; $('due').value = '';
+      $('title').value = ''; $('text').value = ''; $('due').value = ''; $('url').value = '';
       $('fileClear').click();
     }).catch(function (e) { show($('sendMsg'), e.message, false); })
       .finally(function () { btn.disabled = false; $('sendState').textContent = ''; });
@@ -331,14 +342,14 @@
     post({ action: 'adminList', key: key }).then(function (d) {
       if (!d.items.length) { $('list').innerHTML = '<div class="card">Пока ничего не опубликовано.</div>'; return; }
       $('list').innerHTML = d.items.map(function (it) {
-        var hw = it.type === 'homework';
+        var hw = it.type === 'homework', ls = it.type === 'lesson';
         return '<div class="item"><div class="body">' +
-          '<span class="badge ' + (hw ? 'b-hw' : 'b-an') + '">' + (hw ? 'Домашнее задание' : 'Объявление') + '</span>' +
+          '<span class="badge ' + (hw || ls ? 'b-hw' : 'b-an') + '">' + (ls ? 'Кнопка урока' : hw ? 'Домашнее задание' : 'Объявление') + '</span>' +
           (it.subject ? '<span class="badge b-hw">' + esc(it.subject) + '</span>' : '') +
           '<h3>' + esc(it.title) + '</h3><p>' + esc(it.text) + '</p>' +
           '<div class="meta">Кому: ' + it.targets.map(nice).map(esc).join(', ') +
           ' · опубликовано ' + fmtDate(it.created) + (it.due ? ' · сдать до ' + fmtDate(it.due) : '') +
-          (it.fileUrl ? ' · <a href="' + esc(it.fileUrl) + '" target="_blank" rel="noopener">' + esc(it.fileName || 'файл') + '</a>' : '') +
+          (it.fileUrl ? ' · <a href="' + esc(it.fileUrl) + '" target="_blank" rel="noopener">' + (ls ? 'открыть урок' : esc(it.fileName || 'файл')) + '</a>' : '') +
           '</div></div><button class="btn btn-del" type="button" data-del="' + esc(it.id) + '">Удалить</button></div>';
       }).join('');
       document.querySelectorAll('[data-del]').forEach(function (b) {
@@ -354,9 +365,16 @@
   $('reloadList').onclick = loadList;
 
   /* --- результаты --- */
+  function postResults(body) {
+    var R = window.TECHLAB_RESULTS_API || '';
+    if (R.indexOf('http') !== 0) return Promise.reject(new Error('Вставьте адрес сервера результатов в lessons/config.js'));
+    return fetch(R, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d.ok) throw new Error(d.error || 'Ошибка сервера'); return d; });
+  }
   function loadResults() {
     $('resBody').innerHTML = '<tr><td colspan="6">Загружаю…</td></tr>';
-    post({ action: 'results', key: key }).then(function (d) {
+    postResults({ action: 'results', key: key }).then(function (d) {
       if (!d.items.length) { $('resBody').innerHTML = '<tr><td colspan="6">Результатов пока нет.</td></tr>'; return; }
       $('resBody').innerHTML = d.items.map(function (r) {
         var t = new Date(r.time);

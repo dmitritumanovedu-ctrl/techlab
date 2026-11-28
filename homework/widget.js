@@ -53,7 +53,7 @@
 
   function render(box, items) {
     var ann = items.filter(function (i) { return i.type === 'announce'; });
-    var hw = items.filter(function (i) { return i.type !== 'announce'; });
+    var hw = items.filter(function (i) { return i.type === 'homework'; });
     var freshSince = Date.now() - 3 * 86400000;
     var html = '<div class="tlhw-h"><h2>Домашнее задание</h2><button type="button" class="tlhw-refresh">Обновить</button></div>';
     html += ann.map(function (a) {
