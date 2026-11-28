@@ -67,6 +67,8 @@
     '<span id="tlhub-k"></span><button type="button" id="tlhub-x">Закрыть</button></div><div class="in" id="tlhub-in"></div></div>';
   function mountUI() { document.body.appendChild(btn); document.body.appendChild(ov); }
   if (document.body) mountUI(); else document.addEventListener('DOMContentLoaded', mountUI);
+  // если страница перерисовывает себя и убирает кнопку — возвращаем её
+  setInterval(function () { if (document.body && !document.getElementById('tlhub-btn')) mountUI(); }, 1000);
 
   btn.onclick = function () { ov.classList.add('on'); render(); };
   ov.addEventListener('click', function (e) { if (e.target === ov || e.target.id === 'tlhub-x') ov.classList.remove('on'); });
