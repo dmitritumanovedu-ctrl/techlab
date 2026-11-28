@@ -70,6 +70,7 @@ async function refresh() {
 // записи плана → [{d, t, k, s, g}], для ученика — только его класс и его предметы
 function events() {
   const me = getSession();
+  if (!me) return [];                                   // закрытая архитектура: гость не видит план классов
   const myG = me ? String(me.cls).split(" ")[0] : "";
   const mySubj = me && DATA.cs && DATA.cs[clsKey(me.cls)] ? Object.keys(DATA.cs[clsKey(me.cls)]) : null;
   const out = [];
@@ -88,9 +89,9 @@ function leftHtml() {
   const startOn = (h) => on("start", h);
   const items = [
     [ROOT, IC.home, L3("Главная", "Acasă", "Home"), PAGE === "start" && !["calendar", "tasks", "materials", "help"].includes(hash) ? " on" : ""],
-    [ROOT + "#calendar", IC.cal, L3("Календарь", "Calendar", "Calendar"), startOn("calendar")],
+    ...(getSession() ? [[ROOT + "#calendar", IC.cal, L3("Календарь", "Calendar", "Calendar"), startOn("calendar")],
     [ROOT + "#tasks", IC.tasks, L3("Мои задания", "Sarcinile mele", "My tasks"), startOn("tasks")],
-    [ROOT + "#materials", IC.clip, L3("Материалы", "Materiale", "Materials"), startOn("materials")],
+    [ROOT + "#materials", IC.clip, L3("Материалы", "Materiale", "Materials"), startOn("materials")]] : []),
     [ROOT + "#help", IC.help, L3("Как войти", "Cum intru", "How to sign in"), startOn("help")],
     null,
     [ROOT + "parent/", IC.par, L3("Родителям", "Părinților", "Parents"), on("parent")],

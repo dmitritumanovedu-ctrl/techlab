@@ -115,6 +115,7 @@ document.head.insertAdjacentHTML("beforeend", `<style>
 
 function renderNow() {
   const box = $("#now");
+  if (!ME) { box.innerHTML = ""; return; }            // закрытая архитектура: гость не видит, что открыто в классах
   const forMe = !mine() || !CURRENT || (MYSUBJ.includes(CURRENT.subject) && (!CURRENT.grade || CURRENT.grade === MYGRADE));
   if (CURRENT && CURRENT.path && forMe) {
     const s = subj(CURRENT.subject);
@@ -137,6 +138,7 @@ function renderNow() {
 addEventListener("hashchange", () => { render(); scrollTo(0, 0); });
 
 function renderTabs(active) {
+  if (!ME) { $("#tabs").innerHTML = ""; return; }
   $("#tabs").innerHTML = `<a class="tab${active ? "" : " on"}" href="#"><b>${mine() ? L3("Мои предметы", "Disciplinele mele", "My subjects") : t("tab_all")}</b></a>` +
     mySubjects().map((s, i) => `<a class="tab${active === s.id ? " on" : ""}" data-s="${s.id}" href="#${s.id}${mine() ? "-" + MYGRADE : ""}"><b>${esc(subjShort(s))}</b></a>`).join("");
 }
@@ -144,6 +146,8 @@ function renderTabs(active) {
 function render() {
   const [sid, grade] = decodeURIComponent(location.hash.slice(1)).split("-");
   const h = decodeURIComponent(location.hash.slice(1));
+  if (!ME && h && h !== "help") { history.replaceState(null, "", location.pathname); return render(); }
+  document.documentElement.classList.toggle("is-guest", !ME);   // гостю — только главная и «Как войти»
   document.querySelectorAll(".tl-top a").forEach((a) => { const k = a.getAttribute("href"); a.classList.toggle("on", k === "#" + h || (k === "#" && !h) || (k === "#subjects" && !!subj(sid))); });
   document.body.dataset.view = SPECIAL.includes(sid) ? sid : (sid === "subjects" ? "subjects" : "");
   if (SPECIAL.includes(sid)) { renderTabs(""); return renderSpecial(sid); }
@@ -180,16 +184,23 @@ function renderHome() {
         <div class="ds">${statLine(stats(s.id, MYGRADE))}</div>${tileState(s.id, MYGRADE)}
         <div class="cls"><b>${esc(ME.cls)}</b></div></a>`).join("")}</div>`
       : `<div class="empty-note">${L3("Учитель ещё не добавил предметы для твоего класса.", "Profesorul încă nu a adăugat disciplinele pentru clasa ta.", "Your teacher has not added subjects for your class yet.")}</div>`}`;
+    $("#view").insertAdjacentHTML("beforeend", `<form class="tl-joinf" id="joinF"><span>${esc(L3("Новый предмет или учитель? Введите код класса:", "Disciplină nouă? Introduceți codul clasei:", "New subject or teacher? Enter the class code:"))}</span>
+      <input id="joinIn" maxlength="14" autocomplete="off" autocapitalize="characters" placeholder="KXXX-XXXX" aria-label="${esc(L3("Код класса", "Codul clasei", "Class code"))}"><button class="btn-p" type="submit">${esc(L3("Добавить", "Adaugă", "Add"))}</button></form><div id="joinBox"></div>`);
+    import("./engine/join.js?v=1").then(({ joinClass, pendingCard }) => {
+      const box = $("#joinBox"); pendingCard(box, () => location.reload());
+      $("#joinF").onsubmit = (e) => { e.preventDefault(); const v = $("#joinIn").value.trim(); if (v) joinClass(v, () => pendingCard(box, () => location.reload())); };
+    });
     return;
   }
   // гость на главной: вместо списка предметов — одна кнопка «Предметы» и «Как это работает»
   if (!ME && decodeURIComponent(location.hash.slice(1)) !== "subjects") {
     document.body.dataset.view = "guest";
     const step = (n, h, p) => `<div class="tl-step"><i>${n}</i><b>${esc(h)}</b><p>${esc(p)}</p></div>`;
-    $("#view").innerHTML = `<a class="tl-subj" href="#subjects"><span class="ic">📚</span><span><b>${esc(L3("Предметы", "Discipline", "Subjects"))}</b>
-        <small>${esc(L3("Ученик и родитель после входа видят только предметы, к которым их подключил учитель", "După conectare, elevul și părintele văd doar disciplinele la care i-a conectat profesorul", "After signing in, students and parents see only the subjects their teacher connected them to"))}</small></span>
-        <span class="tl-btn w">${esc(L3("Открыть →", "Deschide →", "Open →"))}</span></a>
-      <h2 class="tl-h2">${esc(L3("Как это работает", "Cum funcționează", "How it works"))}</h2>
+    const pub = TESTS.filter((x) => x.path && SET?.[x.id]?.public);
+    $("#view").innerHTML = (pub.length ? `<h2 class="tl-h2">${esc(L3("Открытые тренажёры", "Exerciții deschise", "Open practice"))}</h2>
+      <p class="tl-pubp">${esc(L3("Без кода и без оценки. Остальные работы видят только ученики своего класса.", "Fără cod și fără notă. Celelalte lucrări le văd doar elevii clasei.", "No code, no grade. Other work is visible only to students of the class."))}</p>
+      <div class="tl-pub">${pub.map((x) => { const sj = subj(x.subject); return `<a class="tl-pubc" href="${esc(x.path)}"><small>${sj ? esc(subjName(sj)) : ""}${x.grade ? " · " + esc(gradeLabel(x.grade)) : ""}</small><b>${esc(x.title)}</b><span>${esc(L3("Попробовать →", "Încearcă →", "Try it →"))}</span></a>`; }).join("")}</div>` : "") +
+      `<h2 class="tl-h2">${esc(L3("Как это работает", "Cum funcționează", "How it works"))}</h2>
       <div class="tl-steps">${step(1, L3("Учитель подключает класс", "Profesorul conectează clasa", "Teacher connects a class"), L3("Выбирает свой предмет и класс — у учеников появляется предмет в кабинете.", "Își alege disciplina și clasa — elevii o văd în cabinet.", "Picks a subject and class — students see it in their cabinet."))}
         ${step(2, L3("Ученик входит по коду", "Elevul intră cu codul", "Student signs in with a code"), L3("Получает свой вариант. Ответы сохраняются даже при плохом интернете.", "Primește varianta sa. Răspunsurile se salvează chiar și cu internet slab.", "Gets their own variant. Answers are saved even on a weak connection."))}
         ${step(3, L3("Автопроверка и ИИ", "Verificare automată și AI", "Auto-check and AI"), L3("Оценка и разбор ошибок появляются сразу.", "Nota și analiza greșelilor apar imediat.", "The grade and a review of mistakes appear right away."))}

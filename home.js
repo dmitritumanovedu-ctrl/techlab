@@ -3,6 +3,7 @@
 // последние данные хранятся на компьютере — страница открывается сразу даже при медленном интернете.
 import { readDb, cacheGet, cachePut } from "./engine/fbrest.js?v=1";
 import { SUBJECTS, TESTS, EXPEDITIONS, KINDS, kindOf } from "./tests.js?v=9";
+import { joinClass, isClassCode, pendingCard } from "./engine/join.js?v=1";
 import { getSession, signInStudent, signOutStudent, knownCode, forgetCode, cleanCode, levelOf, awardsOf, fmt1, esc, LEVEL_XP, clsKey, SESSION_EVENT, plusOf, samePlus, mySubjects } from "./engine/people.js?v=4";
 import { t, pl, plw, gradeLabel, subjName as subjNameT, kindShortById, qualShow, LOCALE, LANG as LANG_ } from "./engine/i18n.js?v=1";
 import "./engine/nav.js?v=2";
@@ -136,7 +137,7 @@ function portal() {
       "Students do tests and quests, parents see grades and advice, teachers create tasks and connect their class."))}</p>
     <div class="tl-roles">
       <form class="tl-role r-st" id="pCode" novalidate>${ILL.st}<b>${t("r_student")}</b>
-        <small>${esc(L3("Код на карточке от учителя, начинается с S", "Codul de pe cartonaș, începe cu S", "Code on your card, starts with S"))}</small>
+        <small>${esc(L3("Личный код (S…) или код класса (K…) от учителя", "Codul personal (S…) sau codul clasei (K…)", "Personal code (S…) or class code (K…)"))}</small>
         <div class="tl-code"><label for="pcIn" class="sr">${t("code_label")}</label><input id="pcIn" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" placeholder="SXXX-XXXX">
           <button type="submit" class="pc-go" aria-label="${esc(t("sign_in"))}">→</button></div></form>
       <div class="tl-role r-pa">${ILL.pa}<b>${t("r_parent")}</b><small>${esc(L3("Код начинается с P — оценки и советы ребёнку", "Codul începe cu P — note și sfaturi", "Code starts with P — grades and advice"))}</small>
@@ -144,6 +145,7 @@ function portal() {
       <div class="tl-role r-te">${ILL.te}<b>${t("r_teacher")}</b><small>${esc(L3("Свой кабинет, предметы и Конструктор тестов", "Cabinet propriu, discipline și Constructor", "Your own cabinet, subjects and test builder"))}</small>
         <a class="tl-btn g" href="teacher/">${GOOGLE}${esc(L3("Войти с Google", "Intră cu Google", "Sign in with Google"))}</a></div>
     </div>
+    <div id="joinBox"></div>
     <p class="tl-demo"><a href="demo/">${t("p_demo")}</a> · ${esc(L3("забыл код — спроси учителя", "ai uitat codul — întreabă profesorul", "forgot your code? ask your teacher"))}</p>
   </section>`;
   document.getElementById("pCode").onsubmit = (e) => {
@@ -152,8 +154,11 @@ function portal() {
     if (!v) return askCode();
     // код родителя — сразу в кабинет родителя
     if (cleanCode(v)[0] === "P") { location.href = "parent/?code=" + encodeURIComponent(cleanCode(v)); return; }
+    // код класса (K…) — заявка учителю на вход в класс
+    if (isClassCode(v)) return joinClass(v, () => pendingCard(document.getElementById("joinBox"), () => location.reload()));
     askCode(v);
   };
+  pendingCard(document.getElementById("joinBox"), () => location.reload());
 }
 
 function askCode(prefill = "") {
@@ -184,6 +189,7 @@ function askCode(prefill = "") {
     e.preventDefault();
     if (busy) return;
     let code = cleanCode(inp.value);
+    if (code[0] === "K" && code.length >= 7) { close(); return joinClass(code, () => pendingCard(document.getElementById("joinBox"), () => location.reload())); }
     if (code.length === 7 && code[0] !== "S" && code[0] !== "P") code = "S" + code;   // забыли букву S
     if (code.length < 6 || code[0] !== "S") { err.textContent = code[0] === "P" ? t("err_parent_code") : t("err_s"); return; }
 
