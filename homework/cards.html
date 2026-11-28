@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechLab — Карточки уроков</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
+<script src="config.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f4f8ff;color:#0f1e3d}
+  header{background:#1e3a8a;color:#fff}
+  .bar{max-width:1200px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .bar b{font-size:20px} .bar b span{color:#93c5fd}
+  .bar .sp{margin-left:auto}
+  main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+  h1{margin:0 0 6px;font-size:28px}
+  .sub{color:#4b5a7a;margin:0 0 18px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{border:1px solid #c7d7f2;background:#fff;border-radius:999px;padding:9px 14px;font:600 14px Inter,sans-serif;cursor:pointer;min-height:40px;color:#0f1e3d}
+  .chip[aria-pressed=true]{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .card{background:#fff;border:1px solid #c7d7f2;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:180px}
+  .card small{color:#1d4ed8;font-weight:700;font-size:12px}
+  .card h3{margin:0;font-size:17px;line-height:1.3}
+  .card .row{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .card a,.card button{border:0;border-radius:10px;padding:9px 12px;font:700 14px Inter,sans-serif;cursor:pointer;text-decoration:none;min-height:40px;display:inline-flex;align-items:center}
+  .open{background:#1d4ed8;color:#fff} .open:hover{background:#1e3a8a}
+  .del{background:#fee2e2;color:#991b1b}
+  .plus{border:3px dashed #93c5fd;background:#f8fbff;border-radius:14px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:#1d4ed8;font:700 16px Inter,sans-serif}
+  .plus:hover{border-color:#1d4ed8;background:#eef4ff}
+  .plus span{font-size:52px;line-height:1;font-weight:400}
+  .btn{border:0;border-radius:10px;padding:12px 18px;font:700 15px Inter,sans-serif;cursor:pointer;min-height:44px}
+  .go{background:#ea580c;color:#fff} .ghost{background:#fff;border:1px solid #c7d7f2;color:#0f1e3d}
+  dialog{border:0;border-radius:16px;padding:0;max-width:560px;width:calc(100% - 24px)}
+  dialog::backdrop{background:rgba(15,30,61,.5)}
+  .dlg{padding:22px}
+  .dlg h2{margin:0 0 14px}
+  label{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
+  .f{margin-bottom:14px}
+  input[type=text],input[type=password],select{width:100%;border:1px solid #c7d7f2;border-radius:10px;padding:11px 12px;font:15px Inter,sans-serif}
+  .msg{margin-top:10px;font-weight:600}
+  .msg.err{color:#991b1b} .msg.ok{color:#166534}
+  .login{max-width:420px;margin:60px auto;background:#fff;border:1px solid #c7d7f2;border-radius:14px;padding:22px}
+  .hidden{display:none !important}
+  .empty{color:#4b5a7a;margin:6px 0 16px}
+</style>
+</head>
+<body>
+<header><div class="bar"><b>Tech<span>Lab</span> · карточки уроков</b><a class="sp btn ghost" href="admin.html" style="text-decoration:none">ДЗ и объявления</a></div></header>
+<main>
+  <section id="loginBox" class="login">
+    <h1>Вход для учителя</h1>
+    <div class="f"><label for="pwd">Пароль администратора</label><input id="pwd" type="password"></div>
+    <button class="btn go" id="loginBtn" type="button">Войти</button>
+    <div class="msg" id="loginMsg"></div>
+  </section>
+
+  <section id="panel" class="hidden">
+    <h1>Карточки уроков</h1>
+    <p class="sub">Нажмите «+», впишите класс, тему и ссылку — карточка появится у учеников в кнопке «Уроки и ДЗ».</p>
+    <div class="chips" id="filter"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<dialog id="dlg"><form class="dlg" method="dialog" id="form">
+  <h2>Новая карточка</h2>
+  <div class="f"><label>Класс</label><div class="chips" id="cls" style="margin:0"></div></div>
+  <div class="f"><label for="subj">Предмет</label><select id="subj"></select></div>
+  <div class="f"><label for="topic">Тема</label><input id="topic" type="text" maxlength="200" placeholder="Подготовка к контрольной: Редактирование изображений"></div>
+  <div class="f"><label for="link">Ссылка на страницу</label><input id="link" type="text" maxlength="500" placeholder="https://dmitritumanovedu-ctrl.github.io/techlab/review-5/index.html"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn go" id="save" type="button">Сохранить карточку</button>
+    <button class="btn ghost" id="cancel" type="button">Отмена</button>
+  </div>
+  <div class="msg" id="dlgMsg"></div>
+</form></dialog>
+
+<script>
+(function () {
+  var API = window.TECHLAB_HW_API || '';
+  var GRADES = window.TECHLAB_GRADES || ['5', '6', '7', '11', '12'];
+  var $ = function (id) { return document.getElementById(id); };
+  var key = ''; try { key = sessionStorage.getItem('techlab_admin_key') || ''; } catch (e) {}
+  var items = [], filter = 'ALL', pick = {};
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function post(body) {
+    if (API.indexOf('http') !== 0) return Promise.reject(new Error('Нет адреса сервера в config.js'));
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); }).then(function (d) { if (!d.ok) throw new Error(d.error || 'Ошибка'); return d; });
+  }
+  function nice(t) { return t === 'ALL' ? 'Все классы' : /^\d+$/.test(t) ? t + ' класс' : t.replace(/^(\d+)(.*)$/, '$1 «$2»'); }
+
+  function enter() { $('loginBox').classList.add('hidden'); $('panel').classList.remove('hidden'); load(); }
+  $('loginBtn').onclick = function () {
+    var k = $('pwd').value.trim(); if (!k) return;
+    post({ action: 'login', key: k }).then(function () { key = k; try { sessionStorage.setItem('techlab_admin_key', k); } catch (e) {} enter(); })
+      .catch(function (e) { $('loginMsg').className = 'msg err'; $('loginMsg').textContent = e.message; });
+  };
+  $('pwd').onkeydown = function (e) { if (e.key === 'Enter') $('loginBtn').click(); };
+
+  // фильтр по классам
+  function buildFilter() {
+    var f = $('filter'); f.innerHTML = '';
+    ['ALL'].concat(GRADES).forEach(function (g) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
+      b.textContent = g === 'ALL' ? 'Все' : g + ' класс'; b.setAttribute('aria-pressed', filter === g);
+      b.onclick = function () { filter = g; buildFilter(); render(); }; f.appendChild(b);
+    });
+  }
+  function render() {
+    var list = items.filter(function (i) { return i.type === 'lesson'; }).filter(function (i) {
+      if (filter === 'ALL') return true;
+      return i.targets.some(function (t) { return t === 'ALL' || t.replace(/\D+$/, '') === filter; });
+    });
+    var g = $('grid');
+    g.innerHTML = '<button type="button" class="plus" id="plus"><span>+</span>Новая карточка</button>' + list.map(function (i) {
+      return '<div class="card"><small>' + esc(i.subject || 'Урок') + ' · ' + i.targets.map(nice).map(esc).join(', ') + '</small><h3>' + esc(i.title) + '</h3>' +
+        '<div class="row"><a class="open" href="' + esc(i.fileUrl) + '" target="_blank" rel="noopener">Открыть</a>' +
+        '<button type="button" class="del" data-id="' + esc(i.id) + '">Удалить</button></div></div>';
+    }).join('');
+    $('plus').onclick = openDlg;
+    g.querySelectorAll('.del').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('Удалить карточку? Ученики её больше не увидят.')) return;
+        post({ action: 'deleteItem', key: key, id: b.dataset.id }).then(load);
+      };
+    });
+  }
+  function load() {
+    $('grid').innerHTML = '<p class="empty">Загружаю…</p>';
+    post({ action: 'adminList', key: key }).then(function (d) { items = d.items || []; buildFilter(); render(); })
+      .catch(function (e) { $('grid').innerHTML = '<p class="msg err">' + esc(e.message) + '</p>'; });
+  }
+
+  // окно «Новая карточка»
+  (window.TECHLAB_SUBJECTS || ['Технологическое воспитание']).forEach(function (s) { var o = document.createElement('option'); o.textContent = s; $('subj').appendChild(o); });
+  function buildCls() {
+    var c = $('cls'); c.innerHTML = '';
+    GRADES.forEach(function (g) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = g + ' класс';
+      b.setAttribute('aria-pressed', !!pick[g]);
+      b.onclick = function () { if (pick[g]) delete pick[g]; else pick[g] = true; buildCls(); }; c.appendChild(b);
+    });
+  }
+  function openDlg() {
+    pick = {}; if (filter !== 'ALL') pick[filter] = true;
+    buildCls(); $('topic').value = ''; $('link').value = ''; $('dlgMsg').textContent = '';
+    $('dlg').showModal(); $('topic').focus();
+  }
+  $('cancel').onclick = function () { $('dlg').close(); };
+  $('save').onclick = function () {
+    var targets = Object.keys(pick), topic = $('topic').value.trim(), link = $('link').value.trim(), m = $('dlgMsg');
+    m.className = 'msg err';
+    if (!targets.length) { m.textContent = 'Выберите класс.'; return; }
+    if (!topic) { m.textContent = 'Впишите тему.'; return; }
+    if (link.indexOf('http') !== 0) { m.textContent = 'Ссылка должна начинаться с https://'; return; }
+    var btn = this; btn.disabled = true; m.className = 'msg'; m.textContent = 'Сохраняю…';
+    post({ action: 'addItem', key: key, type: 'lesson', subject: $('subj').value, title: topic, text: '', url: link, targets: targets })
+      .then(function () { $('dlg').close(); load(); })
+      .catch(function (e) { m.className = 'msg err'; m.textContent = e.message; })
+      .finally(function () { btn.disabled = false; });
+  };
+
+  if (key) enter();
+})();
+</script>
+</body>
+</html>
