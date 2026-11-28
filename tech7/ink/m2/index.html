@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СО · Inkscape · 7 класс</title>
+<script src="../../../engine/guard.js?v=3"></script>
+<link rel="icon" href="../../../icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Rubik:wght@400;500;700;800&display=swap">
+<script>window.TL_READY = new Promise(function (r) { window.__tlr = r; }); function TL() { return window.TL_READY; }</script>
+<style>
+:root{--bg:#0b1430;--panel:#13204a;--panel2:#1a2b5e;--line:#2b3f7a;--ink:#eaf1ff;--muted:#a9b8e0;--yellow:#ffd54a;--cyan:#38bdf8;--green:#4ade80;--red:#f87171;--orange:#fb923c;--violet:#a78bfa}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif}
+body{min-height:100vh;background:radial-gradient(circle at 12% 8%,rgba(56,189,248,.14),transparent 40%),radial-gradient(circle at 88% 92%,rgba(167,139,250,.14),transparent 40%),var(--bg)}
+button{font-family:inherit}
+h1,h2,h3{font-family:Unbounded,sans-serif;font-weight:800;margin:0}
+.hud{position:sticky;top:0;z-index:5;background:rgba(11,20,48,.94);border-bottom:2px solid var(--line)}
+.hud-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-weight:700}
+.brand{font-family:Unbounded,sans-serif;color:var(--yellow);font-size:15px}
+.bar{width:150px;height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .4s}
+.hud .sp{margin-left:auto;color:var(--muted);font-weight:600;font-size:14px}
+main{max-width:1080px;margin:0 auto;padding:22px 16px 70px}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:22px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.muted{color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:800;font-size:16px;cursor:pointer;min-height:48px}
+.btn:active{transform:translateY(2px)}
+.go{background:var(--yellow);color:#1b1300;box-shadow:0 4px 0 #b38f12}
+.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+input[type=text],select,textarea{background:#0a1027;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:600 16px Rubik,sans-serif;width:100%;min-height:48px}
+label{display:block;font-weight:700;margin:0 0 6px;color:var(--muted);font-size:14px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.col{flex:1 1 300px;min-width:0}
+.hero{text-align:center;padding:20px 10px}
+.hero h1{font-size:40px;line-height:1.1;color:var(--yellow)}
+.hero h1 small{display:block;font-size:20px;color:var(--cyan);margin-top:10px}
+.notebook{background:#fffdf3;color:#1e3a8a;border-radius:14px;padding:16px 20px;background-image:linear-gradient(#dbe6fb 1px,transparent 1px);background-size:100% 28px;border:3px solid #ffd54a}
+.notebook .nb-h{font-family:Unbounded,sans-serif;color:#b45309;font-size:14px;margin-bottom:8px}
+.notebook p,.notebook li{font-size:17px;line-height:28px;margin:0}
+.notebook ul{margin:0;padding-left:22px}
+.check{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;color:#1e3a8a;cursor:pointer;min-height:44px}
+.check input{width:22px;height:22px}
+.map{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:800px){.map{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.node{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:16px;text-align:left;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:160px}
+.node:disabled{opacity:.45;cursor:not-allowed}
+.node.done{border-color:var(--green)}
+.node.next{border-color:var(--yellow);box-shadow:0 0 0 4px rgba(255,213,74,.18)}
+.node .num{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Unbounded,sans-serif;color:#0b1430}
+.node .t{font-weight:800;font-size:17px}.node .d{font-size:13px;color:var(--muted)}
+.node .pts{margin-top:auto;font-size:13px;font-weight:800;color:var(--yellow)}
+.q{background:var(--panel2);border:2px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+.q h3{font-family:Rubik,sans-serif;font-size:19px;margin-bottom:12px;line-height:1.35}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{background:#0f1a40;border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:12px 14px;font-weight:700;font-size:16px;cursor:pointer;text-align:left;min-height:52px}
+.opt:hover:not(:disabled){border-color:var(--cyan)}
+.opt.right{background:#0f3b26;border-color:var(--green)}.opt.wrong{background:#43141b;border-color:var(--red)}
+.opt.sel{border-color:var(--yellow);background:#2a2a10}
+.explain{margin-top:12px;padding:12px 14px;border-radius:12px;font-weight:600;line-height:1.4}
+.explain.ok{background:rgba(74,222,128,.14);color:#bbf7d0}.explain.bad{background:rgba(248,113,113,.14);color:#fecaca}
+.chat{background:#e5ddd5;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;color:#111}
+.msg{max-width:80%;background:#fff;border-radius:12px;padding:10px 12px;font-size:16px;line-height:1.4;box-shadow:0 1px 1px rgba(0,0,0,.15)}
+.msg b{display:block;font-size:13px;color:#0e7490;margin-bottom:2px}
+.post{background:#fff;color:#111;border-radius:16px;overflow:hidden;max-width:560px}
+.post .ph{position:relative;height:300px;background:linear-gradient(#7dd3fc,#fde68a 70%,#86efac 70%)}
+.hot{position:absolute;border:3px dashed transparent;border-radius:10px;background:transparent;cursor:pointer;color:#111;font:700 14px Rubik,sans-serif;padding:6px 8px}
+.hot:hover{border-color:#f97316}
+.hot.found{border-color:#16a34a;background:rgba(22,163,74,.18)}
+.big{font-family:Unbounded,sans-serif;font-size:26px;color:var(--yellow)}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--yellow);color:#1b1300;font-family:Unbounded,sans-serif;padding:10px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:20;pointer-events:none}
+.toast.on{opacity:1}
+.grade{font-family:Unbounded,sans-serif;font-size:84px;line-height:1;color:var(--yellow)}
+.moods{display:flex;gap:10px;flex-wrap:wrap}
+.moods button{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;min-height:48px}
+.moods button[aria-pressed=true]{border-color:var(--yellow)}
+.desc{display:flex;flex-direction:column;gap:8px}
+.desc div{background:var(--panel2);border-radius:10px;padding:10px 12px;font-weight:600}
+.hidden{display:none !important}
+
+.ck{display:flex;gap:12px;align-items:flex-start;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;font-size:16px;line-height:1.4}
+.ck input{width:24px;height:24px;flex-shrink:0;margin-top:1px}
+.tz{background:#fffdf3;color:#1e3a8a;border-radius:14px;padding:18px 20px;border:3px solid #ffd54a}
+.tz h3{font-family:Unbounded,sans-serif;color:#b45309;font-size:16px;margin:0 0 10px}
+.tz ol{margin:0;padding-left:22px}.tz li{font-size:17px;line-height:1.55}
+.prog{height:10px;border-radius:6px;background:#0a1027;border:1px solid var(--line);overflow:hidden}.prog i{display:block;height:100%;background:var(--violet);transition:width .3s}
+</style>
+</head>
+<body>
+<div class="hud hidden" id="hud"><div class="hud-in">
+  <span class="brand">СО · INKSCAPE</span>
+  <span id="part"></span>
+  <span class="sp">Осталось: <b id="tl">40:00</b></span>
+  <span class="sp" id="who" style="margin-left:0"></span>
+</div></div>
+<main id="stage"></main>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* Связь с сайтом TechLab: результаты попадают в панель учителя */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, update, get, serverTimestamp } from "../../../engine/rtdb.js?v=1";
+import { firebaseConfig } from "../../../firebase-config.js";
+const MISSION_ID = "tech7-ink-m2";
+const db = getDatabase(initializeApp(firebaseConfig));
+const P = `results/${MISSION_ID}`;
+window.__tlr({
+  isOpen: async () => !!(await get(ref(db, `settings/${MISSION_ID}/open`))).val(),
+  start: async (d) => { const r = push(ref(db, P)); await set(r, { ...d, status: "in_progress", stage: "Часть А", score: {}, startedAt: Date.now(), updatedAt: serverTimestamp() }); return r.key; },
+  progress: (id, o) => update(ref(db, `${P}/${id}`), { ...o, updatedAt: serverTimestamp() }),
+  submit: (id, o) => update(ref(db, `${P}/${id}`), { ...o, status: "submitted", submittedAt: Date.now(), updatedAt: serverTimestamp() }),
+});
+</script>
+
+<script>
+(function () {
+'use strict';
+var MAX = 20, MINUTES = 40;
+var S = { name: '', cls: '', rec: null, score: {}, open: {}, t0: 0, ends: 0, ans: [], qs: [], tz: {}, file: '' };
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var stage = $('#stage');
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function prog(o) { if (S.rec) TL().then(function (t) { return t.progress(S.rec, o); }).catch(function () {}); }
+
+var BANK = [
+  { t: 'Inkscape — это редактор…', o: ['векторной графики', 'растровой графики', 'текстов', 'видео'], a: 0 },
+  { t: 'Основной формат файлов Inkscape:', o: ['SVG', 'DOCX', 'MP3', 'TXT'], a: 0 },
+  { t: 'Какую клавишу держат, чтобы нарисовать ровный круг или квадрат?', o: ['Ctrl', 'Alt', 'Tab', 'Esc'], a: 0 },
+  { t: 'Как сгруппировать выделенные объекты?', o: ['Ctrl+G', 'Ctrl+S', 'Ctrl+P', 'Ctrl+Z'], a: 0 },
+  { t: 'Как сделать копию (дубликат) объекта на том же месте?', o: ['Ctrl+D', 'Ctrl+G', 'Ctrl+L', 'Ctrl+E'], a: 0 },
+  { t: 'Какая клавиша поднимает объект на самый верх (над всеми)?', o: ['Home', 'End', 'Delete', 'Insert'], a: 0 },
+  { t: 'Какая операция вырезает одну фигуру из другой?', o: ['Разность', 'Объединение', 'Группировка', 'Дублирование'], a: 0 },
+  { t: 'Операция «Пересечение» оставляет…', o: ['только общую часть фигур', 'обе фигуры целиком', 'фигуры без общей части', 'только верхнюю фигуру'], a: 0 },
+  { t: 'Каким инструментом меняют форму кривой, двигая узлы?', o: ['Редактор узлов', 'Текст', 'Прямоугольник', 'Масштаб'], a: 0 },
+  { t: 'Где меняют цвет заливки и обводки?', o: ['Панель «Заливка и обводка»', 'Меню «Справка»', 'Панель «Слои»', 'Панель «Экспорт»'], a: 0 },
+  { t: 'Как поставить объекты точно по центру друг друга?', o: ['Панель «Выровнять и расставить»', 'Группировка', 'Блокировка', 'Объединение'], a: 0 },
+  { t: 'Зачем блокируют объект?', o: ['Чтобы его нельзя было случайно сдвинуть', 'Чтобы удалить его', 'Чтобы сменить цвет', 'Чтобы сохранить файл'], a: 0 },
+  { t: 'Как получить картинку PNG для сайта или печати?', o: ['Экспорт в PNG', 'Сохранить как TXT', 'Сгруппировать', 'Объединить фигуры'], a: 0 },
+  { t: 'Как написать текст вдоль кривой линии?', o: ['Текст → Разместить по контуру', 'Объект → Сгруппировать', 'Контур → Объединение', 'Файл → Печать'], a: 0 },
+  { t: 'Как отразить объект зеркально по горизонтали?', o: ['Клавиша H', 'Клавиша Q', 'Клавиша Delete', 'Клавиша F1'], a: 0 },
+  { t: 'Как изменить размер, сохранив пропорции?', o: ['Тянуть угол рамки с зажатым Ctrl', 'Тянуть с зажатым Tab', 'Нажать Delete', 'Сгруппировать объект'], a: 0 }
+];
+var TZ = [
+  'Создан новый документ, размер страницы A4',
+  'Нарисованы минимум 3 разные фигуры (круг, прямоугольник, звезда/многоугольник)',
+  'Применена булева операция (объединение, разность или пересечение)',
+  'Фигуры выровнены по центру (панель «Выровнять и расставить»)',
+  'Добавлен текст «ЭКО-КЛУБ» и название лицея, выбран шрифт',
+  'У фигур разные цвета заливки и обводки',
+  'Все части логотипа сгруппированы (Ctrl+G)',
+  'Файл сохранён в SVG и экспортирован в PNG: Фамилия_логотип'
+];
+
+function screenStart() {
+  stage.innerHTML = '<div class="hero"><div class="kicker">Технологическое воспитание · 7 класс · 30.11</div>' +
+    '<h1 style="margin-top:10px">СУММАТИВНОЕ ОЦЕНИВАНИЕ<small>Основы графического дизайна в Inkscape</small></h1>' +
+    '<p class="muted" style="font-size:18px;max-width:700px;margin:14px auto 22px">Часть А — тест (10 вопросов, 10 б.) · Часть Б — практическая работа в Inkscape по техзаданию (8 б.) · Часть В — объясни свою работу (2 б.). Всего 20 баллов, 40 минут. Подсказок нет.</p></div>' +
+    '<div class="panel" style="max-width:720px;margin:0 auto"><div class="row">' +
+    '<div class="col"><label for="fio">Фамилия и имя</label><input id="fio" type="text" maxlength="60" placeholder="Иванов Артём"></div>' +
+    '<div class="col" style="flex:0 1 180px"><label for="cls">Класс</label><select id="cls"><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div></div>' +
+    '<div style="margin-top:18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn go" id="go" type="button">НАЧАТЬ ▶</button><span class="muted" id="err"></span></div></div>';
+  $('#go').onclick = async function () {
+    var fio = $('#fio').value.trim(), cls = $('#cls').value;
+    if (fio.split(/\s+/).length < 2) { $('#err').textContent = 'Напиши фамилию и имя.'; return; }
+    var b = this; b.disabled = true; $('#err').textContent = 'Подключаюсь…';
+    try {
+      var t = await Promise.race([TL(), new Promise(function (_, rj) { setTimeout(function () { rj(new Error('timeout')); }, 8000); })]);
+      if (!(await t.isOpen())) { $('#err').textContent = 'СО пока закрыто — подожди, пока учитель его откроет.'; b.disabled = false; return; }
+      S.rec = await t.start({ name: fio, cls: cls });
+    } catch (e) { $('#err').textContent = 'Нет связи с сайтом — покажешь результат учителю.'; }
+    S.name = fio; S.cls = cls; S.t0 = Date.now(); S.ends = S.t0 + MINUTES * 60000;
+    $('#hud').classList.remove('hidden'); $('#who').textContent = fio + ' · ' + cls;
+    setInterval(tick, 1000); partA();
+  };
+}
+function tick() {
+  var left = Math.max(0, Math.round((S.ends - Date.now()) / 1000));
+  $('#tl').textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+  if (left <= 0 && !S.done) { S.done = true; finish(true); }
+}
+
+/* ---------- Часть А ---------- */
+function partA() {
+  $('#part').textContent = 'Часть А · тест';
+  S.qs = shuffle(BANK).slice(0, 10).map(function (q) {
+    var o = shuffle(q.o.map(function (x, i) { return { x: x, i: i }; }));
+    return { t: q.t, o: o.map(function (z) { return z.x; }), a: o.findIndex(function (z) { return z.i === q.a; }) };
+  });
+  var i = 0;
+  (function one() {
+    var q = S.qs[i];
+    stage.innerHTML = '<div class="kicker">Часть А · вопрос ' + (i + 1) + ' из 10</div><div class="prog" style="margin:10px 0 4px"><i style="width:' + (i * 10) + '%"></i></div>' +
+      '<div class="q"><h3>' + esc(q.t) + '</h3><div class="opts">' + q.o.map(function (o, k) { return '<button type="button" class="opt" data-k="' + k + '">' + esc(o) + '</button>'; }).join('') + '</div></div>' +
+      '<button class="btn go" id="nx" type="button" style="margin-top:14px" disabled>' + (i < 9 ? 'Следующий вопрос ▶' : 'К практической части ▶') + '</button>';
+    var sel = -1;
+    stage.querySelectorAll('.opt').forEach(function (b) { b.onclick = function () { sel = +b.dataset.k; stage.querySelectorAll('.opt').forEach(function (x) { x.classList.toggle('sel', x === b); }); $('#nx').disabled = false; }; });
+    $('#nx').onclick = function () {
+      S.ans[i] = sel; i++;
+      if (i < 10) one();
+      else {
+        S.score.q1 = S.qs.filter(function (q, k) { return S.ans[k] === q.a; }).length;
+        prog({ score: S.score, stage: 'Часть Б', doneCount: 1 }); partB();
+      }
+    };
+  })();
+}
+
+/* ---------- Часть Б ---------- */
+function partB() {
+  $('#part').textContent = 'Часть Б · практика';
+  stage.innerHTML = '<div class="kicker">Часть Б · практическая работа в Inkscape · 8 баллов</div><h2 style="font-size:26px;margin:8px 0 14px">Логотип для «Эко-клуба» лицея</h2>' +
+    '<div class="row"><div class="col"><div class="tz"><h3>ТЕХНИЧЕСКОЕ ЗАДАНИЕ</h3><ol>' + TZ.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ol>' +
+    '<p style="margin:12px 0 0;font-size:15px">Открой Inkscape, выполни задание, потом вернись сюда и отметь, что сделано. <b>Учитель проверит файл на твоём компьютере.</b></p></div></div>' +
+    '<div class="col"><div class="panel"><h3 style="font-size:17px;margin-bottom:12px">Самопроверка: отметь, что выполнено</h3><div id="cks" style="display:flex;flex-direction:column;gap:8px"></div>' +
+    '<label for="fn" style="margin-top:14px">Имя сохранённого файла</label><input id="fn" type="text" maxlength="80" placeholder="Ivanov_logotip.png">' +
+    '<button class="btn go" id="nx" type="button" style="margin-top:14px">К части В ▶</button></div></div></div>';
+  TZ.forEach(function (t, i) {
+    var l = document.createElement('label'); l.className = 'ck';
+    l.innerHTML = '<input type="checkbox" data-i="' + i + '"><span>' + esc(t) + '</span>';
+    $('#cks').appendChild(l);
+  });
+  $('#nx').onclick = function () {
+    stage.querySelectorAll('#cks input').forEach(function (c) { S.tz[c.dataset.i] = c.checked; });
+    S.file = $('#fn').value.trim();
+    S.score.q2 = Object.keys(S.tz).filter(function (k) { return S.tz[k]; }).length;
+    prog({ score: S.score, stage: 'Часть В', doneCount: 2 }); partC();
+  };
+}
+
+/* ---------- Часть В ---------- */
+function partC() {
+  $('#part').textContent = 'Часть В · объяснение';
+  stage.innerHTML = '<div class="kicker">Часть В · 2 балла</div><h2 style="font-size:26px;margin:8px 0 14px">Объясни, как ты сделал(а) логотип</h2>' +
+    '<div class="q"><h3>Опиши по шагам: какие инструменты и операции ты использовал(а) и зачем сгруппировал(а) логотип? (3–5 предложений)</h3>' +
+    '<textarea id="ans" rows="6" maxlength="1500" placeholder="Сначала я нарисовал(а)… Потом применил(а)… Сгруппировал(а), чтобы…"></textarea></div>' +
+    '<button class="btn go" id="send" type="button" style="margin-top:14px">Сдать работу ✓</button>';
+  $('#send').onclick = function () {
+    var t = $('#ans').value.trim();
+    if (t.length < 20 && !confirm('Ответ очень короткий. Всё равно сдать?')) return;
+    S.open.o1 = t; S.done = true; finish(false);
+  };
+}
+
+/* ---------- Итог ---------- */
+function finish(timeout) {
+  if (S.score.q1 == null) S.score.q1 = S.qs.filter(function (q, k) { return S.ans[k] === q.a; }).length;
+  if (S.score.q2 == null) S.score.q2 = 0;
+  if (S.open.o1 == null) S.open.o1 = '';
+  var auto = S.score.q1 + S.score.q2, pct = Math.round(auto / MAX * 100);
+  var qual = pct >= 85 ? 'ОХ' : pct >= 65 ? 'Х' : pct >= 45 ? 'У' : 'Н';
+  var data = { score: S.score, open: S.open, points: auto, max: MAX, percent: pct, qual: qual, stars: 0, coins: 0,
+    descriptors: TZ.map(function (t, i) { return (S.tz[i] ? '✓ ' : '✗ ') + t; }), boss: { rules: [S.file || 'файл не указан'], title: 'Практическая работа (самопроверка)' },
+    minutes: Math.round((Date.now() - S.t0) / 60000), mood: '', stage: 'Финиш', doneCount: 3 };
+  stage.innerHTML = '<div class="panel" style="text-align:center"><div class="kicker">' + (timeout ? 'Время вышло — работа сдана' : 'Работа сдана') + '</div>' +
+    '<h2 style="font-size:28px;margin:12px 0">Спасибо, ' + esc(S.name.split(' ')[1] || S.name) + '!</h2>' +
+    '<p style="font-size:18px">Часть А (тест): <b class="big">' + S.score.q1 + '/10</b></p>' +
+    '<p class="muted" style="font-size:16px">Практическую работу и объяснение проверит учитель. Итоговый квалификатив ты узнаешь от учителя.</p>' +
+    '<p class="muted" id="st">Отправляю результат…</p></div>';
+  if (!S.rec) { $('#st').textContent = 'Нет связи с сайтом. Подними руку и покажи этот экран учителю.'; return; }
+  TL().then(function (t) { return t.submit(S.rec, data); })
+    .then(function () { $('#st').textContent = 'Результат отправлен учителю ✓'; })
+    .catch(function () { $('#st').textContent = 'Не удалось отправить. Подними руку и покажи этот экран учителю.'; });
+}
+
+screenStart();
+})();
+</script>
+</body>
+</html>
