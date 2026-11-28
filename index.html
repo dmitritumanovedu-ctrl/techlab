@@ -2,31 +2,51 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <script src="../engine/sorttable.js?v=1"></script>
-  <script src="../engine/embed.js?v=1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex">
-  <title>Центр управления · TechLab</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
-  <link rel="manifest" href="../manifest.webmanifest">
-  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#ffffff">
-  <link rel="stylesheet" href="../engine/test-e2.css">
-  <link rel="stylesheet" href="teacher-e2.css?v=10">
-  <link rel="stylesheet" href="../theme-classroom.css?v=4">
+  <title>TechLab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://dmitri-bcd33-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="style-e2.css?v=9">
+  <link rel="stylesheet" href="theme-classroom.css?v=4">
+  <link rel="stylesheet" href="theme-tl2.css?v=2">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TechLab">
 </head>
-<body data-shell="teacher">
-  <header class="top noprint">
-    <div>
-      <h1>Центр управления · TechLab</h1>
-      <div class="who" id="hSub">Загрузка…</div>
+<body data-shell="start">
+  <header class="bar">
+    <div class="bar-in">
+      <a class="logo" href="#" title="Стартовая страница">TechLab</a>
+      <nav class="tl-top" aria-label="Разделы"><a href="#" data-i18n="nav_home">Главная</a><a href="#subjects">📚 Предметы</a><a href="#calendar">Календарь</a><a href="#tasks">Мои задания</a><a href="parent/">Родителям</a><a href="pro/">Учителям</a></nav>
+      <div class="hero-r"><div id="langSw"></div><div id="meChip"></div><button type="button" class="inst-btn" id="installBtn" data-i18n="install_btn" hidden>Установить приложение</button><div class="clock" id="clock"></div></div>
     </div>
-    <div class="who" id="who"></div>
   </header>
-  <main data-shell-main id="app" style="max-width:1200px"><div class="card center"><p class="muted">Загрузка…</p></div></main>
-  <dialog id="dlg"></dialog>
-  <script type="module" src="../engine/teacher.js?v=23"></script>
-  <script type="module" src="../engine/shell.js?v=4"></script>
+  <div class="wrap" data-shell-main>
+    <nav class="tabs" id="tabs"></nav>
+    <main>
+      <div id="home"></div>
+      <div id="now"></div>
+      <div id="view"></div>
+    </main>
+    <div id="siteFoot" data-root="./"></div>
+    <footer style="padding-top:0"><a href="demo/" data-i18n="f_demo">демо-режим</a> · <a href="#" id="liteToggle">лёгкий режим</a></footer>
+  </div>
+  <script type="module">
+    import { applyI18n, mountLangSwitch } from "./engine/i18n.js?v=1";
+    applyI18n(); mountLangSwitch(document.getElementById("langSw"));
+  </script>
+  <script src="engine/outbox.js?v=1" defer></script>
+  <script type="module" src="start-e2.js?v=20"></script>
+  <script type="module" src="home.js?v=18"></script>
+  <script type="module" src="install.js?v=2"></script>
+  <script type="module" src="engine/consent.js?v=2"></script>
+  <script type="module" src="engine/shell.js?v=4"></script>
+  <script type="module" src="engine/footer.js?v=2"></script>
 </body>
 </html>
